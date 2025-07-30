@@ -1,0 +1,36 @@
+# Core Flask
+Flask==2.3.3
+Flask-SQLAlchemy==3.0.5
+Flask-Login==0.6.3
+Flask-migrate==4.0.5
+Flask-wtf==1.1.1
+Flask-cors==4.0.0
+
+# Database
+psycopg2-binary==2.9.7
+
+# Deployment
+gunicorn==21.2.0
+
+# Background Tasks
+redis==5.0.0
+celery==5.3.4
+
+# AI/ML
+langchain==0.0.335
+langchain-openai==0.0.2
+openai  # Add this for OpenAI API
+
+# Image Processing
+pillow==10.1.0
+opencv-python-headless==4.8.1.78
+
+# Utilities
+python-dotenv==1.0.0
+click==8.1.7
+bcrypt==4.1.2
+
+# Forms & Validation
+wtforms==3.1.0
+marshmallow==3.20.1
+marshmallow-dataclass==8.6.0

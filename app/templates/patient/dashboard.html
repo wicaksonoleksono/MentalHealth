@@ -1,0 +1,49 @@
+<!-- app/templates/patient/dashboard.html -->
+{% extends "base.html" %}
+{% block title %}Assessment Portal{% endblock %}
+
+{% block nav %}
+<nav class="bg-white shadow-sm border-b border-secondary-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <div class="flex items-center">
+                <h1 class="text-xl font-semibold text-secondary-900">Assessment Portal</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-sm text-secondary-600">{{ current_user.username }}</span>
+                <a href="{{ url_for('auth.logout') }}" class="text-sm text-secondary-600 hover:text-secondary-900">Logout</a>
+            </div>
+        </div>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+    <div class="bg-white rounded-lg shadow p-8">
+        <h2 class="text-2xl font-bold text-secondary-900 mb-6">Mental Health Assessment</h2>
+        
+        <div class="space-y-6">
+            <div class="border-l-4 border-primary-500 pl-4">
+                <p class="text-secondary-700">
+                    This assessment will help evaluate your mental health. It consists of questionnaires and optional open questions.
+                    The session is private and secure.
+                </p>
+            </div>
+            
+            <div class="bg-secondary-50 rounded-lg p-4">
+                <h3 class="font-medium text-secondary-900 mb-2">Before you begin:</h3>
+                <ul class="text-sm text-secondary-600 space-y-1">
+                    <li>• Ensure you're in a quiet, private space</li>
+                    <li>• Camera access will be required</li>
+                    <li>• Assessment takes approximately 10-15 minutes</li>
+                </ul>
+            </div>
+            
+            <button class="w-full bg-primary-600 text-white py-3 px-6 rounded-md hover:bg-primary-700 font-medium">
+                Begin Assessment
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

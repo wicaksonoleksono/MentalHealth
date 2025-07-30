@@ -1,0 +1,38 @@
+<!-- app/templates/components/consent_tab.html -->
+<div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-100">
+    <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+        <div class="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center mr-3">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        Consent Form Content
+    </h3>
+    <p class="text-gray-600 mb-6">Customize the consent form that patients must agree to before starting their assessment.</p>
+    
+    <div class="space-y-4">
+        <label class="block text-sm font-medium text-gray-700">Consent Form Text</label>
+        <div class="relative">
+            <textarea name="consent_form_text" rows="14" 
+                      class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none shadow-sm"
+                      placeholder="Enter the consent form text...">{{ consent_form_text or 'INFORMED CONSENT FOR MENTAL HEALTH ASSESSMENT\n\nI understand that I am about to participate in a mental health assessment that includes:\n\n• Standardized questionnaires about my mental health\n• Open-ended questions with an AI assistant\n• Video monitoring during the session for research purposes\n\nI understand that:\n• My participation is voluntary and I can withdraw at any time\n• My responses will be kept confidential and used only for assessment purposes\n• Video data is collected for research and will be de-identified\n• This assessment is not a substitute for professional mental health care\n• If I am experiencing a mental health crisis, I should contact emergency services immediately\n\nBy clicking "I Agree," I consent to participate in this assessment under the conditions described above.\n\nFor questions about this study, please contact: [CONTACT INFO]' }}</textarea>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <h5 class="font-medium text-purple-900 mb-2">Required Elements</h5>
+                <ul class="text-sm text-purple-700 space-y-1">
+                    <li>• Purpose of assessment</li>
+                    <li>• Data collection methods</li>
+                    <li>• Video monitoring disclosure</li>
+                    <li>• Privacy and confidentiality</li>
+                    <li>• Right to withdraw</li>
+                    <li>• Contact information</li>
+                </ul>
+            </div>
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <h5 class="font-medium text-amber-900 mb-2">Legal Notice</h5>
+                <p class="text-sm text-amber-700">Ensure compliance with local privacy laws, institutional IRB requirements, and informed consent regulations.</p>
+            </div>
+        </div>
+    </div>
+</div>

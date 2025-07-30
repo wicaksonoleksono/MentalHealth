@@ -1,0 +1,23 @@
+<!-- app/templates/admin/settings.html -->
+{% extends "base.html" %}
+{% block title %}Settings - Admin Dashboard{% endblock %}
+
+{% block nav %}
+{% include 'components/admin_nav.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div class="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-900 mb-2">Assessment Configuration</h2>
+            <p class="text-gray-600">Customize your mental health assessment platform settings</p>
+        </div>
+        
+        {% include 'components/flash_messages.html' %}
+        {% include 'components/settings_tabs.html' %}
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+{% endblock %}

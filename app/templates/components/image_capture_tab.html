@@ -1,0 +1,247 @@
+<!-- app/templates/components/image_capture_tab.html -->
+<div class="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl p-6 border border-orange-100" x-data="imageCaptureSettings()">
+    <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+        <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center mr-3">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+        </div>
+        Image Capture Configuration
+    </h3>
+    <p class="text-gray-600 mb-6">Configure automatic image capture settings during assessment sessions.</p>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Settings Panel -->
+        <div class="space-y-6">
+            <!-- Capture Interval -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Capture Interval</label>
+                <div class="flex items-center space-x-4">
+                    <input type="range" 
+                           name="capture_interval" 
+                           x-model="settings.captureInterval"
+                           min="1" 
+                           max="30" 
+                           step="1"
+                           class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <span class="text-sm font-medium text-gray-700 min-w-0 bg-orange-100 px-3 py-1 rounded-lg" 
+                          x-text="settings.captureInterval + ' seconds'"></span>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">How often to capture images during assessment</p>
+            </div>
+
+            <!-- Image Quality -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Image Quality</label>
+                <select name="image_quality" 
+                        x-model="settings.imageQuality"
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                    <option value="0.8">High (80%) - Good for Emotion identification </option>
+                    <option value="0.9">Very High (90%) - Extra detail</option>
+                    <option value="1.0">Maximum (100%) - Uncompressed</option>
+                    <option value="0.7">Medium (70%) - Smaller files</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">80% quality preserves facial features well</p>
+            </div>
+
+            <!-- Image Resolution -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Image Resolution</label>
+                <select name="image_resolution" 
+                        x-model="settings.imageResolution"
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                    <option value="640x480">640x480 - Good for Emotion identification</option>
+                    <option value="800x600">800x600 - Better detail</option>
+                    <option value="1280x720">1280x720 - HD (recommended)</option>
+                    <option value="1920x1080">1920x1080 - Full HD (overkill)</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">For emotion detection, 720p is usually optimal</p>
+            </div>
+
+            <!-- Enable/Disable Capture -->
+            <div class="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200">
+                <div>
+                    <h4 class="font-medium text-gray-900">Enable Image Capture</h4>
+                    <p class="text-sm text-gray-600">Automatically capture images during assessments</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" 
+                           name="enable_capture" 
+                           x-model="settings.enableCapture"
+                           class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Camera Preview Panel -->
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <h4 class="font-medium text-gray-900">Camera Preview</h4>
+                <button type="button"
+                        @click="togglePreview()" 
+                        :class="isPreviewActive ? 'bg-red-500 hover:bg-red-600' : 'bg-orange-500 hover:bg-orange-600'"
+                        class="px-4 py-2 text-white rounded-lg font-medium transition-colors">
+                    <span x-text="isPreviewActive ? 'Stop Preview' : 'Start Preview'"></span>
+                </button>
+            </div>
+
+            <!-- Video Preview -->
+            <div class="relative bg-gray-900 rounded-lg overflow-hidden" style="aspect-ratio: 4/3;">
+                <video x-ref="videoPreview" 
+                       x-show="isPreviewActive"
+                       autoplay 
+                       muted 
+                       class="w-full h-full object-cover">
+                </video>
+                <div x-show="!isPreviewActive" 
+                     class="absolute inset-0 flex items-center justify-center text-gray-400">
+                    <div class="text-center">
+                        <svg class="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                        <p class="text-sm">Camera preview will appear here</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Capture -->
+            <div x-show="isPreviewActive" class="space-y-4">
+                <button type="button"
+                        @click="testCapture()" 
+                        class="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-medium transition-colors">
+                    📸 Test Image Capture
+                </button>
+
+                <!-- Captured Image Preview -->
+                <div x-show="capturedImage" class="bg-gray-100 rounded-lg p-4">
+                    <h5 class="font-medium text-gray-900 mb-2">Captured Image Preview</h5>
+                    <img x-show="capturedImage" 
+                         :src="capturedImage" 
+                         class="w-full rounded border" 
+                         style="max-height: 200px; object-fit: contain;">
+                    <div class="mt-2 text-xs text-gray-600" x-show="imageInfo">
+                        <p x-text="imageInfo"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Display -->
+            <div x-show="error" class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div class="flex">
+                    <svg class="w-5 h-5 text-red-500 mt-0.5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="text-sm text-red-700" x-text="error"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function imageCaptureSettings() {
+    return {
+        settings: {
+            captureInterval: parseInt('{{ capture_interval|default(5) }}'),
+            imageQuality: parseFloat('{{ image_quality|default(0.8) }}'),
+            imageResolution: '{{ image_resolution|default("1280x720") }}',
+            enableCapture: {{ 'true' if enable_capture else 'false' }}
+        },
+        isPreviewActive: false,
+        capturedImage: null,
+        imageInfo: null,
+        error: null,
+        videoStream: null,
+
+        async togglePreview() {
+            if (this.isPreviewActive) {
+                this.stopPreview();
+            } else {
+                await this.startPreview();
+            }
+        },
+
+        async startPreview() {
+            try {
+                this.error = null;
+                const resolution = this.settings.imageResolution.split('x');
+                const width = parseInt(resolution[0]);
+                const height = parseInt(resolution[1]);
+                
+                // Request camera access
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: width },
+                        height: { ideal: height },
+                        facingMode: 'user'
+                    }
+                });
+
+                this.videoStream = stream;
+                this.$refs.videoPreview.srcObject = stream;
+                this.isPreviewActive = true;
+                
+                console.log('Camera preview started successfully');
+            } catch (error) {
+                this.error = 'Camera access denied or not available: ' + error.message;
+                console.error('Camera error:', error);
+                this.isPreviewActive = false;
+            }
+        },
+
+        stopPreview() {
+            if (this.videoStream) {
+                this.videoStream.getTracks().forEach(function(track) {
+                    track.stop();
+                });
+                this.videoStream = null;
+            }
+            this.isPreviewActive = false;
+            this.capturedImage = null;
+            this.imageInfo = null;
+        },
+
+        async testCapture() {
+            if (!this.isPreviewActive) return;
+
+            try {
+                const video = this.$refs.videoPreview;
+                const canvas = document.createElement('canvas');
+                const resolution = this.settings.imageResolution.split('x');
+                const width = parseInt(resolution[0]);
+                const height = parseInt(resolution[1]);
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, width, height);
+                
+                // Convert to blob with specified quality
+                const self = this;
+                canvas.toBlob(function(blob) {
+                    // Create preview URL
+                    self.capturedImage = canvas.toDataURL('image/jpeg', self.settings.imageQuality);
+                    
+                    // Show image info
+                    const fileSizeKB = Math.round(blob.size / 1024);
+                    const qualityPercent = Math.round(self.settings.imageQuality * 100);
+                    self.imageInfo = 'Resolution: ' + width + 'x' + height + ', Quality: ' + qualityPercent + '%, Size: ' + fileSizeKB + 'KB';
+                    
+                    console.log('Test capture successful:', {
+                        resolution: width + 'x' + height,
+                        quality: self.settings.imageQuality,
+                        sizeKB: fileSizeKB
+                    });
+                }, 'image/jpeg', this.settings.imageQuality);
+                
+            } catch (error) {
+                this.error = 'Failed to capture image: ' + error.message;
+                console.error('Capture error:', error);
+            }
+        }
+    };
+}
+</script>
