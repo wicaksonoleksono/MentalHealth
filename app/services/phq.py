@@ -19,7 +19,8 @@ class PHQ:
                     available.append({
                         'number': category_type.number,
                         'name': category_type.name,
-                        'description': category_type.description
+                        'description': category_type.description,
+                        'default_question': category_type.default_question
                     })
             
             return available
@@ -45,7 +46,7 @@ class PHQ:
             raise PHQException(f"Failed to load categories: {str(e)}")
     
     @staticmethod
-    def create_category(category_number, category_name=None, description=None):
+    def create_category(category_number, category_name=None, description=None, add_default_question=True):
         """Create new PHQ category"""
         try:
             # Check if already exists
@@ -64,6 +65,17 @@ class PHQ:
             )
             
             db.session.add(category)
+            db.session.flush()  # Get the category ID
+            
+            # Add default question if requested
+            if add_default_question and category_type.default_question:
+                default_question = PHQQuestion(
+                    category_id=category.id,
+                    question_text=category_type.default_question,
+                    is_active=True
+                )
+                db.session.add(default_question)
+            
             db.session.commit()
             
         except Exception as e:
@@ -72,7 +84,7 @@ class PHQ:
     
     @staticmethod
     def create_all_standard_categories():
-        """Create all 9 standard PHQ-9 categories"""
+        """Create all 9 standard PHQ-9 categories with default questions"""
         try:
             created_count = 0
             existing_numbers = {cat.category_number for cat in PHQCategory.query.all()}
@@ -85,6 +97,17 @@ class PHQ:
                         description=category_type.description
                     )
                     db.session.add(category)
+                    db.session.flush()  # Get the ID
+                    
+                    # Add default question
+                    if category_type.default_question:
+                        default_question = PHQQuestion(
+                            category_id=category.id,
+                            question_text=category_type.default_question,
+                            is_active=True
+                        )
+                        db.session.add(default_question)
+                    
                     created_count += 1
             
             db.session.commit()

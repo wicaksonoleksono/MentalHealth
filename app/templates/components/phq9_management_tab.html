@@ -212,6 +212,7 @@
 </div>
 
 <script>
+// Updated JavaScript for PHQ management (add to phq9_management_tab.html)
 function phqManager() {
     return {
         availableCategories: [],
@@ -342,7 +343,10 @@ function phqManager() {
             }
 
             try {
-                const payload = { category_number: parseInt(categoryData.number) };
+                const payload = { 
+                    category_number: parseInt(categoryData.number),
+                    add_default_question: categoryData.addDefaultQuestion !== false // Default to true
+                };
                 
                 if (categoryData.description) {
                     payload.description = categoryData.description;
@@ -395,8 +399,39 @@ function phqManager() {
             window.location.href = currentUrl.toString();
         },
 
+        async saveScaleSettings() {
+            try {
+                const scaleForm = event.target.closest('form');
+                const formData = new FormData();
+                
+                // Get scale settings from Alpine.js data
+                const scaleData = scaleForm.__x.$data.scaleSettings;
+                
+                formData.append('scale_min', scaleData.min);
+                formData.append('scale_max', scaleData.max);
+                
+                // Add all labels dynamically based on range
+                for (let i = scaleData.min; i <= scaleData.max; i++) {
+                    formData.append(`scale_label_${i}`, scaleData.labels[i] || '');
+                }
+                
+                formData.append('active_tab', 'phq9');
+
+                const response = await fetch('/admin/settings', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    this.showSuccess('Scale settings saved successfully!');
+                } else {
+                    this.showError('Failed to save scale settings');
+                }
+            } catch (error) {
+                this.showError('Error saving scale settings: ' + error.message);
+            }
+        },
         showSuccess(message) {
-            // Create a simple toast notification
             const toast = document.createElement('div');
             toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
             toast.textContent = message;

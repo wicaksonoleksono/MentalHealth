@@ -1,0 +1,115 @@
+<!-- app/templates/patient/consent.html -->
+{% extends "base.html" %}
+{% block title %}Consent Form - Assessment{% endblock %}
+
+{% block nav %}
+<nav class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <div class="flex items-center">
+                <h1 class="text-xl font-semibold text-gray-900">Assessment Portal</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-sm text-gray-600">{{ current_user.username }}</span>
+                <a href="{{ url_for('auth.logout') }}" class="text-sm text-gray-600 hover:text-gray-900">Logout</a>
+            </div>
+        </div>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+    <!-- Progress Bar -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between text-sm font-medium text-gray-600 mb-2">
+            <span>Assessment Progress</span>
+            <span>Step 1 of 4</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="bg-purple-600 h-2 rounded-full transition-all duration-300" style="width: 25%"></div>
+        </div>
+        <div class="flex justify-between text-xs text-gray-500 mt-1">
+            <span>Consent</span>
+            <span>Open Questions</span>
+            <span>PHQ-9</span>
+            <span>Complete</span>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 px-8 py-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-4">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Informed Consent</h2>
+                    <p class="text-purple-100">Please read and agree to participate in this assessment</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Consent Form Content -->
+        <div class="px-8 py-8">
+            <div class="prose prose-lg max-w-none">
+                <div class="bg-gray-50 rounded-lg p-6 border border-gray-200 mb-8">
+                    <div class="whitespace-pre-line text-gray-700 leading-relaxed">
+                        {{ consent_text or "Please configure consent form text in admin settings." }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Consent Form -->
+            <form method="POST" action="{{ url_for('patient.submit_consent') }}" class="space-y-6">
+                <input type="hidden" name="session_id" value="{{ session_id }}">
+                
+                <!-- Agreement Checkbox -->
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-6">
+                    <label class="flex items-start space-x-3 cursor-pointer">
+                        <input type="checkbox" 
+                               name="consent_agreed" 
+                               required
+                               class="mt-1 h-5 w-5 text-purple-600 border-purple-300 rounded focus:ring-purple-500">
+                        <div class="flex-1">
+                            <span class="text-lg font-medium text-gray-900">I agree to participate</span>
+                            <p class="text-sm text-gray-600 mt-1">
+                                I have read and understood the information above. I voluntarily agree to participate 
+                                in this mental health assessment under the conditions described.
+                            </p>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-between pt-6 border-t border-gray-200">
+                    <a href="{{ url_for('patient.dashboard') }}" 
+                       class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                        Back to Dashboard
+                    </a>
+                    
+                    <button type="submit" 
+                            class="px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-105 shadow-lg">
+                        <div class="flex items-center">
+                            <span>Continue to Assessment</span>
+                            <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                            </svg>
+                        </div>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Session Info (for debugging) -->
+    {% if config.DEBUG %}
+    <div class="mt-4 text-xs text-gray-500 text-center">
+        Session ID: {{ session_id }}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

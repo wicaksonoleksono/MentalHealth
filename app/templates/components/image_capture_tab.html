@@ -51,15 +51,13 @@
                 <select name="image_resolution" 
                         x-model="settings.imageResolution"
                         class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-                    <option value="640x480">640x480 - Good for Emotion identification</option>
-                    <option value="800x600">800x600 - Better detail</option>
-                    <option value="1280x720">1280x720 - HD (recommended)</option>
+                    <option value="600x480">640x480 - Good for Emotion identification</option>
+                    <option value="800x800">800x600 - Better detail</option>
+                    <option value="1280x900">1280x720 - HD (recommended)</option>
                     <option value="1920x1080">1920x1080 - Full HD (overkill)</option>
                 </select>
                 <p class="text-xs text-gray-500 mt-1">For emotion detection, 720p is usually optimal</p>
             </div>
-
-            <!-- Enable/Disable Capture -->
             <div class="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200">
                 <div>
                     <h4 class="font-medium text-gray-900">Enable Image Capture</h4>

@@ -1,0 +1,68 @@
+<!-- app/templates/components/instructions_tab.html -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Open Questions Instructions -->
+    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+        <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center mr-3">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                </svg>
+            </div>
+            Open Questions Instructions
+        </h3>
+        <p class="text-gray-600 mb-6">Instructions shown to patients before the AI conversation phase.</p>
+
+        <div class="space-y-4">
+            <label class="block text-sm font-medium text-gray-700">Patient Instructions</label>
+            <div class="relative">
+                <textarea name="openquestion_instructions" rows="12"
+                          class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none shadow-sm"
+                          placeholder="Enter instructions for patients...">{{ openquestion_instructions or 'Welcome to the Open Questions section!\n\nIn this part of the assessment, you\'ll have a conversation with an AI assistant designed to understand your mental health and wellbeing.\n\nWhat to expect:\n• The AI will ask you questions about how you\'re feeling\n• You can respond naturally, as if talking to a counselor\n• Take your time to think about your answers\n• Be as honest and detailed as you feel comfortable\n• There are no right or wrong answers\n\nTips for the best experience:\n• Find a quiet, private space where you feel comfortable\n• Speak clearly if using voice input\n• Don\'t worry about grammar or perfect sentences\n• Share what feels important to you\n\nYour privacy is protected - this conversation is confidential and used only for your mental health assessment.\n\nClick "Start Conversation" when you\'re ready to begin.' }}</textarea>
+            </div>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex">
+                    <svg class="w-5 h-5 text-blue-500 mt-0.5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="text-sm text-blue-700">
+                        <strong>Best Practices:</strong> Explain the purpose, set expectations, and reassure about privacy. Help patients feel comfortable opening up.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PHQ-9 Instructions -->
+    <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100">
+        <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center mr-3">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+            </div>
+            PHQ-9 Instructions
+        </h3>
+        <p class="text-gray-600 mb-6">Instructions and scale explanation for the PHQ-9 questionnaire.</p>
+
+        <div class="space-y-4">
+            <label class="block text-sm font-medium text-gray-700">Patient Instructions</label>
+            <div class="relative">
+                <textarea name="phq9_instructions" rows="12"
+                          class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none shadow-sm"
+                          placeholder="Enter PHQ-9 instructions...">{{ phq9_instructions or 'PHQ-9 Mental Health Questionnaire\n\nThe following questions ask about how you have been feeling during the LAST TWO WEEKS. Please read each question carefully and select the answer that best describes how often you have experienced each problem.\n\nAnswer Scale:\n\n• Not at all (0 points)\n  You have not experienced this problem in the last 2 weeks\n\n• Several days (1 point)\n  You experienced this problem on 2-6 days in the last 2 weeks\n\n• More than half the days (2 points)\n  You experienced this problem on 7+ days in the last 2 weeks\n\n• Nearly every day (3 points)\n  You experienced this problem on 11+ days in the last 2 weeks\n\nImportant Notes:\n• Think about the past 2 weeks only\n• Be honest - there are no right or wrong answers\n• Choose the option that best matches your experience\n• If you\'re unsure, pick the closest answer\n• All responses are confidential\n\nThis questionnaire helps assess symptoms that may be related to depression. Your answers will be used to better understand your mental health status.' }}</textarea>
+            </div>
+
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div class="flex">
+                    <svg class="w-5 h-5 text-green-500 mt-0.5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="text-sm text-green-700">
+                        <strong>Important:</strong> Clearly explain the 2-week timeframe and 4-point scale (0-3). Patients often get confused about scoring.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

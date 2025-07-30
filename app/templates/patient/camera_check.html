@@ -1,0 +1,46 @@
+<!-- app/templates/patient/camera_check.html -->
+{% extends "base.html" %}
+{% block title %}Camera Check - Assessment{% endblock %}
+
+{% block nav %}
+<nav class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <div class="flex items-center">
+                <h1 class="text-xl font-semibold text-gray-900">Assessment Portal</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-sm text-gray-600">{{ current_user.username }}</span>
+                <a href="{{ url_for('auth.logout') }}" class="text-sm text-gray-600 hover:text-gray-900">Logout</a>
+            </div>
+        </div>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+    <!-- Progress Bar -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between text-sm font-medium text-gray-600 mb-2">
+            <span>Assessment Setup</span>
+            <span>Camera Check</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 12.5%"></div>
+        </div>
+        <div class="flex justify-between text-xs text-gray-500 mt-1">
+            <span>Camera</span>
+            <span>Consent</span>
+            <span>Questions</span>
+            <span>PHQ-9</span>
+            <span>Complete</span>
+        </div>
+    </div>
+
+    {% include 'components/flash_messages.html' %}
+    {% include 'components/camera_permission.html' %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+{% endblock %}
