@@ -1,5 +1,4 @@
 <!-- app/templates/components/phq_scale_settings.html -->
- 
 <div class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-100 p-6" x-data="scaleConfig()">
     <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
         <div class="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center mr-3">
@@ -10,6 +9,7 @@
         PHQ-9 Configuration
     </h3>
     <p class="text-gray-600 mb-6">Configure response scale, behavior settings, and instructions</p>
+    
     <div class="space-y-6">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Point Range Configuration -->
@@ -19,19 +19,21 @@
                     <div class="flex-1">
                         <label class="block text-sm text-gray-600 mb-1">Min Value</label>
                         <input type="number" 
-                               x-model="minValue"
+                               x-model.number="minValue"
                                @input="updateRange()"
                                name="scale_min" 
                                min="0" max="5"
+                               value="{{ scale_min or 0 }}"
                                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                     </div>
                     <div class="flex-1">
                         <label class="block text-sm text-gray-600 mb-1">Max Value</label>
                         <input type="number" 
-                               x-model="maxValue"
+                               x-model.number="maxValue"
                                @input="updateRange()"
                                name="scale_max" 
                                min="1" max="10"
+                               value="{{ scale_max or 3 }}"
                                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                     </div>
                 </div>
@@ -76,7 +78,6 @@
                         <label class="text-sm font-medium text-gray-700">Randomize Question Order</label>
                         <p class="text-sm text-gray-500">Randomly shuffle questions within each category</p>
                     </div>
-                    <input type="hidden" name="phq9_randomize_questions" value="0">
                     <input type="checkbox" name="phq9_randomize_questions" value="1" 
                            {{ 'checked' if phq9_randomize_questions else '' }}
                            class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
@@ -87,7 +88,6 @@
                         <label class="text-sm font-medium text-gray-700">Show Progress Indicator</label>
                         <p class="text-sm text-gray-500">Display progress bar during assessment</p>
                     </div>
-                    <input type="hidden" name="phq9_show_progress" value="0">
                     <input type="checkbox" name="phq9_show_progress" value="1" 
                            {{ 'checked' if phq9_show_progress else '' }}
                            class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
@@ -143,14 +143,7 @@ function scaleConfig() {
             0: 'Tidak pernah',
             1: 'Beberapa hari terakhir', 
             2: 'Lebih dari 1 minggu',
-            3: 'Hampir setiap hari',
-            4: 'Sangat sering',
-            5: 'Selalu',
-            6: 'Terus menerus',
-            7: 'Ekstrem',
-            8: 'Maksimal',
-            9: 'Total',
-            10: 'Absolute'
+            3: 'Hampir setiap hari'
         },
 
         init() {

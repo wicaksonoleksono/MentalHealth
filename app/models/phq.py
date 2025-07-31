@@ -1,6 +1,4 @@
 # app/models/phq.py
-from app import db
-from datetime import datetime
 from enum import Enum
 
 class PHQCategoryType(Enum):
@@ -49,22 +47,3 @@ class PHQCategoryType(Enum):
             }
             for cat in cls
         ]
-
-class PHQCategory(db.Model):
-    __tablename__ = 'phq_category'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    category_number = db.Column(db.Integer, nullable=False, unique=True)
-    category_name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text)
-    is_active = db.Column(db.Boolean, default=True)
-    questions = db.relationship('PHQQuestion', backref='category', cascade='all, delete-orphan')
-
-class PHQQuestion(db.Model):
-    __tablename__ = 'phq_question'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    category_id = db.Column(db.Integer, db.ForeignKey('phq_category.id'), nullable=False)
-    question_text = db.Column(db.Text, nullable=False)
-    is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
