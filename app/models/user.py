@@ -14,6 +14,7 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
     patient_profile = db.relationship('PatientProfile', backref='user', uselist=False, cascade='all, delete-orphan')
+    assessments = db.relationship('Assessment', backref='user', lazy=True, cascade='all, delete-orphan')
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
@@ -28,3 +29,4 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return f'<User {self.username} ({self.user_type})>'
+        

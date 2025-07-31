@@ -1,0 +1,85 @@
+<!-- app/templates/admin/components/balance_stats.html -->
+<div class="bg-white rounded-lg shadow p-6" x-data="{ refreshStats: false }">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900">Assessment Order Balance</h3>
+        <button @click="refreshStats = !refreshStats; window.location.reload()" 
+                class="text-sm text-blue-600 hover:text-blue-800">
+            Refresh
+        </button>
+    </div>
+    
+    {% if balance_stats %}
+    <div class="space-y-4">
+        <!-- Balance Visualization -->
+        <div class="bg-gray-50 rounded-lg p-4">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-600">Current Balance</span>
+                <span class="text-xs px-2 py-1 rounded-full
+                    {% if balance_stats.balance_status == 'balanced' %}bg-green-100 text-green-800
+                    {% elif balance_stats.balance_status == 'phq9_heavy' %}bg-orange-100 text-orange-800
+                    {% else %}bg-blue-100 text-blue-800{% endif %}">
+                    {% if balance_stats.balance_status == 'balanced' %}✓ Balanced
+                    {% elif balance_stats.balance_status == 'phq9_heavy' %}PHQ-9 Heavy
+                    {% else %}Questions Heavy{% endif %}
+                </span>
+            </div>
+            
+            <!-- Progress Bar Visualization -->
+            <div class="w-full bg-gray-200 rounded-full h-4 mb-2">
+                <div class="bg-gradient-to-r from-purple-500 to-blue-500 h-4 rounded-full transition-all duration-300" 
+                     style="width: {{ balance_stats.phq9_first_percentage }}%"></div>
+            </div>
+            
+            <div class="flex justify-between text-sm text-gray-600">
+                <span>PHQ-9 First: {{ balance_stats.phq9_first_percentage }}%</span>
+                <span>Questions First: {{ balance_stats.open_questions_first_percentage }}%</span>
+            </div>
+        </div>
+        
+        <!-- Detailed Stats -->
+        <div class="grid grid-cols-3 gap-4">
+            <div class="text-center">
+                <div class="text-2xl font-bold text-purple-600">{{ balance_stats.phq9_first_count }}</div>
+                <div class="text-sm text-gray-600">PHQ-9 First</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-blue-600">{{ balance_stats.open_questions_first_count }}</div>
+                <div class="text-sm text-gray-600">Questions First</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-gray-800">{{ balance_stats.total_assessments }}</div>
+                <div class="text-sm text-gray-600">Total Assessments</div>
+            </div>
+        </div>
+        
+        <!-- Target Info -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div class="flex items-start">
+                <svg class="w-5 h-5 text-blue-500 mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div>
+                    <p class="text-sm font-medium text-blue-800">Balance Target: 50/50 (±5%)</p>
+                    <p class="text-xs text-blue-600 mt-1">
+                        System automatically assigns assessment order to maintain balance.
+                        {% if balance_stats.balance_status == 'balanced' %}
+                            Current distribution is within target range.
+                        {% elif balance_stats.balance_status == 'phq9_heavy' %}
+                            Next patients will likely start with open questions.
+                        {% else %}
+                            Next patients will likely start with PHQ-9.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-8 text-gray-500">
+        <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        <p>No assessment data available yet</p>
+    </div>
+    {% endif %}
+</div>

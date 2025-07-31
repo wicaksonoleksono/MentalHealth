@@ -16,8 +16,8 @@ users_to_seed = [
         "user_type": "superuser"
     },
     {
-        "username": "patient1",
-        "email": "patient1@example.com",
+        "username": "patient",
+        "email": "patient@example.com",
         "password": "patient123", 
         "user_type": "patient",
         "profile": {
@@ -331,6 +331,7 @@ def register_commands(app):
     @click.argument('key')
     @click.argument('value')
     def set_setting(key, value):
+        """Set a specific setting value."""
         try:
             setting = AppSetting.query.filter_by(key=key).first()
             if setting:
