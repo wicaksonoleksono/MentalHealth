@@ -2,7 +2,6 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
-
 from config import Config
 import os
 
@@ -19,23 +18,18 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Please log in to access this page.'
-    from app.routes.auth import AuthService
-
-
     @login_manager.user_loader
     def load_user(user_id):
-        return AuthService.get_user_by_id(user_id)
+        from app.models.user import User
+        return User.query.get(int(user_id))
     from app.routes.auth import auth_bp
     from app.routes.main import main_bp  
-    # from app.routes.patient import patient_bp
     from app.routes.admin import admin_bp
     from app.routes.settings import settings_bp
-    app.register_blueprint(settings_bp,url_prefix="/settings")
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(main_bp)
-    # app.register_blueprint(patient_bp, url_prefix='/patient')
     app.register_blueprint(admin_bp, url_prefix='/admin')
-    
+    app.register_blueprint(settings_bp, url_prefix='/settings')
     with app.app_context():
         try:
             db.create_all()

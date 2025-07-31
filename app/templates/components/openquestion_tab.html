@@ -8,29 +8,59 @@
         </div>
         AI Assistant Configuration
     </h3>
-    <p class="text-gray-600 mb-6">Define how the AI assistant will interact with patients during open question sessions.</p>
+    <p class="text-gray-600 mb-6">Configure how the AI assistant will interact with patients during open question sessions.</p>
     
-    <div class="space-y-4">
-        <label class="block text-sm font-medium text-gray-700">System Prompt</label>
-        <div class="relative">
-            <textarea name="openquestion_prompt" rows="10" 
-                      class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none shadow-sm font-mono text-sm"
-                      placeholder="You are a compassionate mental health assistant...">{{ openquestion_prompt or 'You are a compassionate mental health assessment assistant. Your role is to conduct a thoughtful conversation with patients to understand their current mental state and wellbeing.\n\nGuidelines:\n- Ask open-ended questions that encourage reflection\n- Show empathy and understanding\n- Avoid making diagnoses or giving medical advice\n- If someone mentions self-harm or crisis, encourage them to seek immediate help\n- Keep responses conversational and supportive\n- Ask follow-up questions based on their responses\n- Maintain professional boundaries while being warm\n\nStart the conversation by introducing yourself and asking how they\'re feeling today.' }}</textarea>
-            <div class="absolute bottom-3 right-3 text-xs text-gray-400" 
-                 x-data="{ count: 0 }" 
-                 x-init="count = $el.parentElement.querySelector('textarea').value.length; $watch($el.parentElement.querySelector('textarea'), () => count = $el.parentElement.querySelector('textarea').value.length)"
-                 x-text="count + ' characters'">
+    <div class="space-y-6">
+        <!-- Patient Instructions -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Instructions for Patients</label>
+            <div class="relative">
+                <textarea name="openquestion_instructions" rows="4"
+                    class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none shadow-sm"
+                    placeholder="Instructions that patients will see before starting the open question session...">{{ openquestion_instructions or 'Welcome to your mental health check-in session.\n\nIn this section, you\'ll have a conversation with an AI assistant about how you\'re feeling. This is a safe space to share your thoughts and emotions.\n\nPlease:\n• Be honest about your feelings\n• Take your time to think about your responses\n• Feel free to share as much or as little as you\'re comfortable with\n• Remember this conversation is confidential\n\nIf you\'re experiencing a mental health crisis or having thoughts of self-harm, please contact emergency services immediately or reach out to a mental health professional.\n\nClick "Start Conversation" when you\'re ready to begin.' }}</textarea>
+                <div class="absolute bottom-3 right-3 text-xs text-gray-400"
+                     x-data="{ count: 0 }"
+                     x-init="count = $el.parentElement.querySelector('textarea').value.length; $watch($el.parentElement.querySelector('textarea'), () => count = $el.parentElement.querySelector('textarea').value.length)"
+                     x-text="count + ' characters'">
+                </div>
             </div>
-        </div>
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div class="flex">
-                <svg class="w-5 h-5 text-blue-500 mt-0.5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-                </svg>
-                <div class="text-sm text-blue-700">
-                    <strong>Best Practices:</strong> Be specific about tone, include crisis handling instructions, and provide examples of good questions. The AI will follow these guidelines throughout the conversation.
+            <div class="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
+                <div class="flex">
+                    <svg class="w-5 h-5 text-green-500 mt-0.5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="text-sm text-green-700">
+                        <strong>Patient Instructions:</strong> These instructions will be shown to patients before they start the open question session. Include guidance on how to use the feature and what to expect.
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- AI System Prompt -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">AI System Prompt</label>
+            <div class="relative">
+                <textarea name="openquestion_prompt" rows="10"
+                    class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none shadow-sm font-mono text-sm"
+                    placeholder="You are a compassionate mental health assistant...">{{ openquestion_prompt or 'You are a compassionate mental health assessment assistant. Your role is to conduct a thoughtful conversation with patients to understand their current mental state and wellbeing.\n\nGuidelines:\n- Ask open-ended questions that encourage reflection\n- Show empathy and understanding\n- Avoid making diagnoses or giving medical advice\n- If someone mentions self-harm or crisis, encourage them to seek immediate help\n- Keep responses conversational and supportive\n- Ask follow-up questions based on their responses\n- Maintain professional boundaries while being warm\n\nStart the conversation by introducing yourself and asking how they\'re feeling today.' }}</textarea>
+                <div class="absolute bottom-3 right-3 text-xs text-gray-400"
+                     x-data="{ count: 0 }"
+                     x-init="count = $el.parentElement.querySelector('textarea').value.length; $watch($el.parentElement.querySelector('textarea'), () => count = $el.parentElement.querySelector('textarea').value.length)"
+                     x-text="count + ' characters'">
+                </div>
+            </div>
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+                <div class="flex">
+                    <svg class="w-5 h-5 text-blue-500 mt-0.5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="text-sm text-blue-700">
+                        <strong>System Prompt:</strong> Be specific about tone, include crisis handling instructions, and provide examples of good questions. The AI will follow these guidelines throughout the conversation.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
     </div>
 </div>

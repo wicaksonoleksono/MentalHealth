@@ -5,7 +5,7 @@
 {% block main_class %}min-h-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8{% endblock %}
 
 {% block content %}
-<div class="max-w-md w-full space-y-8" x-data="registerForm()">
+<div class="max-w-2xl w-full space-y-8">
     <div>
         <h2 class="mt-6 text-center text-3xl font-bold tracking-tight text-secondary-900">
             Create your account
@@ -15,30 +15,35 @@
         </p>
     </div>
     
-    <!-- Success Message -->
-    <div x-show="showSuccess" 
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0 transform translate-y-2"
-         x-transition:enter-end="opacity-100 transform translate-y-0"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100 transform translate-y-0"
-         x-transition:leave-end="opacity-0 transform translate-y-2"
-         class="rounded-md bg-green-50 p-4"
-         style="display: none;">
-        <div class="flex">
-            <div class="flex-shrink-0">
-                <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                </svg>
-            </div>
-            <div class="ml-3">
-                <p class="text-sm font-medium text-green-800" x-text="successMessage"></p>
-            </div>
-        </div>
-    </div>
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="rounded-md p-4 {% if category == 'error' %}bg-red-50{% else %}bg-green-50{% endif %}">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            {% if category == 'error' %}
+                                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                                </svg>
+                            {% else %}
+                                <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                            {% endif %}
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium {% if category == 'error' %}text-red-800{% else %}text-green-800{% endif %}">
+                                {{ message }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
     
-    <form class="mt-8 space-y-6" @submit.prevent="submitForm" method="POST">
-        
+    <form class="mt-8 space-y-6" method="POST" action="{{ url_for('auth.register') }}">
         <div class="space-y-4">
             <div>
                 <label for="username" class="block text-sm font-medium text-secondary-700">
@@ -49,13 +54,11 @@
                     name="username" 
                     type="text" 
                     required 
-                    x-model="form.username"
-                    @input="clearFieldError('username')"
-                    :class="{'border-red-300 focus:ring-red-500 focus:border-red-500': errors.username}"
+                    placeholder="WARNING: Do Not Use Your Real Name"
+                    value="{{ request.form.username if request.form.username else '' }}"
                     class="mt-1 block w-full px-3 py-2 border border-secondary-300 rounded-lg shadow-sm 
                            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
                            placeholder-secondary-400">
-                <p x-show="errors.username" x-text="errors.username" class="mt-1 text-sm text-red-600" style="display: none;"></p>
             </div>
             
             <div>
@@ -67,13 +70,11 @@
                     name="email" 
                     type="email" 
                     required 
-                    x-model="form.email"
-                    @input="clearFieldError('email')"
-                    :class="{'border-red-300 focus:ring-red-500 focus:border-red-500': errors.email}"
+                    placeholder="If you are uncomfortable using your real email you can use anonymous email for a 2nd Notification on when to continue the assessment"
+                    value="{{ request.form.email if request.form.email else '' }}"
                     class="mt-1 block w-full px-3 py-2 border border-secondary-300 rounded-lg shadow-sm 
                            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
                            placeholder-secondary-400">
-                <p x-show="errors.email" x-text="errors.email" class="mt-1 text-sm text-red-600" style="display: none;"></p>
             </div>
             
             <div>
@@ -85,14 +86,10 @@
                     name="password" 
                     type="password" 
                     required 
-                    x-model="form.password"
-                    @input="clearFieldError('password')"
-                    :class="{'border-red-300 focus:ring-red-500 focus:border-red-500': errors.password}"
                     class="mt-1 block w-full px-3 py-2 border border-secondary-300 rounded-lg shadow-sm 
                            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
                            placeholder-secondary-400">
                 <p class="mt-1 text-xs text-secondary-500">Minimum 6 characters</p>
-                <p x-show="errors.password" x-text="errors.password" class="mt-1 text-sm text-red-600" style="display: none;"></p>
             </div>
             
             <div>
@@ -104,51 +101,125 @@
                     name="confirm_password" 
                     type="password" 
                     required 
-                    x-model="form.confirm_password"
-                    @input="clearFieldError('confirm_password')"
-                    :class="{'border-red-300 focus:ring-red-500 focus:border-red-500': errors.confirm_password}"
                     class="mt-1 block w-full px-3 py-2 border border-secondary-300 rounded-lg shadow-sm 
                            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
                            placeholder-secondary-400">
-                <p x-show="errors.confirm_password" x-text="errors.confirm_password" class="mt-1 text-sm text-red-600" style="display: none;"></p>
             </div>
-            
-            <div>
-                <label for="user_type" class="block text-sm font-medium text-secondary-700">
-                    Account Type
-                </label>
-                <select 
-                    id="user_type" 
-                    name="user_type" 
-                    x-model="form.user_type"
-                    :class="{'border-red-300 focus:ring-red-500 focus:border-red-500': errors.user_type}"
-                    class="mt-1 block w-full px-3 py-2 border border-secondary-300 rounded-lg shadow-sm 
-                           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-                    <option value="patient">Patient</option>
-                    <option value="superuser">Admin/Superuser</option>
-                </select>
-                <p x-show="errors.user_type" x-text="errors.user_type" class="mt-1 text-sm text-red-600" style="display: none;"></p>
-            </div>
-        </div>
 
-        <!-- General Error Message -->
-        <div x-show="generalError" 
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0 transform translate-y-2"
-             x-transition:enter-end="opacity-100 transform translate-y-0"
-             x-transition:leave="transition ease-in duration-200"
-             x-transition:leave-start="opacity-100 transform translate-y-0"
-             x-transition:leave-end="opacity-0 transform translate-y-2"
-             class="rounded-md bg-red-50 p-4"
-             style="display: none;">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                    </svg>
+            <!-- Patient Profile Information -->
+            <div class="border-t border-secondary-200 pt-4">
+                <h3 class="text-lg font-medium text-secondary-900 mb-4">Profile Information</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="age" class="block text-sm font-medium text-secondary-700">
+                            Age
+                        </label>
+                        <input 
+                            id="age" 
+                            name="age" 
+                            type="number" 
+                            min="1" 
+                            max="120"
+                            value="{{ request.form.age if request.form.age else '' }}"
+                            class="mt-1 block w-full px-3 py-2 border border-secondary-300 rounded-lg shadow-sm 
+                                   focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                                   placeholder-secondary-400">
+                    </div>
+                    
+                    <div>
+                        <label for="gender" class="block text-sm font-medium text-secondary-700">
+                            Gender
+                        </label>
+                        <select 
+                            id="gender" 
+                            name="gender"
+                            class="mt-1 block w-full px-3 py-2 border border-secondary-300 rounded-lg shadow-sm 
+                                   focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                            <option value="">Select gender</option>
+                            <option value="male" {{ 'selected' if request.form.gender == 'male' else '' }}>Male</option>
+                            <option value="female" {{ 'selected' if request.form.gender == 'female' else '' }}>Female</option>
+                            <option value="other" {{ 'selected' if request.form.gender == 'other' else '' }}>Other</option>
+                            <option value="prefer_not_to_say" {{ 'selected' if request.form.gender == 'prefer_not_to_say' else '' }}>Prefer not to say</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="educational_level" class="block text-sm font-medium text-secondary-700">
+                            Educational Level
+                        </label>
+                        <select 
+                            id="educational_level" 
+                            name="educational_level"
+                            class="mt-1 block w-full px-3 py-2 border border-secondary-300 rounded-lg shadow-sm 
+                                   focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                            <option value="">Select education level</option>
+                            <option value="elementary" {{ 'selected' if request.form.educational_level == 'elementary' else '' }}>Elementary</option>
+                            <option value="high_school" {{ 'selected' if request.form.educational_level == 'high_school' else '' }}>High School</option>
+                            <option value="bachelor" {{ 'selected' if request.form.educational_level == 'bachelor' else '' }}>Bachelor's Degree</option>
+                            <option value="master" {{ 'selected' if request.form.educational_level == 'master' else '' }}>Master's Degree</option>
+                            <option value="phd" {{ 'selected' if request.form.educational_level == 'phd' else '' }}>PhD</option>
+                            <option value="other" {{ 'selected' if request.form.educational_level == 'other' else '' }}>Other</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="cultural_background" class="block text-sm font-medium text-secondary-700">
+                            Cultural Background
+                        </label>
+                        <input 
+                            id="cultural_background" 
+                            name="cultural_background" 
+                            type="text" 
+                            placeholder="e.g., Asian, European, Latino"
+                            value="{{ request.form.cultural_background if request.form.cultural_background else '' }}"
+                            class="mt-1 block w-full px-3 py-2 border border-secondary-300 rounded-lg shadow-sm 
+                                   focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                                   placeholder-secondary-400">
+                    </div>
                 </div>
-                <div class="ml-3">
-                    <p class="text-sm font-medium text-red-800" x-text="generalError"></p>
+                
+                <div class="mt-4">
+                    <label for="medical_conditions" class="block text-sm font-medium text-secondary-700">
+                        Medical Conditions
+                    </label>
+                    <textarea 
+                        id="medical_conditions" 
+                        name="medical_conditions" 
+                        rows="3"
+                        placeholder="List any relevant medical conditions (optional)"
+                        class="mt-1 block w-full px-3 py-2 border border-secondary-300 rounded-lg shadow-sm 
+                               focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                               placeholder-secondary-400">{{ request.form.medical_conditions if request.form.medical_conditions else '' }}</textarea>
+                </div>
+                
+                <div class="mt-4">
+                    <label for="medications" class="block text-sm font-medium text-secondary-700">
+                        Current Medications
+                    </label>
+                    <textarea 
+                        id="medications" 
+                        name="medications" 
+                        rows="3"
+                        placeholder="List any current medications (optional)"
+                        class="mt-1 block w-full px-3 py-2 border border-secondary-300 rounded-lg shadow-sm 
+                               focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                               placeholder-secondary-400">{{ request.form.medications if request.form.medications else '' }}</textarea>
+                </div>
+                
+                <div class="mt-4">
+                    <label for="emergency_contact" class="block text-sm font-medium text-secondary-700">
+                        Contact for prize
+                    </label>
+                    <input 
+                        id="emergency_contact" 
+                        name="emergency_contact" 
+                        type="text" 
+                        placeholder="Anonymous email or WhatsApp number"
+                        value="{{ request.form.emergency_contact if request.form.emergency_contact else '' }}"
+                        class="mt-1 block w-full px-3 py-2 border border-secondary-300 rounded-lg shadow-sm 
+                               focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                               placeholder-secondary-400">
                 </div>
             </div>
         </div>
@@ -156,19 +227,11 @@
         <div>
             <button 
                 type="submit" 
-                :disabled="loading"
                 class="group relative w-full flex justify-center py-3 px-4 border border-transparent 
                        text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 
                        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500
-                       disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                <span x-show="!loading">Create Account</span>
-                <span x-show="loading" class="flex items-center">
-                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Creating Account...
-                </span>
+                       transition-colors">
+                Create Account
             </button>
         </div>
         
@@ -179,124 +242,4 @@
         </div>
     </form>
 </div>
-
-<script>
-function registerForm() {
-    return {
-        form: {
-            username: '',
-            email: '',
-            password: '',
-            confirm_password: '',
-            user_type: 'patient'
-        },
-        loading: false,
-        errors: {},
-        generalError: '',
-        showSuccess: false,
-        successMessage: '',
-        
-        async submitForm() {
-            // Clear previous errors
-            this.clearErrors();
-            this.loading = true;
-            
-            try {
-                const formData = new FormData();
-                Object.keys(this.form).forEach(key => {
-                    formData.append(key, this.form[key]);
-                });
-                
-                const response = await fetch('/auth/register', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (response.ok) {
-                    // Success - redirect to login
-                    window.location.href = '/auth/login';
-                } else {
-                    const data = await response.json().catch(() => ({}));
-                    
-                    if (data.errors) {
-                        // Handle field-specific errors from server
-                        this.errors = data.errors;
-                    } else {
-                        this.generalError = 'Registration failed. Please try again.';
-                    }
-                }
-            } catch (error) {
-                console.error('Registration error:', error);
-                this.generalError = 'Network error. Please check your connection and try again.';
-            } finally {
-                this.loading = false;
-            }
-        },
-        
-        validateForm() {
-            let isValid = true;
-            
-            // Username validation
-            if (!this.form.username.trim()) {
-                this.errors.username = 'Username is required';
-                isValid = false;
-            } else if (this.form.username.length < 3) {
-                this.errors.username = 'Username must be at least 3 characters long';
-                isValid = false;
-            }
-            
-            // Email validation
-            if (!this.form.email.trim()) {
-                this.errors.email = 'Email is required';
-                isValid = false;
-            } else if (!this.isValidEmail(this.form.email)) {
-                this.errors.email = 'Please enter a valid email address';
-                isValid = false;
-            }
-            
-            // Password validation
-            if (!this.form.password) {
-                this.errors.password = 'Password is required';
-                isValid = false;
-            } else if (this.form.password.length < 6) {
-                this.errors.password = 'Password must be at least 6 characters long';
-                isValid = false;
-            }
-            
-            // Confirm password validation
-            if (!this.form.confirm_password) {
-                this.errors.confirm_password = 'Please confirm your password';
-                isValid = false;
-            } else if (this.form.password !== this.form.confirm_password) {
-                this.errors.confirm_password = 'Passwords do not match';
-                isValid = false;
-            }
-            
-            return isValid;
-        },
-        
-        isValidEmail(email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return emailRegex.test(email);
-        },
-        
-        clearErrors() {
-            this.errors = {};
-            this.generalError = '';
-            this.showSuccess = false;
-        },
-        
-        clearFieldError(field) {
-            if (this.errors[field]) {
-                delete this.errors[field];
-            }
-        },
-        
-        showSuccessMessage(message) {
-            this.successMessage = message;
-            this.showSuccess = true;
-        }
-    }
-}
-</script>
 {% endblock %}

@@ -1,8 +1,13 @@
 import click
 from app import db
 from app.models.user import User
-from app.services.auth import AuthService
+from app.models.patient_profile import PatientProfile
+from app.models.settings import AppSetting
+from app.services.auth import AuthService  # Fixed import path
 from sqlalchemy.exc import IntegrityError
+import json
+
+# Always use this for seeding - admin and patients
 users_to_seed = [
     {
         "username": "admin",
@@ -11,12 +16,29 @@ users_to_seed = [
         "user_type": "superuser"
     },
     {
-        "username": "user",
+        "username": "patient1",
         "email": "patient1@example.com",
-        "password": "user123", 
-        "user_type": "patient"
+        "password": "patient123", 
+        "user_type": "patient",
+        "profile": {
+            "age": 25,
+            "gender": "female",
+            "educational_level": "bachelor",
+            "cultural_background": "asian"
+        }
     },
-
+    {
+        "username": "patient2",
+        "email": "patient2@example.com",
+        "password": "patient123", 
+        "user_type": "patient",
+        "profile": {
+            "age": 35,
+            "gender": "male",
+            "educational_level": "master",
+            "cultural_background": "european"
+        }
+    },
 ]
 
 def register_commands(app):
@@ -42,15 +64,25 @@ def register_commands(app):
                 email = user_data.get("email") 
                 password = user_data.get("password")
                 user_type = user_data.get("user_type", "patient")
+                profile_data = user_data.get("profile")
                 
                 # Check if user already exists
                 existing_user = User.query.filter_by(username=username).first()
                 if not existing_user:
                     try:
-                        user = AuthService.register_user(username, email, password, user_type)
-                        click.echo(f"  - User '{username}' ({user_type}) created.")
+                        user = AuthService.register_user(
+                            username, 
+                            email, 
+                            password, 
+                            user_type, 
+                            profile_data
+                        )
+                        profile_info = f" with profile" if profile_data else ""
+                        click.echo(f"  - User '{username}' ({user_type}){profile_info} created.")
                     except ValueError as e:
                         click.echo(f"  - Error creating user '{username}': {e}")
+                    except Exception as e:
+                        click.echo(f"  - Unexpected error creating user '{username}': {e}")
                 else:
                     # Update user type if different
                     if existing_user.user_type != user_type:
@@ -78,6 +110,45 @@ def register_commands(app):
             click.echo(f'Admin user {username} created successfully!')
         except ValueError as e:
             click.echo(f'Error creating admin: {e}')
+        except Exception as e:
+            click.echo(f'Unexpected error: {e}')
+    
+    @app.cli.command("create-patient")
+    def create_patient():
+        """Create a patient account interactively with optional profile."""
+        username = click.prompt('Patient username')
+        email = click.prompt('Patient email')
+        password = click.prompt('Patient password', hide_input=True)
+        
+        # Optional profile data
+        if click.confirm('Add profile information?'):
+            profile_data = {}
+            age = click.prompt('Age (optional)', default='', show_default=False)
+            if age:
+                profile_data['age'] = int(age)
+            
+            gender = click.prompt('Gender (optional)', default='', show_default=False)
+            if gender:
+                profile_data['gender'] = gender
+                
+            edu_level = click.prompt('Educational level (optional)', default='', show_default=False)
+            if edu_level:
+                profile_data['educational_level'] = edu_level
+                
+            cultural_bg = click.prompt('Cultural background (optional)', default='', show_default=False)
+            if cultural_bg:
+                profile_data['cultural_background'] = cultural_bg
+        else:
+            profile_data = None
+        
+        try:
+            user = AuthService.register_user(username, email, password, 'patient', profile_data)
+            profile_info = " with profile" if profile_data else ""
+            click.echo(f'Patient user {username}{profile_info} created successfully!')
+        except ValueError as e:
+            click.echo(f'Error creating patient: {e}')
+        except Exception as e:
+            click.echo(f'Unexpected error: {e}')
     
     @app.cli.command("reset-db")
     def reset_db():
@@ -94,7 +165,7 @@ def register_commands(app):
     
     @app.cli.command("list-users")
     def list_users():
-        """List all users in the database."""
+        """List all users in the database with their profiles."""
         users = User.query.all()
         if not users:
             click.echo("No users found.")
@@ -103,6 +174,179 @@ def register_commands(app):
         click.echo(f"Found {len(users)} users:")
         for user in users:
             status = "Active" if user.is_active else "Inactive"
-            click.echo(f"  - {user.username} ({user.user_type}) - {user.email} [{status}]")\
+            profile_info = ""
+            
+            if user.is_patient() and user.patient_profile:
+                profile = user.patient_profile
+                profile_parts = []
+                if profile.age:
+                    profile_parts.append(f"Age: {profile.age}")
+                if profile.gender:
+                    profile_parts.append(f"Gender: {profile.gender}")
+                if profile_parts:
+                    profile_info = f" ({', '.join(profile_parts)})"
+            
+            click.echo(f"  - {user.username} ({user.user_type}) - {user.email} [{status}]{profile_info}")
+    
+    @app.cli.command("list-settings")
+    def list_settings():
+        """List all settings in the database."""
+        settings = AppSetting.query.order_by(AppSetting.key).all()
+        if not settings:
+            click.echo("No settings found.")
+            return
+        
+        click.echo(f"Found {len(settings)} settings:")
+        click.echo("-" * 80)
+        
+        for setting in settings:
+            # Pretty print JSON values
+            value = setting.value
+            if setting.key.endswith('_questions') or setting.key == 'phq_enabled_categories':
+                try:
+                    parsed = json.loads(value)
+                    if isinstance(parsed, list):
+                        value = f"[{len(parsed)} items]: {parsed}"
+                    else:
+                        value = json.dumps(parsed, indent=2)
+                except:
+                    pass  # Keep original value if not JSON
+            
+            # Truncate long values
+            if len(str(value)) > 100:
+                value = str(value)[:97] + "..."
+            
+            click.echo(f"  {setting.key:<30} = {value}")
+            if setting.updated_at:
+                click.echo(f"  {'':<30}   (Updated: {setting.updated_at.strftime('%Y-%m-%d %H:%M:%S')})")
+            click.echo()
+    
+    @app.cli.command("show-setting")
+    @click.argument('key')
+    def show_setting(key):
+        """Show detailed view of a specific setting."""
+        setting = AppSetting.query.filter_by(key=key).first()
+        if not setting:
+            click.echo(f"Setting '{key}' not found.")
+            return
+        
+        click.echo(f"Setting: {setting.key}")
+        click.echo(f"Created: {setting.created_at.strftime('%Y-%m-%d %H:%M:%S')}")
+        click.echo(f"Updated: {setting.updated_at.strftime('%Y-%m-%d %H:%M:%S')}")
+        click.echo(f"Value:")
+        
+        # Pretty print JSON
+        try:
+            parsed = json.loads(setting.value)
+            click.echo(json.dumps(parsed, indent=2))
+        except:
+            click.echo(setting.value)
+    
+    @app.cli.command("settings")
+    def show_all_settings():
+        """Show detailed view of ALL settings."""
+        settings = AppSetting.query.order_by(AppSetting.key).all()
+        if not settings:
+            click.echo("No settings found.")
+            return
+        
+        click.echo(f"Showing all {len(settings)} settings in detail:")
+        click.echo("=" * 80)
+        for i, setting in enumerate(settings, 1):
+            click.echo(f"\n[{i}] {setting.key}")
+            click.echo(f"    Created: {setting.created_at.strftime('%Y-%m-%d %H:%M:%S')}")
+            click.echo(f"    Updated: {setting.updated_at.strftime('%Y-%m-%d %H:%M:%S')}")
+            click.echo(f"    Value:")
+            try:
+                parsed = json.loads(setting.value)
+                formatted = json.dumps(parsed, indent=2)
+                # Indent each line for better readability
+                indented = '\n'.join('      ' + line for line in formatted.split('\n'))
+                click.echo(indented)
+            except:
+                # Indent regular values too
+                value_lines = str(setting.value).split('\n')
+                for line in value_lines:
+                    click.echo(f"      {line}")
+            if i < len(settings):
+                click.echo("    " + "-" * 60)
+                
+    @app.cli.command("keys")
+    def show_keys():
+        """Displays all the application setting keys."""
+        settings = AppSetting.query.order_by(AppSetting.key).all()
+        click.echo("-" * 50)
+        for setting in settings:
+            click.echo(setting.key)
+        click.echo("-" * 50)
 
-  
+    @app.cli.command("routes")
+    def list_routes():
+        """List all registered routes/endpoints."""
+        routes = []
+        for rule in app.url_map.iter_rules():
+            routes.append({
+                'endpoint': rule.endpoint,
+                'methods': list(rule.methods),
+                'path': rule.rule
+            })
+        
+        # Sort by path
+        routes.sort(key=lambda x: x['path'])
+        
+        click.echo(f"Found {len(routes)} routes:")
+        click.echo("-" * 80)
+        
+        # Group by blueprint
+        blueprints = {}
+        for route in routes:
+            bp_name = route['endpoint'].split('.')[0] if '.' in route['endpoint'] else 'main'
+            if bp_name not in blueprints:
+                blueprints[bp_name] = []
+            blueprints[bp_name].append(route)
+        
+        for bp_name, bp_routes in blueprints.items():
+            click.echo(f"\n📁 {bp_name.upper()} BLUEPRINT:")
+            for route in bp_routes:
+                methods = [m for m in route['methods'] if m not in ['HEAD', 'OPTIONS']]
+                methods_str = ', '.join(methods)
+                click.echo(f"  {methods_str:<12} {route['path']:<40} → {route['endpoint']}")
+    
+    @app.cli.command("clear-settings")
+    def clear_settings():
+        """Clear all settings from database. WARNING: This deletes all settings!"""
+        if click.confirm('This will delete ALL settings. Are you sure?'):
+            try:
+                count = AppSetting.query.count()
+                AppSetting.query.delete()
+                db.session.commit()
+                click.echo(f"Cleared {count} settings successfully!")
+            except Exception as e:
+                db.session.rollback()
+                click.echo(f"Error clearing settings: {e}")
+        else:
+            click.echo("Clear settings cancelled.")
+    
+    @app.cli.command("set-setting")
+    @click.argument('key')
+    @click.argument('value')
+    def set_setting(key, value):
+        try:
+            setting = AppSetting.query.filter_by(key=key).first()
+            if setting:
+                old_value = setting.value
+                setting.value = value
+                click.echo(f"Updated setting '{key}':")
+                click.echo(f"  Old: {old_value}")
+                click.echo(f"  New: {value}")
+            else:
+                setting = AppSetting(key=key, value=value)
+                db.session.add(setting)
+                click.echo(f"Created new setting '{key}' = '{value}'")
+            
+            db.session.commit()
+            click.echo("Setting saved successfully!")
+            
+        except Exception as e:
+            db.session.rollback()
+            click.echo(f"Error setting value: {e}")

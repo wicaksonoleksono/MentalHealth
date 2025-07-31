@@ -23,14 +23,15 @@ def show_settings():
 @login_required
 @admin_required
 def save_settings():
-    """Handle all form-based settings including PHQ settings"""
-    active_tab = request.form.get('active_tab', 'openquestion')
-    
-    # Let errors crash and show in browser - NO TRY-CATCH
-    form_data = dict(request.form)
-    print(f"Raw form data: {form_data}")
-    
-    SettingsService.update_settings(form_data)
-    flash('Settings saved successfully!', 'success')
+    try:
+        active_tab = request.form.get('active_tab', 'openquestion')
+        form_data = dict(request.form)
+        print(f"Raw form data: {form_data}")
+        SettingsService.update_settings(form_data)
+        flash('Settings saved successfully!', 'success')
+    except SettingsException as e:
+        flash(f'Error saving settings: {str(e)}', 'error')
+    except Exception as e:
+        flash(f'An unexpected error occurred: {str(e)}', 'error')
     
     return redirect(url_for('settings.show_settings', tab=active_tab))
