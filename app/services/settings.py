@@ -1,4 +1,4 @@
-# app/services/settings.py - Remove try-catch for debugging
+# app/services/settings.py
 from app import db
 from app.models.settings import AppSetting
 import json
@@ -26,6 +26,10 @@ class SettingsService:
         phq9_instructions = AppSetting.query.filter_by(key='phq9_instructions').first()
         settings['phq9_instructions'] = phq9_instructions.value if phq9_instructions else ''
         
+        # Recording settings
+        recording_mode = AppSetting.query.filter_by(key='recording_mode').first()
+        settings['recording_mode'] = recording_mode.value if recording_mode else 'capture'
+        
         # Image capture settings
         capture_interval = AppSetting.query.filter_by(key='capture_interval').first()
         settings['capture_interval'] = int(capture_interval.value) if capture_interval else 5
@@ -33,11 +37,19 @@ class SettingsService:
         image_quality = AppSetting.query.filter_by(key='image_quality').first()
         settings['image_quality'] = float(image_quality.value) if image_quality else 0.8
         
-        image_resolution = AppSetting.query.filter_by(key='image_resolution').first()
-        settings['image_resolution'] = image_resolution.value if image_resolution else '1280x720'
+        # Video settings
+        video_quality = AppSetting.query.filter_by(key='video_quality').first()
+        settings['video_quality'] = video_quality.value if video_quality else '720p'
         
-        enable_capture = AppSetting.query.filter_by(key='enable_capture').first()
-        settings['enable_capture'] = enable_capture.value == 'true' if enable_capture else True
+        video_format = AppSetting.query.filter_by(key='video_format').first()
+        settings['video_format'] = video_format.value if video_format else 'webm'
+        
+        # Common settings
+        resolution = AppSetting.query.filter_by(key='resolution').first()
+        settings['resolution'] = resolution.value if resolution else '1280x720'
+        
+        enable_recording = AppSetting.query.filter_by(key='enable_recording').first()
+        settings['enable_recording'] = enable_recording.value == 'true' if enable_recording else True
         
         # Scale settings
         scale_min = AppSetting.query.filter_by(key='scale_min').first()
@@ -70,7 +82,6 @@ class SettingsService:
         from app.models.phq import PHQCategoryType
         settings['phq_category_types'] = PHQCategoryType.get_all_data()
         
-        # Get existing categories
         existing_categories = []
         phq_categories = {}
         
@@ -79,12 +90,10 @@ class SettingsService:
             if exists_setting and exists_setting.value == '1':
                 existing_categories.append(cat_num)
                 
-                # Get questions for this category
                 questions_setting = AppSetting.query.filter_by(key=f'phq_category_{cat_num}_questions').first()
                 if questions_setting and questions_setting.value:
                     questions = json.loads(questions_setting.value)
                 else:
-                    # Default question from enum
                     cat_type = PHQCategoryType.get_by_number(cat_num)
                     questions = [cat_type.default_question] if cat_type else []
                 
@@ -98,16 +107,15 @@ class SettingsService:
     
     @staticmethod
     def update_settings(form_data):
-        """Update app settings from form data - NO TRY-CATCH FOR DEBUGGING"""
-        print(f"=== DEBUGGING FORM DATA ===")
-        print(f"All form keys: {list(form_data.keys())}")
-        
-        # Print PHQ-related form data
-        phq_data = {k: v for k, v in form_data.items() if k.startswith('phq_')}
-        print(f"PHQ form data: {phq_data}")
-        
+        """Update app settings from form data"""
         updated_count = 0
         phq_questions = {}
+        
+        # Define recording-related keys
+        recording_keys = {
+            'recording_mode', 'capture_interval', 'image_quality', 
+            'video_quality', 'video_format', 'resolution', 'enable_recording'
+        }
         
         for key, value in form_data.items():
             if value is None:
@@ -115,32 +123,25 @@ class SettingsService:
             
             # Handle PHQ category exists flags
             if key.startswith('phq_category_') and key.endswith('_exists'):
-                print(f"Processing category exists: {key} = {value}")
                 setting = AppSetting.query.filter_by(key=key).first()
                 if setting:
                     setting.value = str(value)
-                    print(f"Updated existing setting: {key}")
                 else:
                     setting = AppSetting(key=key, value=str(value))
                     db.session.add(setting)
-                    print(f"Added new setting: {key}")
                 updated_count += 1
                 continue
             
             # Handle PHQ questions
             if key.startswith('phq_category_') and '_question_' in key:
-                print(f"Processing question: {key} = {value}")
                 parts = key.split('_')
                 cat_num = int(parts[2])
                 if cat_num not in phq_questions:
                     phq_questions[cat_num] = []
-                if value.strip():  # Only add non-empty questions
+                if value.strip():
                     phq_questions[cat_num].append(value.strip())
-                    print(f"Added question to category {cat_num}: {value.strip()}")
                 continue
-            
-            # Handle regular settings (non-PHQ)
-            if not key.startswith('phq_'):
+            if not key.startswith('phq_') or key in recording_keys:
                 setting = AppSetting.query.filter_by(key=key).first()
                 if setting:
                     if setting.value != str(value):
@@ -152,24 +153,17 @@ class SettingsService:
                     updated_count += 1
         
         # Save PHQ questions
-        print(f"PHQ questions to save: {phq_questions}")
         for cat_num, questions in phq_questions.items():
-            if questions:  # Only save if there are questions
+            if questions:
                 questions_setting = AppSetting.query.filter_by(key=f'phq_category_{cat_num}_questions').first()
                 questions_json = json.dumps(questions)
-                print(f"Saving questions for category {cat_num}: {questions_json}")
                 
                 if questions_setting:
                     questions_setting.value = questions_json
-                    print(f"Updated existing questions for category {cat_num}")
                 else:
                     questions_setting = AppSetting(key=f'phq_category_{cat_num}_questions', value=questions_json)
                     db.session.add(questions_setting)
-                    print(f"Added new questions for category {cat_num}")
                 updated_count += 1
         
-        print(f"About to commit {updated_count} changes")
         db.session.commit()
-        print(f"Successfully committed changes")
-        
         return updated_count

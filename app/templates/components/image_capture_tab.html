@@ -3,70 +3,127 @@
     <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
         <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center mr-3">
             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
             </svg>
         </div>
-        Image Capture Configuration
+        Recording Configuration
     </h3>
-    <p class="text-gray-600 mb-6">Configure automatic image capture settings during assessment sessions.</p>
+    <p class="text-gray-600 mb-6">Configure recording settings during assessment sessions.</p>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <!-- Settings Panel -->
         <div class="space-y-6">
-            <!-- Capture Interval -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Capture Interval</label>
-                <div class="flex items-center space-x-4">
-                    <input type="range" 
-                           name="capture_interval" 
-                           x-model="settings.captureInterval"
-                           min="1" 
-                           max="30" 
-                           step="1"
-                           class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                    <span class="text-sm font-medium text-gray-700 min-w-0 bg-orange-100 px-3 py-1 rounded-lg" 
-                          x-text="settings.captureInterval + ' seconds'"></span>
+            <!-- Recording Mode Toggle -->
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+                <label class="block text-sm font-medium text-gray-700 mb-3">Recording Mode</label>
+                <div class="relative">
+                    <div class="flex bg-gray-100 rounded-lg p-1">
+                        <button type="button"
+                                @click="settings.recordingMode = 'capture'"
+                                :class="settings.recordingMode === 'capture' ? 'bg-orange-500 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'"
+                                class="flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200">
+                            📸 Image Capture
+                        </button>
+                        <button type="button"
+                                @click="settings.recordingMode = 'video'"
+                                :class="settings.recordingMode === 'video' ? 'bg-orange-500 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'"
+                                class="flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200">
+                            🎥 Full Video
+                        </button>
+                    </div>
+                    <input type="hidden" name="recording_mode" :value="settings.recordingMode">
                 </div>
-                <p class="text-xs text-gray-500 mt-1">How often to capture images during assessment</p>
+                <p class="text-xs text-gray-500 mt-2" x-text="settings.recordingMode === 'capture' ? 'Capture images at regular intervals' : 'Record continuous video throughout assessment'"></p>
             </div>
 
-            <!-- Image Quality -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Image Quality</label>
-                <select name="image_quality" 
-                        x-model="settings.imageQuality"
-                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-                    <option value="0.8">High (80%) - Good for Emotion identification </option>
-                    <option value="0.9">Very High (90%) - Extra detail</option>
-                    <option value="1.0">Maximum (100%) - Uncompressed</option>
-                    <option value="0.7">Medium (70%) - Smaller files</option>
-                </select>
-                <p class="text-xs text-gray-500 mt-1">80% quality preserves facial features well</p>
+            <!-- Image Capture Settings (shown when capture mode) -->
+            <div x-show="settings.recordingMode === 'capture'" x-transition class="space-y-4">
+                <!-- Capture Interval -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Capture Interval (seconds)</label>
+                    <div class="flex items-center space-x-3">
+                        <input type="number" 
+                               name="capture_interval" 
+                               x-model="settings.captureInterval"
+                               min="1" 
+                               step="1"
+                               class="w-20 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-center">
+                        <span class="text-sm text-gray-600">seconds between captures</span>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">How often to capture images during assessment (minimum 1 second)</p>
+                </div>
             </div>
 
-            <!-- Image Resolution -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Image Resolution</label>
-                <select name="image_resolution" 
-                        x-model="settings.imageResolution"
-                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-                    <option value="600x480">640x480 - Good for Emotion identification</option>
-                    <option value="800x800">800x600 - Better detail</option>
-                    <option value="1280x900">1280x720 - HD (recommended)</option>
-                    <option value="1920x1080">1920x1080 - Full HD (overkill)</option>
-                </select>
-                <p class="text-xs text-gray-500 mt-1">For emotion detection, 720p is usually optimal</p>
+            <!-- Video Settings (shown when video mode) -->
+            <div x-show="settings.recordingMode === 'video'" x-transition class="space-y-4">
+                <!-- Video Quality -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Video Quality</label>
+                    <select name="video_quality" 
+                            x-model="settings.videoQuality"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                        <option value="720p">HD (720p) - Recommended</option>
+                        <option value="1080p">Full HD (1080p) - Higher quality</option>
+                        <option value="480p">SD (480p) - Smaller files</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">720p provides good quality with manageable file sizes</p>
+                </div>
+
+                <!-- Video Format -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Video Format</label>
+                    <select name="video_format" 
+                            x-model="settings.videoFormat"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                        <option value="webm">WebM - Browser optimized</option>
+                        <option value="mp4">MP4 - Universal compatibility</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">WebM works well in browsers, MP4 for broader compatibility</p>
+                </div>
             </div>
+
+            <!-- Common Settings -->
+            <div class="space-y-4">
+                <!-- Image/Video Quality -->
+                <div x-show="settings.recordingMode === 'capture'">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Image Quality</label>
+                    <select name="image_quality" 
+                            x-model="settings.imageQuality"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                        <option value="0.8">High (80%) - Good for emotion detection</option>
+                        <option value="0.9">Very High (90%) - Extra detail</option>
+                        <option value="1.0">Maximum (100%) - Uncompressed</option>
+                        <option value="0.7">Medium (70%) - Smaller files</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">80% quality preserves facial features well</p>
+                </div>
+
+                <!-- Resolution -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Resolution</label>
+                    <select name="resolution" 
+                            x-model="settings.resolution"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                        <option value="640x480">640x480 - Good for emotion detection</option>
+                        <option value="800x600">800x600 - Better detail</option>
+                        <option value="1280x720">1280x720 - HD (recommended)</option>
+                        <option value="1920x1080">1920x1080 - Full HD</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">720p is usually optimal for emotion analysis</p>
+                </div>
+            </div>
+
+            <!-- Enable Recording Toggle -->
             <div class="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200">
                 <div>
-                    <h4 class="font-medium text-gray-900">Enable Image Capture</h4>
-                    <p class="text-sm text-gray-600">Automatically capture images during assessments</p>
+                    <h4 class="font-medium text-gray-900" x-text="settings.recordingMode === 'capture' ? 'Enable Image Capture' : 'Enable Video Recording'"></h4>
+                    <p class="text-sm text-gray-600" x-text="settings.recordingMode === 'capture' ? 'Automatically capture images during assessments' : 'Record full video during assessments'"></p>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" 
-                           name="enable_capture" 
-                           x-model="settings.enableCapture"
+                           name="enable_recording" 
+                           x-model="settings.enableRecording"
                            class="sr-only peer">
                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
                 </label>
@@ -104,23 +161,47 @@
                 </div>
             </div>
 
-            <!-- Test Capture -->
+            <!-- Test Controls -->
             <div x-show="isPreviewActive" class="space-y-4">
+                <!-- Test Capture/Recording Button -->
                 <button type="button"
-                        @click="testCapture()" 
-                        class="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-medium transition-colors">
-                    📸 Test Image Capture
+                        @click="testRecording()" 
+                        :class="isRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'"
+                        class="w-full text-white py-3 rounded-lg font-medium transition-colors">
+                    <span x-show="settings.recordingMode === 'capture' && !isRecording">📸 Test Image Capture</span>
+                    <span x-show="settings.recordingMode === 'video' && !isRecording">🎥 Start Test Recording</span>
+                    <span x-show="isRecording">⏹️ Stop Recording</span>
                 </button>
 
-                <!-- Captured Image Preview -->
-                <div x-show="capturedImage" class="bg-gray-100 rounded-lg p-4">
-                    <h5 class="font-medium text-gray-900 mb-2">Captured Image Preview</h5>
-                    <img x-show="capturedImage" 
-                         :src="capturedImage" 
+                <!-- Recording Status -->
+                <div x-show="isRecording" class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse mr-2"></div>
+                        <span class="text-red-700 font-medium">Recording in progress...</span>
+                        <span class="ml-auto text-red-600" x-text="recordingDuration + 's'"></span>
+                    </div>
+                </div>
+
+                <!-- Captured Content Preview -->
+                <div x-show="capturedContent" class="bg-gray-100 rounded-lg p-4">
+                    <h5 class="font-medium text-gray-900 mb-2" x-text="settings.recordingMode === 'capture' ? 'Captured Image Preview' : 'Recorded Video Preview'"></h5>
+                    
+                    <!-- Image Preview -->
+                    <img x-show="settings.recordingMode === 'capture' && capturedContent" 
+                         :src="capturedContent" 
                          class="w-full rounded border" 
                          style="max-height: 200px; object-fit: contain;">
-                    <div class="mt-2 text-xs text-gray-600" x-show="imageInfo">
-                        <p x-text="imageInfo"></p>
+                    
+                    <!-- Video Preview -->
+                    <video x-show="settings.recordingMode === 'video' && capturedContent"
+                           :src="capturedContent"
+                           controls
+                           class="w-full rounded border"
+                           style="max-height: 200px;">
+                    </video>
+                    
+                    <div class="mt-2 text-xs text-gray-600" x-show="contentInfo">
+                        <p x-text="contentInfo"></p>
                     </div>
                 </div>
             </div>
@@ -142,16 +223,23 @@
 function imageCaptureSettings() {
     return {
         settings: {
+            recordingMode: '{{ recording_mode|default("capture") }}',
             captureInterval: parseInt('{{ capture_interval|default(5) }}'),
             imageQuality: parseFloat('{{ image_quality|default(0.8) }}'),
-            imageResolution: '{{ image_resolution|default("1280x720") }}',
-            enableCapture: {{ 'true' if enable_capture else 'false' }}
+            resolution: '{{ resolution|default("1280x720") }}',
+            videoQuality: '{{ video_quality|default("720p") }}',
+            videoFormat: '{{ video_format|default("webm") }}',
+            enableRecording: {{ 'true' if enable_recording else 'false' }}
         },
         isPreviewActive: false,
-        capturedImage: null,
-        imageInfo: null,
+        isRecording: false,
+        recordingDuration: 0,
+        capturedContent: null,
+        contentInfo: null,
         error: null,
         videoStream: null,
+        mediaRecorder: null,
+        recordingTimer: null,
 
         async togglePreview() {
             if (this.isPreviewActive) {
@@ -164,41 +252,53 @@ function imageCaptureSettings() {
         async startPreview() {
             try {
                 this.error = null;
-                const resolution = this.settings.imageResolution.split('x');
+                const resolution = this.settings.resolution.split('x');
                 const width = parseInt(resolution[0]);
                 const height = parseInt(resolution[1]);
                 
-                // Request camera access
                 const stream = await navigator.mediaDevices.getUserMedia({
                     video: {
                         width: { ideal: width },
                         height: { ideal: height },
                         facingMode: 'user'
-                    }
+                    },
+                    audio: this.settings.recordingMode === 'video'
                 });
 
                 this.videoStream = stream;
                 this.$refs.videoPreview.srcObject = stream;
                 this.isPreviewActive = true;
                 
-                console.log('Camera preview started successfully');
             } catch (error) {
                 this.error = 'Camera access denied or not available: ' + error.message;
-                console.error('Camera error:', error);
                 this.isPreviewActive = false;
             }
         },
 
         stopPreview() {
+            if (this.isRecording) {
+                this.stopRecording();
+            }
+            
             if (this.videoStream) {
-                this.videoStream.getTracks().forEach(function(track) {
-                    track.stop();
-                });
+                this.videoStream.getTracks().forEach(track => track.stop());
                 this.videoStream = null;
             }
             this.isPreviewActive = false;
-            this.capturedImage = null;
-            this.imageInfo = null;
+            this.capturedContent = null;
+            this.contentInfo = null;
+        },
+
+        async testRecording() {
+            if (this.settings.recordingMode === 'capture') {
+                await this.testCapture();
+            } else {
+                if (this.isRecording) {
+                    this.stopRecording();
+                } else {
+                    this.startRecording();
+                }
+            }
         },
 
         async testCapture() {
@@ -207,7 +307,7 @@ function imageCaptureSettings() {
             try {
                 const video = this.$refs.videoPreview;
                 const canvas = document.createElement('canvas');
-                const resolution = this.settings.imageResolution.split('x');
+                const resolution = this.settings.resolution.split('x');
                 const width = parseInt(resolution[0]);
                 const height = parseInt(resolution[1]);
                 
@@ -217,27 +317,67 @@ function imageCaptureSettings() {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, width, height);
                 
-                // Convert to blob with specified quality
                 const self = this;
                 canvas.toBlob(function(blob) {
-                    // Create preview URL
-                    self.capturedImage = canvas.toDataURL('image/jpeg', self.settings.imageQuality);
+                    self.capturedContent = canvas.toDataURL('image/jpeg', self.settings.imageQuality);
                     
-                    // Show image info
                     const fileSizeKB = Math.round(blob.size / 1024);
                     const qualityPercent = Math.round(self.settings.imageQuality * 100);
-                    self.imageInfo = 'Resolution: ' + width + 'x' + height + ', Quality: ' + qualityPercent + '%, Size: ' + fileSizeKB + 'KB';
-                    
-                    console.log('Test capture successful:', {
-                        resolution: width + 'x' + height,
-                        quality: self.settings.imageQuality,
-                        sizeKB: fileSizeKB
-                    });
+                    self.contentInfo = `Resolution: ${width}x${height}, Quality: ${qualityPercent}%, Size: ${fileSizeKB}KB`;
                 }, 'image/jpeg', this.settings.imageQuality);
                 
             } catch (error) {
                 this.error = 'Failed to capture image: ' + error.message;
-                console.error('Capture error:', error);
+            }
+        },
+
+        startRecording() {
+            if (!this.videoStream) return;
+
+            try {
+                const options = {
+                    mimeType: this.settings.videoFormat === 'mp4' ? 'video/mp4' : 'video/webm'
+                };
+                
+                this.mediaRecorder = new MediaRecorder(this.videoStream, options);
+                const chunks = [];
+                
+                this.mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) chunks.push(event.data);
+                };
+                
+                this.mediaRecorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: options.mimeType });
+                    this.capturedContent = URL.createObjectURL(blob);
+                    
+                    const fileSizeMB = Math.round(blob.size / 1024 / 1024 * 100) / 100;
+                    const resolution = this.settings.resolution;
+                    const quality = this.settings.videoQuality;
+                    this.contentInfo = `Resolution: ${resolution}, Quality: ${quality}, Duration: ${this.recordingDuration}s, Size: ${fileSizeMB}MB`;
+                };
+                
+                this.mediaRecorder.start();
+                this.isRecording = true;
+                this.recordingDuration = 0;
+                
+                this.recordingTimer = setInterval(() => {
+                    this.recordingDuration++;
+                }, 1000);
+                
+            } catch (error) {
+                this.error = 'Failed to start recording: ' + error.message;
+            }
+        },
+
+        stopRecording() {
+            if (this.mediaRecorder && this.isRecording) {
+                this.mediaRecorder.stop();
+                this.isRecording = false;
+                
+                if (this.recordingTimer) {
+                    clearInterval(this.recordingTimer);
+                    this.recordingTimer = null;
+                }
             }
         }
     };
