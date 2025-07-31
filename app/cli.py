@@ -287,7 +287,7 @@ def register_commands(app):
             blueprints[bp_name].append(route)
         
         for bp_name, bp_routes in blueprints.items():
-            click.echo(f"\n📁 {bp_name.upper()} BLUEPRINT:")
+            click.echo(f"\n{bp_name.upper()} BLUEPRINT:")
             for route in bp_routes:
                 methods = [m for m in route['methods'] if m not in ['HEAD', 'OPTIONS']]
                 methods_str = ', '.join(methods)
@@ -332,3 +332,85 @@ def register_commands(app):
         except Exception as e:
             db.session.rollback()
             click.echo(f"Error setting value: {e}")
+    @app.cli.command("test-openai")
+    def test_openai():
+        """Test OpenAI chat service with dummy message."""
+        click.echo("Testing OpenAI chat service...")
+        
+        # Check database settings first
+        preprompt = AppSetting.query.filter_by(key='openquestion_prompt').first()
+        instructions = AppSetting.query.filter_by(key='openquestion_instructions').first()
+        
+        if not preprompt:
+            click.echo("Missing 'openquestion_prompt' in database")
+            click.echo("Run: flask add-chat-settings")
+            return
+            
+        if not instructions:
+            click.echo("Missing 'openquestion_instructions' in database")
+            click.echo("Run: flask add-chat-settings")
+            return
+        
+        click.echo(" Database settings found")
+        
+        # Test OpenAI service
+        async def test_async():
+            try:
+                from app.services.openai_chat import OpenAIChatService
+                
+                service = OpenAIChatService()
+                click.echo(" Service initialized")
+                
+                # Create dummy chat session
+                chat_session = service.create_chat_session("test-session", 999)
+                click.echo(" Chat session created")
+                
+                # Test async response
+                click.echo("🤖 Testing with message: 'Hello, how are you?'")
+                
+                full_response = await service.generate_streaming_response_async(chat_session, "Hello, how are you?")
+                click.echo(f" Full response ({len(full_response)} chars): {full_response[:100]}...")
+                
+                click.echo("🎉 OpenAI async service working correctly!")
+                
+            except Exception as e:
+                click.echo(f"OpenAI service error: {str(e)}")
+                import traceback
+                click.echo(traceback.format_exc())
+        
+        # Run async test
+        import asyncio
+        asyncio.run(test_async())
+    
+    @app.cli.command("add-chat-settings")
+    def add_chat_settings():
+        try:
+            preprompt = AppSetting.query.filter_by(key='openquestion_prompt').first()
+            if not preprompt:
+                preprompt = AppSetting(
+                    key='openquestion_prompt',
+                    value='You are a supportive mental health assistant. Be empathetic, ask thoughtful follow-up questions, and provide a safe space for conversation. Keep responses conversational and 1-3 sentences.'
+                )
+                db.session.add(preprompt)
+            else:
+                click.echo("openquestion_prompt already exists")
+            
+            # Add instructions
+            instructions = AppSetting.query.filter_by(key='openquestion_instructions').first()
+            if not instructions:
+                instructions = AppSetting(
+                    key='openquestion_instructions', 
+                    value='Please share your thoughts and feelings openly. This conversation is confidential and designed to help assess your mental well-being.'
+                )
+                db.session.add(instructions)
+                click.echo("Added openquestion_instructions")
+            else:
+                click.echo("openquestion_instructions already exists")
+            
+            db.session.commit()
+            click.echo("Chat settings ready!")
+            
+        except Exception as e:
+            db.session.rollback()
+            click.echo(f"Error adding settings: {e}")
+

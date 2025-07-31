@@ -2,133 +2,132 @@
 {% extends "patient/base.html" %}
 {% block title %}Open Questions - Mental Health Chat{% endblock %}
 
-<!-- Pass variables to navbar -->
 {% set page_title = "Open Questions" %}
 {% set page_subtitle = "AI-Powered Mental Health Conversation" %}
 {% set assessment_session_id = session_id %}
 {% set show_progress_bar = true %}
 
 {% block patient_content %}
-    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-        <!-- Header -->
-        <div class="bg-gradient-to-r from-green-600 to-teal-600 px-8 py-6">
-            <div class="flex items-center">
-                <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-4">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<div class="bg-white rounded-lg shadow-lg overflow-hidden" x-data="chatInterface()">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-green-600 to-teal-600 px-8 py-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-4">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                </svg>
+            </div>
+            <div>
+                <h2 class="text-2xl font-bold text-white">Mental Health Conversation</h2>
+                <p class="text-green-100">Open-ended discussion with AI assistant</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions -->
+    {% if chat_settings.instructions %}
+    <div class="px-8 py-4 bg-green-50 border-b border-green-200">
+        <div class="flex items-start">
+            <svg class="w-5 h-5 text-green-500 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>
+                <h3 class="text-sm font-medium text-green-900">Instructions</h3>
+                <p class="text-sm text-green-800 mt-1">{{ chat_settings.instructions }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Chat Interface -->
+    <div class="flex flex-col h-96">
+        <!-- Chat Messages -->
+        <div class="flex-1 overflow-y-auto p-6 space-y-4" x-ref="chatContainer">
+            <!-- Welcome Message -->
+            <div class="flex items-start space-x-3">
+                <div class="w-8 h-8 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                     </svg>
                 </div>
-                <div>
-                    <h2 class="text-2xl font-bold text-white">Mental Health Conversation</h2>
-                    <p class="text-green-100">Open-ended discussion with AI assistant</p>
+                <div class="bg-gray-100 rounded-lg px-4 py-2 max-w-xs lg:max-w-md">
+                    <p class="text-sm text-gray-800">Hello! I'm here to have a conversation with you about your mental health and well-being. Feel free to share whatever is on your mind.</p>
                 </div>
             </div>
-        </div>
 
-        <!-- Instructions -->
-        {% if chat_settings.instructions %}
-        <div class="px-8 py-4 bg-green-50 border-b border-green-200">
-            <div class="flex items-start">
-                <svg class="w-5 h-5 text-green-500 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <div>
-                    <h3 class="text-sm font-medium text-green-900">Instructions</h3>
-                    <p class="text-sm text-green-800 mt-1">{{ chat_settings.instructions }}</p>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Chat Interface -->
-        <div class="flex flex-col h-96" x-data="chatInterface()">
-            <!-- Chat Messages -->
-            <div class="flex-1 overflow-y-auto p-6 space-y-4" x-ref="chatContainer">
-                <!-- Welcome Message -->
-                <div class="flex items-start space-x-3">
-                    <div class="w-8 h-8 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center">
+            <!-- Dynamic Messages -->
+            <template x-for="message in messages" :key="message.id">
+                <div :class="message.type === 'user' ? 'flex justify-end' : 'flex items-start space-x-3'">
+                    <!-- Bot Avatar -->
+                    <div x-show="message.type === 'bot'" class="w-8 h-8 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center">
                         <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                         </svg>
                     </div>
-                    <div class="bg-gray-100 rounded-lg px-4 py-2 max-w-xs lg:max-w-md">
-                        <p class="text-sm text-gray-800">Hello! I'm here to have a conversation with you about your mental health and well-being. Feel free to share whatever is on your mind.</p>
-                    </div>
-                </div>
 
-                <!-- Dynamic Messages -->
-                <template x-for="message in messages" :key="message.id">
-                    <div :class="message.type === 'user' ? 'flex justify-end' : 'flex items-start space-x-3'">
-                        <!-- Bot Avatar -->
-                        <div x-show="message.type === 'bot'" class="w-8 h-8 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center">
-                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                            </svg>
-                        </div>
-
-                        <!-- Message Bubble -->
-                        <div :class="message.type === 'user' ? 'bg-blue-500 text-white rounded-lg px-4 py-2 max-w-xs lg:max-w-md' : 'bg-gray-100 rounded-lg px-4 py-2 max-w-xs lg:max-w-md'">
-                            <p :class="message.type === 'user' ? 'text-sm text-white' : 'text-sm text-gray-800'" x-text="message.content"></p>
-                            
-                            <!-- Typing indicator for streaming -->
-                            <div x-show="message.type === 'bot' && message.streaming" class="flex items-center space-x-1 mt-2">
-                                <div class="flex space-x-1">
-                                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
-                                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
-                                </div>
+                    <!-- Message Bubble -->
+                    <div :class="message.type === 'user' ? 'bg-blue-500 text-white rounded-lg px-4 py-2 max-w-xs lg:max-w-md' : 'bg-gray-100 rounded-lg px-4 py-2 max-w-xs lg:max-w-md'">
+                        <p :class="message.type === 'user' ? 'text-sm text-white' : 'text-sm text-gray-800'" x-text="message.content"></p>
+                        
+                        <!-- Typing indicator for streaming -->
+                        <div x-show="message.type === 'bot' && message.streaming" class="flex items-center space-x-1 mt-2">
+                            <div class="flex space-x-1">
+                                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
                             </div>
                         </div>
-
-                        <!-- User Avatar -->
-                        <div x-show="message.type === 'user'" class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                            <span class="text-white font-medium text-sm">{{ current_user.username[0].upper() }}</span>
-                        </div>
                     </div>
-                </template>
-            </div>
 
-            <!-- Input Area -->
-            <div class="border-t border-gray-200 p-4">
-                <form @submit.prevent="sendMessage()" class="flex space-x-3">
-                    <input 
-                        type="text" 
-                        x-model="currentMessage"
-                        :disabled="isTyping || chatEnded"
-                        placeholder="Type your message here..."
-                        class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100"
-                        maxlength="500">
-                    
-                    <button 
-                        type="submit" 
-                        :disabled="!currentMessage.trim() || isTyping || chatEnded"
-                        class="px-6 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-medium hover:from-green-700 hover:to-teal-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span x-show="!isTyping">Send</span>
-                        <span x-show="isTyping" class="flex items-center">
-                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                            </svg>
-                            Thinking...
-                        </span>
-                    </button>
-                </form>
-                
-                <!-- Chat Status -->
-                <div class="mt-2 text-xs text-gray-500 flex justify-between">
-                    <span>Exchange <span x-text="exchangeCount"></span> of {{ chat_settings.max_exchanges }}</span>
-                    <span x-show="chatEnded" class="text-green-600 font-medium">Conversation Complete</span>
+                    <!-- User Avatar -->
+                    <div x-show="message.type === 'user'" class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                        <span class="text-white font-medium text-sm">{{ current_user.username[0].upper() }}</span>
+                    </div>
                 </div>
-            </div>
+            </template>
         </div>
 
-        <!-- Complete Button -->
-        <div x-show="chatEnded" class="px-8 py-4 border-t border-gray-200">
-            <a href="{{ url_for('patient.complete_open_questions') }}" 
-               class="block w-full text-center px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-medium hover:from-green-700 hover:to-teal-700 transition-all duration-200">
-                Continue to Next Assessment
-            </a>
+        <!-- Input Area -->
+        <div class="border-t border-gray-200 p-4">
+            <form @submit.prevent="sendMessage()" class="flex space-x-3">
+                <input 
+                    type="text" 
+                    x-model="currentMessage"
+                    :disabled="isTyping || chatEnded"
+                    placeholder="Type your message here..."
+                    class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100"
+                    maxlength="500">
+                
+                <button 
+                    type="submit" 
+                    :disabled="!currentMessage.trim() || isTyping || chatEnded"
+                    class="px-6 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-medium hover:from-green-700 hover:to-teal-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span x-show="!isTyping">Send</span>
+                    <span x-show="isTyping" class="flex items-center">
+                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        Thinking...
+                    </span>
+                </button>
+            </form>
+            
+            <!-- Chat Status -->
+            <div class="mt-2 text-xs text-gray-500 flex justify-between">
+                <span>Exchange <span x-text="exchangeCount"></span> of {{ chat_settings.max_exchanges }}</span>
+                <span x-show="chatEnded" class="text-green-600 font-medium">Conversation Complete</span>
+            </div>
         </div>
     </div>
+
+    <!-- Complete Button -->
+    <div x-show="chatEnded" class="px-8 py-4 border-t border-gray-200">
+        <a href="{{ url_for('patient.complete_open_questions') }}" 
+           class="block w-full text-center px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-medium hover:from-green-700 hover:to-teal-700 transition-all duration-200">
+            Continue to Next Assessment
+        </a>
+    </div>
+</div>
 
 <script>
 function chatInterface() {
@@ -167,36 +166,39 @@ function chatInterface() {
             this.isTyping = true;
             this.scrollToBottom();
             
-            // Use Server-Sent Events for streaming
-            const eventSource = new EventSource('/patient/chat-stream', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ message: userMessage })
-            });
+            // Use GET request for SSE with URL parameter
+            const encodedMessage = encodeURIComponent(userMessage);
+            const eventSource = new EventSource(`/patient/chat-stream/${encodedMessage}`);
             
             let botMessage = this.messages.find(m => m.id === botMessageId);
             
             eventSource.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                
-                if (data.type === 'chunk') {
-                    botMessage.content += data.content;
-                    this.scrollToBottom();
-                } else if (data.type === 'complete') {
-                    botMessage.streaming = false;
-                    this.isTyping = false;
-                    this.exchangeCount = data.exchange_count;
-                    eventSource.close();
-                } else if (data.type === 'end') {
-                    botMessage.content = data.message;
-                    botMessage.streaming = false;
-                    this.isTyping = false;
-                    this.chatEnded = true;
-                    eventSource.close();
-                } else if (data.type === 'error') {
-                    botMessage.content = 'Sorry, I encountered an error. Please try again.';
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'chunk') {
+                        botMessage.content += data.content;
+                        this.scrollToBottom();
+                    } else if (data.type === 'complete') {
+                        botMessage.streaming = false;
+                        this.isTyping = false;
+                        this.exchangeCount = data.exchange_count;
+                        eventSource.close();
+                    } else if (data.type === 'end') {
+                        botMessage.content = data.message;
+                        botMessage.streaming = false;
+                        this.isTyping = false;
+                        this.chatEnded = true;
+                        eventSource.close();
+                    } else if (data.type === 'error') {
+                        botMessage.content = data.message || 'Sorry, I encountered an error. Please try again.';
+                        botMessage.streaming = false;
+                        this.isTyping = false;
+                        eventSource.close();
+                    }
+                } catch (e) {
+                    console.error('Error parsing SSE data:', e);
+                    botMessage.content = 'Connection error. Please try again.';
                     botMessage.streaming = false;
                     this.isTyping = false;
                     eventSource.close();
@@ -209,7 +211,6 @@ function chatInterface() {
                 botMessage.streaming = false;
                 this.isTyping = false;
                 eventSource.close();
-                throw error;
             };
         },
         

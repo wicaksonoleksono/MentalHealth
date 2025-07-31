@@ -187,7 +187,7 @@ def phq9_assessment():
         'assessment_order': assessment_order
     }
     
-    return render_template('patient/phq9_assessment.html', 
+    return render_template('patient/phq9_question.html', 
                          phq_data=phq_data,
                          session_id=assessment_session_id,
                          **progress_data)
@@ -305,7 +305,6 @@ def phq9_submit():
         # Go to next question
         return redirect(url_for('patient.phq9_question', question_index=next_question_index))
 
-
 @patient_bp.route('/open-questions-assessment')
 @login_required
 @patient_required
@@ -327,10 +326,10 @@ def open_questions_assessment():
     
     # Progress bar data
     if assessment_order == 'phq_first':
-        progress_percentage = 75  # Step 3 of 4
+        progress_percentage = 75
         step_text = 'Step 3 of 4'
     else:
-        progress_percentage = 50  # Step 2 of 4  
+        progress_percentage = 50
         step_text = 'Step 2 of 4'
     
     progress_data = {
@@ -345,11 +344,59 @@ def open_questions_assessment():
                          **progress_data)
 
 
+@patient_bp.route('/chat-stream/<message>')
+@login_required
+@patient_required
+def chat_stream(message):
+    """Stream chat response using SSE."""
+    assessment_session_id = session.get('assessment_session_id')
+    chat_session = session.get('chat_session')
+    user_id = current_user.id  # Get user_id before entering generator
+    
+    if not assessment_session_id or not chat_session or not message:
+        return Response("data: " + json.dumps({'type': 'error', 'message': 'Invalid request'}) + "\n\n",
+                       mimetype='text/event-stream')
+    
+    def generate():
+        chat_service = OpenAIChatService()
+        
+        # Check if chat should continue
+        can_continue, end_message = chat_service.should_continue_chat(chat_session)
+        if not can_continue:
+            yield f"data: {json.dumps({'type': 'end', 'message': end_message})}\n\n"
+            return
+        
+        # Stream response chunks
+        full_response = ""
+        for chunk in chat_service.generate_streaming_response(chat_session, message):
+            full_response += chunk
+            yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
+        
+        # Save exchange using captured user_id
+        chat_service.save_chat_exchange(
+            assessment_session_id,
+            user_id,  # Use captured user_id
+            message,
+            full_response
+        )
+        
+        # Update session
+        session['chat_session'] = chat_session
+        session.modified = True
+        
+        yield f"data: {json.dumps({'type': 'complete', 'exchange_count': chat_session['exchange_count']})}\n\n"
+    
+    response = Response(generate(), mimetype='text/event-stream')
+    response.headers['Cache-Control'] = 'no-cache'
+    response.headers['X-Accel-Buffering'] = 'no'
+    return response
+
+
 @patient_bp.route('/chat-message', methods=['POST'])
 @login_required
 @patient_required
 def chat_message():
-    """Handle chat message with streaming response."""
+    """Handle non-streaming chat message."""
     data = request.get_json()
     user_message = data.get('message')
     assessment_session_id = session.get('assessment_session_id')
@@ -358,7 +405,6 @@ def chat_message():
     if not assessment_session_id or not chat_session or not user_message:
         return jsonify({'error': 'Invalid request'}), 400
     
-    # Initialize chat service
     chat_service = OpenAIChatService()
     
     # Check if chat should continue
@@ -370,77 +416,30 @@ def chat_message():
             'redirect_url': url_for('patient.complete_open_questions')
         })
     
-    # Generate response (non-streaming for now, we'll add streaming route separately)
+    # Generate response (collect all chunks)
     response_chunks = []
-    start_time = datetime.now()
-    
     for chunk in chat_service.generate_streaming_response(chat_session, user_message):
         response_chunks.append(chunk)
     
     full_response = ''.join(response_chunks)
-    response_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
     
     # Save chat exchange
     chat_service.save_chat_exchange(
         assessment_session_id,
         current_user.id,
         user_message,
-        full_response,
-        response_time_ms
+        full_response
     )
     
     # Update session
     session['chat_session'] = chat_session
+    session.modified = True
     
     return jsonify({
         'response': full_response,
         'should_end': False,
         'exchange_count': chat_session['exchange_count']
     })
-
-
-@patient_bp.route('/chat-stream', methods=['POST'])
-@login_required
-@patient_required
-def chat_stream():
-    """Stream chat response in real-time."""
-    data = request.get_json()
-    user_message = data.get('message')
-    assessment_session_id = session.get('assessment_session_id')
-    chat_session = session.get('chat_session')
-    
-    if not assessment_session_id or not chat_session or not user_message:
-        return jsonify({'error': 'Invalid request'}), 400
-    
-    def generate():
-        chat_service = OpenAIChatService()
-        
-        # Check if chat should continue
-        can_continue, end_message = chat_service.should_continue_chat(chat_session)
-        if not can_continue:
-            yield f"data: {json.dumps({'type': 'end', 'message': end_message})}\n\n"
-            return
-        
-        # Stream response
-        full_response = ""
-        for chunk in chat_service.generate_streaming_response(chat_session, user_message):
-            full_response += chunk
-            yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
-        
-        # Save exchange
-        chat_service.save_chat_exchange(
-            assessment_session_id,
-            current_user.id,
-            user_message,
-            full_response
-        )
-        
-        # Update session
-        session['chat_session'] = chat_session
-        
-        yield f"data: {json.dumps({'type': 'complete', 'exchange_count': chat_session['exchange_count']})}\n\n"
-    
-    return Response(generate(), mimetype='text/event-stream')
 
 
 @patient_bp.route('/complete-open-questions', methods=['GET', 'POST'])
@@ -478,53 +477,48 @@ def complete_open_questions():
             return redirect(url_for('patient.assessment_complete'))
 
 
-@patient_bp.route('/debug-session')
+@patient_bp.route('/debug-chat')
 @login_required
 @patient_required
-def debug_session():
-    """Debug route to check session and services."""
+def debug_chat():
+    """Debug chat setup - shows actual errors."""
     debug_info = {
         'session_data': {
             'assessment_session_id': session.get('assessment_session_id'),
-            'assessment_order': session.get('assessment_order'),
-            'user_id': current_user.id,
-            'username': current_user.username
+            'chat_session': session.get('chat_session'),
+            'user_id': current_user.id
         }
     }
     
-    # Test PHQ Service
+    # Test database connection
     try:
-        phq_settings = PHQService.get_phq_settings()
-        debug_info['phq_service'] = {
-            'status': 'working',
-            'total_questions': phq_settings.get('total_questions', 0),
-            'active_categories': phq_settings.get('active_categories', [])
+        from app.models.settings import AppSetting
+        all_settings = AppSetting.query.all()
+        debug_info['database'] = {
+            'status': 'connected',
+            'total_settings': len(all_settings),
+            'settings': {setting.key: setting.value for setting in all_settings}
         }
     except Exception as e:
-        debug_info['phq_service'] = {'status': 'error', 'error': str(e)}
+        debug_info['database'] = {'status': 'error', 'error': str(e)}
     
-    # Test Chat Service
+    # Test OpenAI service
     try:
+        from app.services.openai_chat import OpenAIChatService
         chat_service = OpenAIChatService()
-        chat_settings = chat_service.get_chat_settings()
-        debug_info['chat_service'] = {
+        settings = chat_service.get_chat_settings()
+        debug_info['openai_service'] = {
             'status': 'working',
-            'has_preprompt': bool(chat_settings.get('preprompt')),
-            'max_exchanges': chat_settings.get('max_exchanges')
+            'settings': settings
         }
     except Exception as e:
-        debug_info['chat_service'] = {'status': 'error', 'error': str(e)}
+        debug_info['openai_service'] = {'status': 'error', 'error': str(e)}
+    
+    # Test OpenAI API key
+    import os
+    debug_info['openai_api'] = {
+        'key_set': bool(os.getenv('OPENAI_API_KEY')),
+        'key_length': len(os.getenv('OPENAI_API_KEY', '')) if os.getenv('OPENAI_API_KEY') else 0
+    }
     
     return jsonify(debug_info)
-
-
-@patient_bp.route('/assessment-complete')
-@login_required
-@patient_required
-def assessment_complete():
-    assessment_session_id = session.get('assessment_session_id')
-    if not assessment_session_id:
-        flash('Please start a new assessment session', 'error')
-        return redirect(url_for('patient.dashboard'))
-    session.pop('assessment_session_id', None)
-    return render_template('patient/assessment_complete.html')
