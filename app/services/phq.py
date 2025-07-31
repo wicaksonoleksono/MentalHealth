@@ -45,43 +45,55 @@ class PHQ:
         except Exception as e:
             raise PHQException(f"Failed to load categories: {str(e)}")
     
-    @staticmethod
-    def create_category(category_number, category_name=None, description=None, add_default_question=True):
-        """Create new PHQ category"""
-        try:
-            # Check if already exists
-            if PHQCategory.query.filter_by(category_number=category_number).first():
-                raise PHQException(f"Category {category_number} already exists")
-            
-            # Get defaults from enum
-            category_type = PHQCategoryType.get_by_number(category_number)
-            if not category_type:
-                raise PHQException(f"Invalid category number: {category_number}")
-            
-            category = PHQCategory(
-                category_number=category_number,
-                category_name=category_name or category_type.name,
-                description=description or category_type.description
-            )
-            
-            db.session.add(category)
-            db.session.flush()  # Get the category ID
-            
-            # Add default question if requested
-            if add_default_question and category_type.default_question:
-                default_question = PHQQuestion(
-                    category_id=category.id,
-                    question_text=category_type.default_question,
-                    is_active=True
+        @staticmethod
+        def validate_category_number(category_number):
+            """Centralized validation"""
+            if not isinstance(category_number, int) or not (1 <= category_number <= 9):
+                raise PHQException(f"Category number must be between 1-9, got: {category_number}")
+        
+        @staticmethod
+        def create_category(category_number, category_name=None, description=None, add_default_question=True):
+            """Create new PHQ category"""
+            try:
+                PHQ.validate_category_number(category_number)  # Reuse validation
+                
+                # Check if already exists
+                existing = PHQCategory.query.filter_by(category_number=category_number).first()
+                if existing:
+                    raise PHQException(f"Category {category_number} already exists")
+                
+                # Get defaults from enum
+                category_type = PHQCategoryType.get_by_number(category_number)
+                
+                category = PHQCategory(
+                    category_number=category_number,
+                    category_name=category_name or category_type.name,
+                    description=description or category_type.description
                 )
-                db.session.add(default_question)
-            
-            db.session.commit()
-            
-        except Exception as e:
-            db.session.rollback()
-            raise PHQException(f"Failed to create category: {str(e)}")
-    
+                
+                db.session.add(category)
+                db.session.flush()
+                
+                # Add default question if requested
+                if add_default_question and category_type.default_question:
+                    default_question = PHQQuestion(
+                        category_id=category.id,
+                        question_text=category_type.default_question,
+                        is_active=True
+                    )
+                    db.session.add(default_question)
+                
+                db.session.commit()
+                return category
+                
+            except PHQException:
+                db.session.rollback()
+                raise
+            except Exception as e:
+                db.session.rollback()
+                raise PHQException(f"Failed to create category: {str(e)}")
+                raise PHQException(f"Failed to create category: {str(e)}")
+        
     @staticmethod
     def create_all_standard_categories():
         """Create all 9 standard PHQ-9 categories with default questions"""

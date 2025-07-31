@@ -25,23 +25,27 @@ def get_available_categories():
 @admin_required
 def create_category():
     try:
-        data = request.json
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'No data provided'}), 400
+            
         category_number = data.get('category_number')
-        category_name = data.get('category_name')
-        description = data.get('description')
-        add_default_question = data.get('add_default_question', True)
-
         if not category_number:
             return jsonify({'success': False, 'error': 'Category number required'}), 400
-
-        if not (1 <= category_number <= 9):
-            return jsonify({'success': False, 'error': 'Category number must be between 1-9'}), 400
-
-        PHQ.create_category(category_number, category_name, description, add_default_question)
+            
+        PHQ.create_category(
+            category_number=category_number,
+            category_name=data.get('category_name'),
+            description=data.get('description'),
+            add_default_question=data.get('add_default_question', True)
+        )
+        
         return jsonify({'success': True, 'message': 'Category created successfully'})
-
+        
     except PHQException as e:
         return jsonify({'success': False, 'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
 @phq_bp.route('/categories/create-all', methods=['POST'])
 @login_required

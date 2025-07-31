@@ -2,6 +2,9 @@
 from app import db
 from app.models.settings import AppSetting
 from app.services.phq import PHQ
+import logging
+
+logger = logging.getLogger(__name__)
 
 class SettingsException(Exception):
     pass
@@ -42,47 +45,80 @@ class SettingsService:
             enable_capture = AppSetting.query.filter_by(key='enable_capture').first()
             settings['enable_capture'] = enable_capture.value == 'true' if enable_capture else True
             
-            # Get PHQ scale settings
-            scale_min = AppSetting.query.filter_by(key='scale_min').first()
-            settings['scale_min'] = int(scale_min.value) if scale_min else 0
+            # Add PHQ scale settings
+            settings.update(SettingsService.get_scale_settings())
             
-            scale_max = AppSetting.query.filter_by(key='scale_max').first()
-            settings['scale_max'] = int(scale_max.value) if scale_max else 3
+            # Add additional PHQ settings
+            phq9_randomize = AppSetting.query.filter_by(key='phq9_randomize_questions').first()
+            settings['phq9_randomize_questions'] = phq9_randomize.value == 'true' if phq9_randomize else False
             
-            # Scale labels - dynamically get all labels in range
-            min_val = settings['scale_min']
-            max_val = settings['scale_max']
-            default_labels = ['Tidak pernah', 'Beberapa hari terakhir', 'Lebih dari 1 minggu', 'Hampir setiap hari']
+            phq9_progress = AppSetting.query.filter_by(key='phq9_show_progress').first()
+            settings['phq9_show_progress'] = phq9_progress.value == 'true' if phq9_progress else True
             
-            for i in range(min_val, max_val + 1):
-                label_setting = AppSetting.query.filter_by(key=f'scale_label_{i}').first()
-                default_label = default_labels[i] if i < len(default_labels) else f'Label {i}'
-                settings[f'scale_label_{i}'] = label_setting.value if label_setting else default_label
+            phq9_per_page = AppSetting.query.filter_by(key='phq9_questions_per_page').first()
+            settings['phq9_questions_per_page'] = int(phq9_per_page.value) if phq9_per_page else 1
             
             return settings
             
         except Exception as e:
+            logger.error(f"Failed to load settings: {str(e)}")
             raise SettingsException(f"Failed to load settings: {str(e)}")
+    
+    @staticmethod
+    def get_scale_settings():
+        """Get PHQ scale settings for the component"""
+        try:
+            # Get scale range
+            scale_min = AppSetting.query.filter_by(key='scale_min').first()
+            scale_max = AppSetting.query.filter_by(key='scale_max').first()
+            
+            min_val = int(scale_min.value) if scale_min else 0
+            max_val = int(scale_max.value) if scale_max else 3
+            
+            # Get all scale labels for the range
+            scale_labels = {}
+            for i in range(min_val, max_val + 1):
+                label_setting = AppSetting.query.filter_by(key=f'scale_label_{i}').first()
+                if label_setting:
+                    scale_labels[str(i)] = label_setting.value
+            
+            return {
+                'scale_min': min_val,
+                'scale_max': max_val,
+                'scale_labels': scale_labels
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to load scale settings: {str(e)}")
+            raise SettingsException(f"Failed to load scale settings: {str(e)}")
     
     @staticmethod
     def update_settings(form_data):
         """Update app settings from form data"""
         try:
+            logger.info(f"Updating settings with data: {list(form_data.keys())}")
+            
+            updated_count = 0
             for key, value in form_data.items():
                 if value is None:
                     continue
                     
                 setting = AppSetting.query.filter_by(key=key).first()
                 if setting:
-                    setting.value = value
+                    if setting.value != str(value):
+                        setting.value = str(value)
+                        updated_count += 1
                 else:
-                    setting = AppSetting(key=key, value=value)
+                    setting = AppSetting(key=key, value=str(value))
                     db.session.add(setting)
+                    updated_count += 1
             
             db.session.commit()
+            logger.info(f"Successfully updated {updated_count} settings")
             
         except Exception as e:
             db.session.rollback()
+            logger.error(f"Failed to save settings: {str(e)}")
             raise SettingsException(f"Failed to save settings: {str(e)}")
     
     @staticmethod
@@ -91,4 +127,5 @@ class SettingsService:
         try:
             return PHQ.get_categories_with_questions()
         except Exception as e:
+            logger.error(f"Failed to load PHQ data: {str(e)}")
             raise SettingsException(f"Failed to load PHQ data: {str(e)}")
