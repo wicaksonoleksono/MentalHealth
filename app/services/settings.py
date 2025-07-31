@@ -89,7 +89,6 @@ class SettingsService:
             exists_setting = AppSetting.query.filter_by(key=f'phq_category_{cat_num}_exists').first()
             if exists_setting and exists_setting.value == '1':
                 existing_categories.append(cat_num)
-                
                 questions_setting = AppSetting.query.filter_by(key=f'phq_category_{cat_num}_questions').first()
                 if questions_setting and questions_setting.value:
                     questions = json.loads(questions_setting.value)

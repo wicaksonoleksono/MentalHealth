@@ -1,0 +1,22 @@
+<!-- app/templates/patient/base.html -->
+{% extends "base.html" %}
+
+{% block nav %}
+    {% include 'components/patient_nav.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+    <!-- Progress Bar (if assessment active) -->
+    {% if show_progress_bar %}
+        {% include 'components/progress_bar.html' %}
+    {% endif %}
+    
+    <!-- Flash Messages -->
+    {% include 'components/flash_messages.html' %}
+    
+    <!-- Page Content -->
+    {% block patient_content %}
+    {% endblock %}
+</div>
+{% endblock %}

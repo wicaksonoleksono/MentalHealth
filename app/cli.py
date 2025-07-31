@@ -205,6 +205,7 @@ def register_commands(app):
             if setting.key.endswith('_questions') or setting.key == 'phq_enabled_categories':
                 try:
                     parsed = json.loads(value)
+                    print(parsed)
                     if isinstance(parsed, list):
                         value = f"[{len(parsed)} items]: {parsed}"
                     else:
@@ -221,26 +222,6 @@ def register_commands(app):
                 click.echo(f"  {'':<30}   (Updated: {setting.updated_at.strftime('%Y-%m-%d %H:%M:%S')})")
             click.echo()
     
-    @app.cli.command("show-setting")
-    @click.argument('key')
-    def show_setting(key):
-        """Show detailed view of a specific setting."""
-        setting = AppSetting.query.filter_by(key=key).first()
-        if not setting:
-            click.echo(f"Setting '{key}' not found.")
-            return
-        
-        click.echo(f"Setting: {setting.key}")
-        click.echo(f"Created: {setting.created_at.strftime('%Y-%m-%d %H:%M:%S')}")
-        click.echo(f"Updated: {setting.updated_at.strftime('%Y-%m-%d %H:%M:%S')}")
-        click.echo(f"Value:")
-        
-        # Pretty print JSON
-        try:
-            parsed = json.loads(setting.value)
-            click.echo(json.dumps(parsed, indent=2))
-        except:
-            click.echo(setting.value)
     
     @app.cli.command("settings")
     def show_all_settings():
