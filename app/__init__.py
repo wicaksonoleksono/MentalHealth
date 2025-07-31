@@ -21,18 +21,18 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Please log in to access this page.'
-    from app.services.auth import AuthService
+    from app.routes.auth import AuthService
 
 
     @login_manager.user_loader
     def load_user(user_id):
         return AuthService.get_user_by_id(user_id)
-    from app.controllers.auth import auth_bp
-    from app.controllers.main import main_bp  
-    from app.controllers.patient import patient_bp
-    from app.controllers.admin import admin_bp
-    from app.controllers.phq import phq_bp
-    from app.controllers.settings import settings_bp
+    from app.routes.auth import auth_bp
+    from app.routes.main import main_bp  
+    from app.routes.patient import patient_bp
+    from app.routes.admin import admin_bp
+    from app.routes.phq import phq_bp
+    from app.routes.settings import settings_bp
     app.register_blueprint(settings_bp,url_prefix="/settings")
     app.register_blueprint(phq_bp, url_prefix='/phq')
     app.register_blueprint(auth_bp, url_prefix='/auth')
