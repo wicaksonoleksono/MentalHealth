@@ -1,4 +1,4 @@
-# app/controllers/admin.py
+# app/routes/admin.py
 from flask import Blueprint, render_template, request, flash, redirect, url_for
 from flask_login import login_required, current_user
 from app.decorators.auth import admin_required

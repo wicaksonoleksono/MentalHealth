@@ -1,4 +1,4 @@
-# app/controllers/phq.py
+# app/routes/phq.py
 from flask import Blueprint, request, jsonify
 from flask_login import login_required
 from app.decorators.auth import admin_required

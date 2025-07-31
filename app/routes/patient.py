@@ -1,4 +1,4 @@
-# app/controllers/patient.py
+# app/routes/patient.py
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import login_required, current_user
 from app.decorators.auth import patient_required

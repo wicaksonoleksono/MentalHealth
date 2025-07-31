@@ -1,4 +1,4 @@
-# app/controllers/settings.py
+# app/routes/settings.py
 from flask import Blueprint, render_template, request, flash, redirect, url_for, session
 from flask_login import login_required
 from app.decorators.auth import admin_required

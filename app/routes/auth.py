@@ -1,4 +1,4 @@
-# app/controllers/auth.py (or modal/auth.py)
+# app/routes/auth.py (or modal/auth.py)
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_user, logout_user, current_user
