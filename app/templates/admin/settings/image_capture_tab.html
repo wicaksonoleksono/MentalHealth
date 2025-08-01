@@ -1,0 +1,696 @@
+<!-- app/templates/admin/settings/image_capture_tab.html -->
+<div class="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl p-8 border border-orange-100">
+    <h3 class="text-2xl font-semibold text-gray-900 mb-4 flex items-center">
+        <div class="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center mr-4">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+        </div>
+        Camera & Recording Configuration
+    </h3>
+    <p class="text-gray-600 mb-8">Configure camera and recording settings for emotion capture during assessments.</p>
+
+    <div class="space-y-8">
+        <!-- Enable/Disable Recording -->
+        <div class="bg-white rounded-lg p-6 border border-orange-200">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h4 class="font-medium text-gray-900">Enable Recording</h4>
+                    <p class="text-sm text-gray-600">Turn camera recording on or off globally</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="enable_recording" value="true" 
+                           {{ 'checked' if settings_data.enable_recording else '' }}
+                           id="enable_recording_toggle"
+                           class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Recording Mode -->
+        <div class="bg-white rounded-lg p-6 border border-orange-200" id="recording_mode_section">
+            <h4 class="font-medium text-gray-900 mb-4">Recording Mode</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Image Capture Mode -->
+                <label class="relative">
+                    <input type="radio" name="recording_mode" value="capture" 
+                           {{ 'checked' if settings_data.recording_mode == 'capture' else '' }}
+                           class="peer sr-only">
+                    <div class="p-6 border-2 border-gray-200 rounded-xl cursor-pointer transition-all peer-checked:border-orange-500 peer-checked:bg-orange-50">
+                        <div class="flex items-center mb-3">
+                            <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center mr-3">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                            </div>
+                            <span class="font-medium">Image Capture</span>
+                        </div>
+                        <p class="text-sm text-gray-600">Capture images at regular intervals</p>
+                        <ul class="text-xs text-gray-500 mt-2 list-disc list-inside">
+                            <li>Lower bandwidth usage</li>
+                            <li>Smaller file sizes</li>
+                            <li>Good for emotion detection</li>
+                        </ul>
+                    </div>
+                </label>
+
+                <!-- Video Recording Mode -->
+                <label class="relative">
+                    <input type="radio" name="recording_mode" value="video" 
+                           {{ 'checked' if settings_data.recording_mode == 'video' else '' }}
+                           class="peer sr-only">
+                    <div class="p-6 border-2 border-gray-200 rounded-xl cursor-pointer transition-all peer-checked:border-orange-500 peer-checked:bg-orange-50">
+                        <div class="flex items-center mb-3">
+                            <div class="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center mr-3">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                            <span class="font-medium">Full Video</span>
+                        </div>
+                        <p class="text-sm text-gray-600">Record continuous video</p>
+                        <ul class="text-xs text-gray-500 mt-2 list-disc list-inside">
+                            <li>Complete interaction recording</li>
+                            <li>Higher data usage</li>
+                            <li>Detailed analysis possible</li>
+                        </ul>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Image Capture Settings -->
+        <div class="bg-white rounded-lg p-6 border border-orange-200" id="image_capture_settings">
+            <h4 class="font-medium text-gray-900 mb-4">Image Capture Settings</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Capture Interval</label>
+                    <div class="flex items-center space-x-3">
+                        <input type="range" name="capture_interval" 
+                               min="1" max="30" step="1"
+                               value="{{ settings_data.capture_interval or 5 }}"
+                               id="capture_interval_slider"
+                               class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider">
+                        <div class="min-w-0">
+                            <span class="text-sm font-medium text-gray-900" id="interval_display">{{ settings_data.capture_interval or 5 }}</span>
+                            <span class="text-sm text-gray-500">sec</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">How often to capture images (1-30 seconds)</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Image Quality</label>
+                    <select name="image_quality" id="image_quality_select"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500">
+                        <option value="0.6">Standard (60%) - Smaller files</option>
+                        <option value="0.8" {{ 'selected' if settings_data.image_quality == 0.8 else '' }}>High (80%) - Recommended</option>
+                        <option value="0.9" {{ 'selected' if settings_data.image_quality == 0.9 else '' }}>Very High (90%) - Extra detail</option>
+                        <option value="1.0" {{ 'selected' if settings_data.image_quality == 1.0 else '' }}>Maximum (100%) - Largest files</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Recording Settings -->
+        <div class="bg-white rounded-lg p-6 border border-orange-200" id="video_recording_settings">
+            <h4 class="font-medium text-gray-900 mb-4">Video Recording Settings</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Video Quality</label>
+                    <select name="video_quality" id="video_quality_select"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500">
+                        <option value="480p">SD (480p) - Smaller files</option>
+                        <option value="720p" {{ 'selected' if settings_data.video_quality == '720p' else '' }}>HD (720p) - Recommended</option>
+                        <option value="1080p" {{ 'selected' if settings_data.video_quality == '1080p' else '' }}>Full HD (1080p) - High quality</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Video Format</label>
+                    <select name="video_format" id="video_format_select"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500">
+                        <option value="webm" {{ 'selected' if settings_data.video_format == 'webm' else '' }}>WebM - Browser optimized</option>
+                        <option value="mp4" {{ 'selected' if settings_data.video_format == 'mp4' else '' }}>MP4 - Universal compatibility</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Common Settings -->
+        <div class="bg-white rounded-lg p-6 border border-orange-200" id="common_settings">
+            <h4 class="font-medium text-gray-900 mb-4">Camera Settings</h4>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Resolution</label>
+                <select name="resolution" id="resolution_select"
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500">
+                    <option value="640x480">640x480 - Basic quality</option>
+                    <option value="800x600">800x600 - Good quality</option>
+                    <option value="1280x720" {{ 'selected' if settings_data.resolution == '1280x720' else '' }}>1280x720 - HD (recommended)</option>
+                    <option value="1920x1080" {{ 'selected' if settings_data.resolution == '1920x1080' else '' }}>1920x1080 - Full HD</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">Higher resolutions provide better quality but use more storage</p>
+            </div>
+        </div>
+
+        <!-- Camera Test -->
+        <div class="bg-white rounded-lg p-6 border border-orange-200" id="camera-test-section">
+            <h4 class="font-medium text-gray-900 mb-4">Test Camera Settings</h4>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Camera Preview -->
+                <div>
+                    <div class="relative bg-gray-900 rounded-lg overflow-hidden mb-4" style="aspect-ratio: 4/3;">
+                        <video id="videoPreview" 
+                               autoplay muted 
+                               class="w-full h-full object-cover hidden">
+                        </video>
+                        <canvas id="captureCanvas" class="hidden"></canvas>
+                        <div id="camera-placeholder" 
+                             class="absolute inset-0 flex items-center justify-center text-gray-400">
+                            <div class="text-center">
+                                <svg class="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                </svg>
+                                <p class="text-sm">Camera preview will appear here</p>
+                                <button type="button" onclick="startCameraTest(event)" 
+                                        class="mt-2 bg-orange-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-orange-600">
+                                    Start Camera Test
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Camera Controls -->
+                    <div id="camera-controls" class="flex gap-2 hidden">
+                        <!-- Image Mode Controls -->
+                        <button type="button" id="capture-photo-btn" onclick="testCapture()" 
+                                class="flex-1 bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600" style="display: none;">
+                            📸 Take Photo
+                        </button>
+                        
+                        <!-- Video Mode Controls -->
+                        <button type="button" id="start-recording-btn" onclick="startVideoRecording()" 
+                                class="flex-1 bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600" style="display: none;">
+                            🎥 Start Recording
+                        </button>
+                        <button type="button" id="stop-recording-btn" onclick="stopVideoRecording()" 
+                                class="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600" style="display: none;">
+                            ⏹️ Stop Recording
+                        </button>
+                        
+                        <!-- Common Controls -->
+                        <button type="button" onclick="stopCameraTest()" 
+                                class="flex-1 bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600">
+                            Stop Preview
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Test Results -->
+                <div>
+                    <h5 class="font-medium text-gray-900 mb-3">Test Results</h5>
+                    <div class="space-y-3">
+                        <!-- Captured Image Preview -->
+                        <div id="captured-image-preview" class="bg-gray-100 rounded-lg p-4 hidden">
+                            <img id="captured-image" class="w-full rounded border" style="max-height: 150px; object-fit: contain;">
+                            <div id="capture-info" class="mt-2 text-xs text-gray-600"></div>
+                        </div>
+                        
+                        <!-- Recorded Video Preview -->
+                        <div id="captured-video-preview" class="bg-gray-100 rounded-lg p-4 hidden">
+                            <video id="captured-video" controls class="w-full rounded border" style="max-height: 150px;">
+                            </video>
+                            <div id="recording-info" class="mt-2 text-xs text-gray-600"></div>
+                        </div>
+                        
+                        <!-- Camera Info -->
+                        <div class="bg-gray-50 rounded-lg p-4 text-sm">
+                            <div class="grid grid-cols-2 gap-2" id="camera-info-grid">
+                                <div><strong>Resolution:</strong> <span id="current-resolution">{{ settings_data.resolution or '1280x720' }}</span></div>
+                                <div><strong>Mode:</strong> <span id="current-mode">{{ settings_data.recording_mode or 'capture' }}</span></div>
+                                <div id="interval-info" style="display: none;"><strong>Interval:</strong> <span id="current-interval">{{ settings_data.capture_interval or 5 }}s</span></div>
+                                <div id="image-quality-info" style="display: none;"><strong>Image Quality:</strong> <span id="current-image-quality">{{ (settings_data.image_quality * 100)|round if settings_data.image_quality else 80 }}%</span></div>
+                                <div id="video-quality-info" style="display: none;"><strong>Video Quality:</strong> <span id="current-video-quality">{{ settings_data.video_quality or '720p' }}</span></div>
+                                <div id="video-format-info" style="display: none;"><strong>Video Format:</strong> <span id="current-video-format">{{ settings_data.video_format or 'webm' }}</span></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Error Display -->
+                        <div id="camera-error" class="bg-red-50 border border-red-200 rounded-lg p-3 hidden">
+                            <div id="error-message" class="text-sm text-red-700"></div>
+                        </div>
+                        
+                        <!-- Success Message -->
+                        <div id="camera-success" class="bg-green-50 border border-green-200 rounded-lg p-3 hidden">
+                            <div class="text-sm text-green-700">✅ Camera test successful! Settings are working properly.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Storage Estimates -->
+        <div class="bg-white rounded-lg p-6 border border-orange-200" id="storage_estimates">
+            <h4 class="font-medium text-gray-900 mb-4">Storage Estimates</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-blue-50 rounded-lg p-4 text-center">
+                    <div class="text-2xl font-bold text-blue-600" id="storage-5min">~5MB</div>
+                    <div class="text-sm text-blue-700">5-minute assessment</div>
+                </div>
+                <div class="bg-green-50 rounded-lg p-4 text-center">
+                    <div class="text-2xl font-bold text-green-600" id="storage-15min">~15MB</div>
+                    <div class="text-sm text-green-700">15-minute assessment</div>
+                </div>
+                <div class="bg-purple-50 rounded-lg p-4 text-center">
+                    <div class="text-2xl font-bold text-purple-600" id="storage-30min">~30MB</div>
+                    <div class="text-sm text-purple-700">30-minute assessment</div>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-3">Estimates based on current settings. Actual sizes may vary.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+// Camera Test Functionality
+let videoStream = null;
+let isPreviewActive = false;
+let mediaRecorder = null;
+let recordedChunks = [];
+let isRecording = false;
+
+function getCurrentSettings() {
+    return {
+        enabled: document.querySelector('input[name="enable_recording"]')?.checked || false,
+        mode: document.querySelector('input[name="recording_mode"]:checked')?.value || 'capture',
+        interval: document.querySelector('input[name="capture_interval"]')?.value || 5,
+        imageQuality: parseFloat(document.querySelector('select[name="image_quality"]')?.value || 0.8),
+        videoQuality: document.querySelector('select[name="video_quality"]')?.value || '720p',
+        videoFormat: document.querySelector('select[name="video_format"]')?.value || 'webm',
+        resolution: document.querySelector('select[name="resolution"]')?.value || '1280x720'
+    };
+}
+
+function updateCurrentSettingsDisplay() {
+    const settings = getCurrentSettings();
+    
+    // Update basic info
+    document.getElementById('current-resolution').textContent = settings.resolution;
+    document.getElementById('current-mode').textContent = settings.mode === 'capture' ? 'Image Capture' : 'Video Recording';
+    
+    // Show/hide mode-specific info
+    const intervalInfo = document.getElementById('interval-info');
+    const imageQualityInfo = document.getElementById('image-quality-info');
+    const videoQualityInfo = document.getElementById('video-quality-info');
+    const videoFormatInfo = document.getElementById('video-format-info');
+    
+    if (settings.mode === 'capture') {
+        // Image mode - show interval and image quality
+        intervalInfo.style.display = 'block';
+        imageQualityInfo.style.display = 'block';
+        videoQualityInfo.style.display = 'none';
+        videoFormatInfo.style.display = 'none';
+        
+        document.getElementById('current-interval').textContent = settings.interval + 's';
+        document.getElementById('current-image-quality').textContent = Math.round(settings.imageQuality * 100) + '%';
+    } else {
+        // Video mode - show video quality and format, hide interval
+        intervalInfo.style.display = 'none';
+        imageQualityInfo.style.display = 'none';
+        videoQualityInfo.style.display = 'block';
+        videoFormatInfo.style.display = 'block';
+        
+        document.getElementById('current-video-quality').textContent = settings.videoQuality;
+        document.getElementById('current-video-format').textContent = settings.videoFormat.toUpperCase();
+    }
+    
+    // Update control buttons
+    updateControlButtons();
+    
+    // Update storage estimates
+    updateStorageEstimates();
+}
+
+function updateControlButtons() {
+    const settings = getCurrentSettings();
+    const captureBtn = document.getElementById('capture-photo-btn');
+    const startRecordBtn = document.getElementById('start-recording-btn');
+    const stopRecordBtn = document.getElementById('stop-recording-btn');
+    
+    if (settings.mode === 'capture') {
+        captureBtn.style.display = 'block';
+        startRecordBtn.style.display = 'none';
+        stopRecordBtn.style.display = 'none';
+    } else {
+        captureBtn.style.display = 'none';
+        if (isRecording) {
+            startRecordBtn.style.display = 'none';
+            stopRecordBtn.style.display = 'block';
+        } else {
+            startRecordBtn.style.display = 'block';
+            stopRecordBtn.style.display = 'none';
+        }
+    }
+}
+
+async function startCameraTest(event) {
+    // Prevent form submission
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    console.log('startCameraTest() called'); // Debug log
+    
+    try {
+        hideError();
+        hideSuccess();
+        
+        const settings = getCurrentSettings();
+        console.log('Current settings:', settings); // Debug log
+        
+        if (!settings.enabled) {
+            showError('Recording is disabled. Please enable recording first.');
+            return;
+        }
+        
+        updateCurrentSettingsDisplay();
+        
+        console.log('Requesting camera permission...'); // Debug log
+        
+        const resolution = settings.resolution.split('x');
+        const width = parseInt(resolution[0]);
+        const height = parseInt(resolution[1]);
+        
+        // Request camera permission - this should trigger browser modal
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                width: { ideal: width },
+                height: { ideal: height },
+                facingMode: 'user'
+            }
+        });
+
+        console.log('Camera stream obtained successfully'); // Debug log
+        
+        videoStream = stream;
+        const video = document.getElementById('videoPreview');
+        video.srcObject = stream;
+        
+        // Show video, hide placeholder
+        video.classList.remove('hidden');
+        document.getElementById('camera-placeholder').classList.add('hidden');
+        document.getElementById('camera-controls').classList.remove('hidden');
+        
+        isPreviewActive = true;
+        console.log('Camera test started successfully'); // Debug log
+        
+    } catch (error) {
+        console.error('Camera test error:', error); // Debug log
+        showError('Camera access denied: ' + error.message + '. Please allow camera access and try again.');
+        isPreviewActive = false;
+    }
+}
+
+function stopCameraTest() {
+    // Stop any recording first
+    if (isRecording) {
+        stopVideoRecording();
+    }
+    
+    if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        videoStream = null;
+    }
+    
+    // Hide video, show placeholder
+    document.getElementById('videoPreview').classList.add('hidden');
+    document.getElementById('camera-placeholder').classList.remove('hidden');
+    document.getElementById('camera-controls').classList.add('hidden');
+    
+    // Hide captured results
+    document.getElementById('captured-image-preview').classList.add('hidden');
+    document.getElementById('captured-video-preview').classList.add('hidden');
+    
+    isPreviewActive = false;
+    isRecording = false;
+    hideError();
+    hideSuccess();
+}
+
+async function testCapture() {
+    if (!isPreviewActive) return;
+
+    try {
+        const settings = getCurrentSettings();
+        const video = document.getElementById('videoPreview');
+        const canvas = document.getElementById('captureCanvas');
+        
+        const resolution = settings.resolution.split('x');
+        const width = parseInt(resolution[0]);
+        const height = parseInt(resolution[1]);
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, width, height);
+        
+        canvas.toBlob(function(blob) {
+            const dataUrl = canvas.toDataURL('image/jpeg', settings.imageQuality);
+            
+            // Show captured image
+            document.getElementById('captured-image').src = dataUrl;
+            
+            const fileSizeKB = Math.round(blob.size / 1024);
+            const qualityPercent = Math.round(settings.imageQuality * 100);
+            document.getElementById('capture-info').textContent = 
+                `${width}x${height}, ${qualityPercent}% image quality, ${fileSizeKB}KB`;
+            
+            // Hide video preview, show image
+            document.getElementById('captured-video-preview').classList.add('hidden');
+            document.getElementById('captured-image-preview').classList.remove('hidden');
+            showSuccess();
+            
+        }, 'image/jpeg', settings.imageQuality);
+        
+    } catch (error) {
+        showError('Failed to capture image: ' + error.message);
+    }
+}
+
+async function startVideoRecording() {
+    if (!isPreviewActive || isRecording) return;
+
+    try {
+        const settings = getCurrentSettings();
+        recordedChunks = [];
+        
+        // Determine MIME type based on format
+        const mimeType = settings.videoFormat === 'mp4' 
+            ? 'video/mp4' 
+            : 'video/webm';
+        
+        mediaRecorder = new MediaRecorder(videoStream, {
+            mimeType: mimeType
+        });
+        
+        mediaRecorder.ondataavailable = function(event) {
+            if (event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
+        };
+        
+        mediaRecorder.onstop = function() {
+            const blob = new Blob(recordedChunks, { type: mimeType });
+            const videoUrl = URL.createObjectURL(blob);
+            
+            // Show recorded video
+            const capturedVideo = document.getElementById('captured-video');
+            capturedVideo.src = videoUrl;
+            
+            const fileSizeMB = (blob.size / (1024 * 1024)).toFixed(2);
+            const resolution = settings.resolution;
+            const quality = settings.videoQuality;
+            const format = settings.videoFormat.toUpperCase();
+            
+            document.getElementById('recording-info').textContent = 
+                `${resolution}, ${quality} ${format} video, ${fileSizeMB}MB`;
+            
+            // Hide image preview, show video
+            document.getElementById('captured-image-preview').classList.add('hidden');
+            document.getElementById('captured-video-preview').classList.remove('hidden');
+            showSuccess();
+        };
+        
+        mediaRecorder.start();
+        isRecording = true;
+        updateControlButtons();
+        
+    } catch (error) {
+        showError('Failed to start video recording: ' + error.message);
+    }
+}
+
+function stopVideoRecording() {
+    if (!isRecording || !mediaRecorder) return;
+    
+    mediaRecorder.stop();
+    isRecording = false;
+    updateControlButtons();
+}
+
+function showError(message) {
+    document.getElementById('error-message').textContent = message;
+    document.getElementById('camera-error').classList.remove('hidden');
+}
+
+function hideError() {
+    document.getElementById('camera-error').classList.add('hidden');
+}
+
+function showSuccess() {
+    document.getElementById('camera-success').classList.remove('hidden');
+}
+
+function hideSuccess() {
+    document.getElementById('camera-success').classList.add('hidden');
+}
+
+function updateStorageEstimates() {
+    const settings = getCurrentSettings();
+    
+    document.getElementById('storage-5min').textContent = calculateStorage(5);
+    document.getElementById('storage-15min').textContent = calculateStorage(15);
+    document.getElementById('storage-30min').textContent = calculateStorage(30);
+}
+
+function calculateStorage(minutes) {
+    const settings = getCurrentSettings();
+    let sizeKB = 0;
+    
+    if (settings.mode === 'capture') {
+        const capturesPerMinute = 60 / settings.interval;
+        const totalCaptures = capturesPerMinute * minutes;
+        const avgImageSize = getImageSizeEstimate(settings);
+        sizeKB = totalCaptures * avgImageSize;
+    } else {
+        const avgVideoSizeMB = getVideoSizeEstimate(settings);
+        sizeKB = avgVideoSizeMB * minutes * 1024;
+    }
+    
+    if (sizeKB > 1024) {
+        return Math.round(sizeKB / 1024) + 'MB';
+    } else {
+        return Math.round(sizeKB) + 'KB';
+    }
+}
+
+function getImageSizeEstimate(settings) {
+    const baseSizes = {
+        '640x480': 25,
+        '800x600': 40,
+        '1280x720': 60,
+        '1920x1080': 120
+    };
+    
+    return (baseSizes[settings.resolution] || 60) * settings.imageQuality;
+}
+
+function getVideoSizeEstimate(settings) {
+    const baseSizes = {
+        '480p': 2,
+        '720p': 4,
+        '1080p': 8
+    };
+    
+    const multiplier = settings.videoFormat === 'mp4' ? 1.2 : 1.0;
+    return (baseSizes[settings.videoQuality] || 4) * multiplier;
+}
+
+function toggleSectionVisibility() {
+    const enabled = document.getElementById('enable_recording_toggle').checked;
+    console.log('Recording enabled:', enabled); // Debug log
+    
+    const sections = [
+        'recording_mode_section',
+        'image_capture_settings', 
+        'video_recording_settings',
+        'common_settings',
+        'camera-test-section',
+        'storage_estimates'
+    ];
+    
+    sections.forEach(sectionId => {
+        const section = document.getElementById(sectionId);
+        if (section) {
+            section.style.display = enabled ? 'block' : 'none';
+            console.log(`Section ${sectionId} display:`, section.style.display); // Debug log
+        }
+    });
+    
+    // Stop camera if disabling recording
+    if (!enabled && isPreviewActive) {
+        stopCameraTest();
+    }
+}
+
+function toggleModeSpecificSettings() {
+    const mode = document.querySelector('input[name="recording_mode"]:checked')?.value || 'capture';
+    
+    const imageSettings = document.getElementById('image_capture_settings');
+    const videoSettings = document.getElementById('video_recording_settings');
+    
+    if (imageSettings && videoSettings) {
+        if (mode === 'capture') {
+            imageSettings.style.display = 'block';
+            videoSettings.style.display = 'none';
+        } else {
+            imageSettings.style.display = 'none';
+            videoSettings.style.display = 'block';
+        }
+    }
+    
+    updateCurrentSettingsDisplay();
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Interval slider
+    const intervalSlider = document.getElementById('capture_interval_slider');
+    const intervalDisplay = document.getElementById('interval_display');
+    
+    if (intervalSlider && intervalDisplay) {
+        intervalSlider.addEventListener('input', function() {
+            intervalDisplay.textContent = this.value;
+            updateCurrentSettingsDisplay();
+        });
+    }
+    
+    // Enable/disable toggle
+    const enableToggle = document.getElementById('enable_recording_toggle');
+    if (enableToggle) {
+        enableToggle.addEventListener('change', toggleSectionVisibility);
+        toggleSectionVisibility(); // Initial state
+    }
+    
+    // Recording mode radio buttons
+    const modeRadios = document.querySelectorAll('input[name="recording_mode"]');
+    modeRadios.forEach(radio => {
+        radio.addEventListener('change', toggleModeSpecificSettings);
+    });
+    toggleModeSpecificSettings(); // Initial state
+    
+    // Other settings changes
+    const settingsInputs = document.querySelectorAll('select[name="resolution"], select[name="image_quality"], select[name="video_quality"], select[name="video_format"]');
+    settingsInputs.forEach(input => {
+        input.addEventListener('change', updateCurrentSettingsDisplay);
+    });
+    
+    // Initial update
+    updateCurrentSettingsDisplay();
+});
+</script>

@@ -23,7 +23,7 @@
                                @input="updateRange()"
                                name="scale_min" 
                                min="0" max="5"
-                               value="{{ scale_min or 0 }}"
+                               value="{{ settings_data.scale_min or 0 }}"
                                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                     </div>
                     <div class="flex-1">
@@ -33,7 +33,7 @@
                                @input="updateRange()"
                                name="scale_max" 
                                min="1" max="10"
-                               value="{{ scale_max or 3 }}"
+                               value="{{ settings_data.scale_max or 3 }}"
                                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                     </div>
                 </div>
@@ -79,7 +79,7 @@
                         <p class="text-sm text-gray-500">Randomly shuffle questions within each category</p>
                     </div>
                     <input type="checkbox" name="phq9_randomize_questions" value="1" 
-                           {{ 'checked' if phq9_randomize_questions else '' }}
+                           {{ 'checked' if settings_data.phq9_randomize_questions else '' }}
                            class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
                 </div>
                 
@@ -89,7 +89,7 @@
                         <p class="text-sm text-gray-500">Display progress bar during assessment</p>
                     </div>
                     <input type="checkbox" name="phq9_show_progress" value="1" 
-                           {{ 'checked' if phq9_show_progress else '' }}
+                           {{ 'checked' if settings_data.phq9_show_progress else '' }}
                            class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
                 </div>
                 
@@ -97,10 +97,10 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">Questions Per Page</label>
                     <select name="phq9_questions_per_page" 
                             class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                        <option value="1" {{ 'selected' if phq9_questions_per_page == 1 else '' }}>1 question per page</option>
-                        <option value="3" {{ 'selected' if phq9_questions_per_page == 3 else '' }}>3 questions per page</option>
-                        <option value="5" {{ 'selected' if phq9_questions_per_page == 5 else '' }}>5 questions per page</option>
-                        <option value="0" {{ 'selected' if phq9_questions_per_page == 0 else '' }}>All questions on one page</option>
+                        <option value="1" {{ 'selected' if settings_data.phq9_questions_per_page == 1 else '' }}>1 question per page</option>
+                        <option value="3" {{ 'selected' if settings_data.phq9_questions_per_page == 3 else '' }}>3 questions per page</option>
+                        <option value="5" {{ 'selected' if settings_data.phq9_questions_per_page == 5 else '' }}>5 questions per page</option>
+                        <option value="0" {{ 'selected' if settings_data.phq9_questions_per_page == 0 else '' }}>All questions on one page</option>
                     </select>
                 </div>
 
@@ -108,7 +108,7 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">PHQ-9 Instructions</label>
                     <textarea name="phq9_instructions" rows="4" 
                               placeholder="Instructions shown to patients before PHQ-9 assessment..."
-                              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">{{ phq9_instructions }}</textarea>
+                              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">{{ settings_data.phq9_instructions }}</textarea>
                 </div>
             </div>
         </div>
@@ -135,10 +135,14 @@
 <script>
 function scaleConfig() {
     return {
-        minValue: {{ scale_min or 0 }},
-        maxValue: {{ scale_max or 3 }},
+        minValue: {{ settings_data.scale_min or 0 }},
+        maxValue: {{ settings_data.scale_max or 3 }},
         responseOptions: [],
-        scaleLabels: {{ scale_labels|tojson if scale_labels else '{}' }},
+        scaleLabels: {
+            {% for i in range(0, 10) %}
+            '{{ i }}': '{{ settings_data["scale_label_" ~ i] or "" }}',
+            {% endfor %}
+        },
         defaultLabels: {
             0: 'Tidak pernah',
             1: 'Beberapa hari terakhir', 

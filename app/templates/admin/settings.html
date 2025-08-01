@@ -1,23 +1,82 @@
 <!-- app/templates/admin/settings.html -->
 {% extends "base.html" %}
-{% block title %}Settings - Admin Dashboard{% endblock %}
+{% block title %}Settings - {{ active_section|title }} - Admin Dashboard{% endblock %}
 
 {% block nav %}
-{% include 'components/admin_nav.html' %}
+<nav class="bg-white shadow-sm border-b border-secondary-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <div class="flex items-center space-x-8">
+                <h1 class="text-xl font-semibold text-secondary-900">Settings</h1>
+                <div class="flex space-x-4">
+                    <a href="{{ url_for('admin.dashboard') }}" 
+                       class="text-secondary-600 hover:text-secondary-900 pb-4 pt-4">
+                        Overview
+                    </a>
+                    <a href="{{ url_for('settings.show_settings_section', section='openquestion') }}" 
+                       class="{{ 'text-primary-600 border-b-2 border-primary-600' if active_section == 'openquestion' else 'text-secondary-600 hover:text-secondary-900' }} pb-4 pt-4">
+                        AI Assistant
+                    </a>
+                    <a href="{{ url_for('settings.show_settings_section', section='consent') }}" 
+                       class="{{ 'text-primary-600 border-b-2 border-primary-600' if active_section == 'consent' else 'text-secondary-600 hover:text-secondary-900' }} pb-4 pt-4">
+                        Consent Form
+                    </a>
+                    <a href="{{ url_for('settings.show_settings_section', section='phq9') }}" 
+                       class="{{ 'text-primary-600 border-b-2 border-primary-600' if active_section == 'phq9' else 'text-secondary-600 hover:text-secondary-900' }} pb-4 pt-4">
+                        PHQ-9 Assessment
+                    </a>
+                    <a href="{{ url_for('settings.show_settings_section', section='recording') }}" 
+                       class="{{ 'text-primary-600 border-b-2 border-primary-600' if active_section == 'recording' else 'text-secondary-600 hover:text-secondary-900' }} pb-4 pt-4">
+                        Camera & Recording
+                    </a>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button onclick="document.getElementById('settingsForm').submit()" 
+                        class="bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700 text-sm">
+                    Save Settings
+                </button>
+                <span class="text-sm text-secondary-600">{{ current_user.username }}</span>
+                <a href="{{ url_for('auth.logout') }}" 
+                   class="text-sm text-secondary-600 hover:text-secondary-900">
+                    Logout
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
 {% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-    <div class="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div class="mb-8">
-            <h2 class="text-3xl font-bold text-gray-900 mb-2">Assessment Configuration</h2>
-            <p class="text-gray-600">Customize your mental health assessment platform settings</p>
-        </div>
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <form id="settingsForm" method="POST" action="{{ url_for('settings.save_settings_section', section=active_section) }}">
         
-        {% include 'components/flash_messages.html' %}
-        {% include 'admin/settings_tabs.html' %}
-    </div>
+        {% if active_section == 'openquestion' %}
+        <!-- AI Assistant Section -->
+        <div class="max-w-5xl">
+            {% include 'admin/settings/openquestion_tab.html' %}
+        </div>
+
+        {% elif active_section == 'consent' %}
+        <!-- Consent Form Section -->
+        <div class="max-w-5xl">
+            {% include 'admin/settings/consent_tab.html' %}
+        </div>
+
+        {% elif active_section == 'phq9' %}
+        <!-- PHQ-9 Assessment Section -->
+        <div class="max-w-6xl">
+            {% include 'admin/settings/phq_category_management.html' %}
+        </div>
+
+        {% elif active_section == 'recording' %}
+        <!-- Camera & Recording Section -->
+        <div class="max-w-5xl">
+            {% include 'admin/settings/image_capture_tab.html' %}
+        </div>
+
+        {% endif %}
+    </form>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 {% endblock %}

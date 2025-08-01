@@ -53,7 +53,7 @@ def register_commands(app):
         except Exception as e:
             click.echo(f"Error creating database tables: {e}")
     
-    @app.cli.command("seed-users") 
+    @app.cli.command("seedu") 
     def seed_users():
         """Seeds the database with predefined users."""
         with app.app_context():
@@ -260,38 +260,44 @@ def register_commands(app):
         for setting in settings:
             click.echo(setting.key)
         click.echo("-" * 50)
-
     @app.cli.command("routes")
-    def list_routes():
+    @click.option("--format", type=click.Choice(["plain", "md"]), default="plain",
+                help="Output format: plain text or Markdown table.")
+    def list_routes(format):
         """List all registered routes/endpoints."""
+        def clean_methods(methods):
+            return sorted(m for m in methods if m not in ("HEAD", "OPTIONS"))
+
         routes = []
         for rule in app.url_map.iter_rules():
             routes.append({
-                'endpoint': rule.endpoint,
-                'methods': list(rule.methods),
-                'path': rule.rule
+                "blueprint": rule.endpoint.split(".", 1)[0] if "." in rule.endpoint else "main",
+                "endpoint": rule.endpoint,
+                "methods": clean_methods(rule.methods),
+                "path": rule.rule,
             })
-        
-        # Sort by path
-        routes.sort(key=lambda x: x['path'])
-        
-        click.echo(f"Found {len(routes)} routes:")
+
+        routes.sort(key=lambda r: (r["blueprint"], r["path"]))
+
+        if format == "md":
+            click.echo(f"Found {len(routes)} routes.\n")
+            click.echo("| Blueprint | Methods | Path | Endpoint |")
+            click.echo("|----------|---------|------|----------|")
+            for r in routes:
+                methods = ",".join(r["methods"])
+                click.echo(f"| {r['blueprint']} | {methods} | `{r['path']}` | {r['endpoint']} |")
+            return
+
+        # plain format
+        click.echo(f"Found {len(routes)} routes.")
         click.echo("-" * 80)
-        
-        # Group by blueprint
-        blueprints = {}
-        for route in routes:
-            bp_name = route['endpoint'].split('.')[0] if '.' in route['endpoint'] else 'main'
-            if bp_name not in blueprints:
-                blueprints[bp_name] = []
-            blueprints[bp_name].append(route)
-        
-        for bp_name, bp_routes in blueprints.items():
-            click.echo(f"\n{bp_name.upper()} BLUEPRINT:")
-            for route in bp_routes:
-                methods = [m for m in route['methods'] if m not in ['HEAD', 'OPTIONS']]
-                methods_str = ', '.join(methods)
-                click.echo(f"  {methods_str:<12} {route['path']:<40} → {route['endpoint']}")
+        current_bp = None
+        for r in routes:
+            if r["blueprint"] != current_bp:
+                current_bp = r["blueprint"]
+                click.echo(f"\n{current_bp.upper()}:", nl=True)
+            methods = ",".join(r["methods"])
+            click.echo(f"  {methods:<10} {r['path']:<35} → {r['endpoint']}")
     
     @app.cli.command("clear-settings")
     def clear_settings():

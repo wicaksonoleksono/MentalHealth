@@ -2,10 +2,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, flash
 from flask_login import login_user, logout_user, current_user
 from app.services.auth import AuthService
-
 auth_bp = Blueprint('auth', __name__)
-
-
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:

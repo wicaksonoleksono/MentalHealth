@@ -1,168 +1,232 @@
-# app/services/settings.py
-from app import db
-from app.models.settings import AppSetting
-import json
+# app/services/settings.py - Clean version
 
+from app import db
+from app.models.settings import AppSetting,SettingsKey
+import json
 class SettingsException(Exception):
     pass
-
 class SettingsService:
+    @staticmethod
+    def get(setting_key):
+        """Get single setting value by enum key"""
+        if isinstance(setting_key, str):
+            setting_key = SettingsKey.get_by_key(setting_key)
+        
+        if not setting_key:
+            raise SettingsException(f"Unknown setting key")
+        
+        setting = AppSetting.query.filter_by(key=setting_key.key).first()
+        
+        if not setting:
+            return setting_key.default
+        
+        # Convert based on data type
+        return SettingsService._convert_value(setting.value, setting_key.data_type)
     
     @staticmethod
-    def get_all_settings():
-        """Get all app settings for display"""
-        settings = {}
+    def set(setting_key, value):
+        """Set single setting value"""
+        if isinstance(setting_key, str):
+            setting_key = SettingsKey.get_by_key(setting_key)
         
-        # Basic settings
-        openq_setting = AppSetting.query.filter_by(key='openquestion_prompt').first()
-        settings['openquestion_prompt'] = openq_setting.value if openq_setting else ''
+        if not setting_key:
+            raise SettingsException(f"Unknown setting key")
         
-        consent_setting = AppSetting.query.filter_by(key='consent_form_text').first()
-        settings['consent_form_text'] = consent_setting.value if consent_setting else ''
+        # Validate value
+        validated_value = SettingsService._validate_value(value, setting_key)
         
-        openq_instructions = AppSetting.query.filter_by(key='openquestion_instructions').first()
-        settings['openquestion_instructions'] = openq_instructions.value if openq_instructions else ''
-        
-        phq9_instructions = AppSetting.query.filter_by(key='phq9_instructions').first()
-        settings['phq9_instructions'] = phq9_instructions.value if phq9_instructions else ''
-        
-        # Recording settings
-        recording_mode = AppSetting.query.filter_by(key='recording_mode').first()
-        settings['recording_mode'] = recording_mode.value if recording_mode else 'capture'
-        
-        # Image capture settings
-        capture_interval = AppSetting.query.filter_by(key='capture_interval').first()
-        settings['capture_interval'] = int(capture_interval.value) if capture_interval else 5
-        
-        image_quality = AppSetting.query.filter_by(key='image_quality').first()
-        settings['image_quality'] = float(image_quality.value) if image_quality else 0.8
-        
-        # Video settings
-        video_quality = AppSetting.query.filter_by(key='video_quality').first()
-        settings['video_quality'] = video_quality.value if video_quality else '720p'
-        
-        video_format = AppSetting.query.filter_by(key='video_format').first()
-        settings['video_format'] = video_format.value if video_format else 'webm'
-        
-        # Common settings
-        resolution = AppSetting.query.filter_by(key='resolution').first()
-        settings['resolution'] = resolution.value if resolution else '1280x720'
-        
-        enable_recording = AppSetting.query.filter_by(key='enable_recording').first()
-        settings['enable_recording'] = enable_recording.value == 'true' if enable_recording else True
-        
-        # Scale settings
-        scale_min = AppSetting.query.filter_by(key='scale_min').first()
-        scale_max = AppSetting.query.filter_by(key='scale_max').first()
-        
-        min_val = int(scale_min.value) if scale_min else 0
-        max_val = int(scale_max.value) if scale_max else 3
-        
-        scale_labels = {}
-        for i in range(min_val, max_val + 1):
-            label_setting = AppSetting.query.filter_by(key=f'scale_label_{i}').first()
-            if label_setting:
-                scale_labels[str(i)] = label_setting.value
-        
-        settings['scale_min'] = min_val
-        settings['scale_max'] = max_val
-        settings['scale_labels'] = scale_labels
-        
-        # PHQ settings
-        phq9_randomize = AppSetting.query.filter_by(key='phq9_randomize_questions').first()
-        settings['phq9_randomize_questions'] = phq9_randomize.value == 'true' if phq9_randomize else False
-        
-        phq9_progress = AppSetting.query.filter_by(key='phq9_show_progress').first()
-        settings['phq9_show_progress'] = phq9_progress.value == 'true' if phq9_progress else True
-        
-        phq9_per_page = AppSetting.query.filter_by(key='phq9_questions_per_page').first()
-        settings['phq9_questions_per_page'] = int(phq9_per_page.value) if phq9_per_page else 1
-        
-        # PHQ Categories
-        from app.models.assessment import PHQCategoryType
-        settings['phq_category_types'] = PHQCategoryType.get_all_data()
-        
-        existing_categories = []
-        phq_categories = {}
-        
-        for cat_num in range(1, 10):
-            exists_setting = AppSetting.query.filter_by(key=f'phq_category_{cat_num}_exists').first()
-            if exists_setting and exists_setting.value == '1':
-                existing_categories.append(cat_num)
-                questions_setting = AppSetting.query.filter_by(key=f'phq_category_{cat_num}_questions').first()
-                if questions_setting and questions_setting.value:
-                    questions = json.loads(questions_setting.value)
-                else:
-                    cat_type = PHQCategoryType.get_by_number(cat_num)
-                    questions = [cat_type.default_question] if cat_type else []
-                
-                phq_categories[cat_num] = {'questions': questions}
-        
-        settings['existing_categories'] = existing_categories
-        settings['existing_category_numbers'] = existing_categories
-        settings['phq_categories'] = phq_categories
-        
-        return settings
-    
-    @staticmethod
-    def update_settings(form_data):
-        """Update app settings from form data"""
-        updated_count = 0
-        phq_questions = {}
-        
-        # Define recording-related keys
-        recording_keys = {
-            'recording_mode', 'capture_interval', 'image_quality', 
-            'video_quality', 'video_format', 'resolution', 'enable_recording'
-        }
-        
-        for key, value in form_data.items():
-            if value is None:
-                continue
-            
-            # Handle PHQ category exists flags
-            if key.startswith('phq_category_') and key.endswith('_exists'):
-                setting = AppSetting.query.filter_by(key=key).first()
-                if setting:
-                    setting.value = str(value)
-                else:
-                    setting = AppSetting(key=key, value=str(value))
-                    db.session.add(setting)
-                updated_count += 1
-                continue
-            
-            # Handle PHQ questions
-            if key.startswith('phq_category_') and '_question_' in key:
-                parts = key.split('_')
-                cat_num = int(parts[2])
-                if cat_num not in phq_questions:
-                    phq_questions[cat_num] = []
-                if value.strip():
-                    phq_questions[cat_num].append(value.strip())
-                continue
-            if not key.startswith('phq_') or key in recording_keys:
-                setting = AppSetting.query.filter_by(key=key).first()
-                if setting:
-                    if setting.value != str(value):
-                        setting.value = str(value)
-                        updated_count += 1
-                else:
-                    setting = AppSetting(key=key, value=str(value))
-                    db.session.add(setting)
-                    updated_count += 1
-        
-        # Save PHQ questions
-        for cat_num, questions in phq_questions.items():
-            if questions:
-                questions_setting = AppSetting.query.filter_by(key=f'phq_category_{cat_num}_questions').first()
-                questions_json = json.dumps(questions)
-                
-                if questions_setting:
-                    questions_setting.value = questions_json
-                else:
-                    questions_setting = AppSetting(key=f'phq_category_{cat_num}_questions', value=questions_json)
-                    db.session.add(questions_setting)
-                updated_count += 1
+        # Get or create setting
+        setting = AppSetting.query.filter_by(key=setting_key.key).first()
+        if setting:
+            setting.value = str(validated_value)
+        else:
+            setting = AppSetting(key=setting_key.key, value=str(validated_value))
+            db.session.add(setting)
         
         db.session.commit()
+        return validated_value
+    
+    @staticmethod
+    def get_group(group_method):
+        """Get all settings for a group (recording, phq9, etc.)"""
+        if isinstance(group_method, str):
+            group_method = getattr(SettingsKey, f'get_{group_method}_settings')
+        
+        settings_keys = group_method()
+        result = {}
+        
+        for setting_key in settings_keys:
+            result[setting_key.key] = SettingsService.get(setting_key)
+        
+        return result
+    
+    @staticmethod
+    def get_all():
+        """Get all settings organized by category"""
+        return {
+            'recording': SettingsService.get_group(SettingsKey.get_recording_settings),
+            'phq9': SettingsService.get_group(SettingsKey.get_phq9_settings),
+            'text': SettingsService.get_group(SettingsKey.get_text_settings)
+        }
+    
+    @staticmethod
+    def update_bulk(settings_dict):
+        """Update multiple settings at once"""
+        updated_count = 0
+        
+        # Handle PHQ category data first
+        phq_categories = {}
+        other_settings = {}
+        
+        for key, value in settings_dict.items():
+            if key.startswith('phq_category_') and key.endswith('_exists'):
+                # PHQ category exists flag
+                cat_num = key.split('_')[2]
+                if cat_num not in phq_categories:
+                    phq_categories[cat_num] = {'exists': True, 'questions': [], 'name': f'Category {cat_num}'}
+            elif key.startswith('phq_category_') and key.endswith('_name'):
+                # PHQ category name
+                cat_num = key.split('_')[2]
+                if cat_num not in phq_categories:
+                    phq_categories[cat_num] = {'exists': True, 'questions': [], 'name': value}
+                else:
+                    phq_categories[cat_num]['name'] = value
+            elif key.startswith('phq_category_') and '_question_' in key:
+                # PHQ category question
+                parts = key.split('_')
+                cat_num = parts[2]
+                question_idx = int(parts[4])
+                if cat_num not in phq_categories:
+                    phq_categories[cat_num] = {'exists': True, 'questions': [], 'name': f'Category {cat_num}'}
+                # Ensure questions list is long enough
+                while len(phq_categories[cat_num]['questions']) <= question_idx:
+                    phq_categories[cat_num]['questions'].append('')
+                phq_categories[cat_num]['questions'][question_idx] = value
+            else:
+                other_settings[key] = value
+        
+        # Save PHQ category data as JSON
+        import json
+        for cat_num, data in phq_categories.items():
+            if data['exists']:
+                # Save existence flag
+                exists_key = f'phq_category_{cat_num}_exists'
+                SettingsService._save_raw_setting(exists_key, '1')
+                updated_count += 1
+                
+                # Save category name
+                name_key = f'phq_category_{cat_num}_name'
+                SettingsService._save_raw_setting(name_key, data['name'])
+                updated_count += 1
+                
+                # Save questions as JSON
+                questions_key = f'phq_category_{cat_num}_questions'
+                # Filter out empty questions
+                questions = [q for q in data['questions'] if q.strip()]
+                SettingsService._save_raw_setting(questions_key, json.dumps(questions))
+                updated_count += 1
+        
+        # Handle regular settings
+        for key, value in other_settings.items():
+            setting_key = SettingsKey.get_by_key(key)
+            if setting_key:
+                SettingsService.set(setting_key, value)
+                updated_count += 1
+        
         return updated_count
+    
+    @staticmethod
+    def reset_to_defaults():
+        """Reset all settings to their default values"""
+        reset_count = 0
+        
+        for setting_key in SettingsKey:
+            if setting_key.default is not None:
+                SettingsService.set(setting_key, setting_key.default)
+                reset_count += 1
+        
+        return reset_count
+    
+    @staticmethod
+    def get_recording_config():
+        """Get recording configuration for frontend"""
+        recording_settings = SettingsService.get_group(SettingsKey.get_recording_settings)
+        
+        return {
+            'mode': recording_settings['recording_mode'],
+            'enabled': recording_settings['enable_recording'],
+            'interval': recording_settings['capture_interval'],
+            'resolution': recording_settings['resolution'],
+            'image_quality': recording_settings['image_quality'],
+            'video_quality': recording_settings['video_quality'],
+            'video_format': recording_settings['video_format']
+        }
+    
+    @staticmethod
+    def get_phq9_config():
+        """Get PHQ9 configuration for frontend"""
+        phq9_settings = SettingsService.get_group(SettingsKey.get_phq9_settings)
+        
+        # Build scale labels
+        scale_labels = {}
+        min_val = phq9_settings['scale_min']
+        max_val = phq9_settings['scale_max']
+        
+        for i in range(min_val, max_val + 1):
+            label_key = f'scale_label_{i}'
+            if label_key in phq9_settings:
+                scale_labels[str(i)] = phq9_settings[label_key]
+        
+        return {
+            'instructions': phq9_settings['phq9_instructions'],
+            'randomize': phq9_settings['phq9_randomize_questions'],
+            'show_progress': phq9_settings['phq9_show_progress'],
+            'questions_per_page': phq9_settings['phq9_questions_per_page'],
+            'scale': {
+                'min': min_val,
+                'max': max_val,
+                'labels': scale_labels
+            }
+        }
+    @staticmethod
+    def _convert_value(value, data_type):
+        """Convert string value to proper type"""
+        if value is None:
+            return None
+        
+        if data_type == 'boolean':
+            return value.lower() in ('true', '1', 'yes', 'on')
+        elif data_type == 'integer':
+            return int(value)
+        elif data_type == 'float':
+            return float(value)
+        else:  # string, text, choice
+            return value
+    
+    @staticmethod
+    def _save_raw_setting(key, value):
+        """Save raw setting value without validation"""
+        setting = AppSetting.query.filter_by(key=key).first()
+        if setting:
+            setting.value = str(value)
+        else:
+            setting = AppSetting(key=key, value=str(value))
+            db.session.add(setting)
+        db.session.commit()
+    
+    @staticmethod
+    def _validate_value(value, setting_key):
+        """Validate value against setting constraints"""
+        if setting_key.data_type == 'choice' and setting_key.choices:
+            if value not in setting_key.choices:
+                raise SettingsException(f"Invalid choice for {setting_key.key}: {value}")
+        
+        if setting_key.data_type == 'float':
+            if setting_key.key == 'image_quality' and not (0.1 <= float(value) <= 1.0):
+                raise SettingsException("Image quality must be between 0.1 and 1.0")
+        
+        if setting_key.data_type == 'integer':
+            if setting_key.key == 'capture_interval' and int(value) < 1:
+                raise SettingsException("Capture interval must be at least 1 second")
+        
+        return value

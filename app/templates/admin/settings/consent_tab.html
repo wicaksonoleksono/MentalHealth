@@ -1,0 +1,120 @@
+<!-- app/templates/admin/consent_tab.html -->
+<div class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-8 border border-purple-100">
+    <h3 class="text-2xl font-semibold text-gray-900 mb-4 flex items-center">
+        <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center mr-4">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        Consent Form Configuration
+    </h3>
+    <p class="text-gray-600 mb-8">Configure the consent form that patients see before starting assessments.</p>
+    
+    <div class="space-y-6">
+        <!-- Consent Form Text -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-3">Consent Form Text</label>
+            <div class="relative">
+                <textarea name="consent_form_text" rows="20"
+                    class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none shadow-sm"
+                    placeholder="Enter your consent form text here...">{{ settings_data.consent_form_text or 'CONSENT TO PARTICIPATE IN MENTAL HEALTH ASSESSMENT\n\nI understand that I am being asked to participate in a mental health assessment that includes:\n• Completion of standardized questionnaires (PHQ-9)\n• Participation in an AI-assisted conversation about my mental health\n• Optional audio/video recording during the assessment for research purposes\n\nI understand that:\n• My participation is voluntary and I can withdraw at any time\n• My responses will be kept confidential and used only for research purposes\n• The data collected may be used in aggregate form for research publications\n• If I express thoughts of self-harm, appropriate resources will be provided\n• This assessment is not a substitute for professional mental health treatment\n\nI consent to participate in this research and understand my rights as described above.\n\nBy clicking "I Agree" below, I indicate my informed consent to participate.' }}</textarea>
+                <div class="absolute bottom-3 right-3 text-xs text-gray-400"
+                     x-data="{ count: 0 }"
+                     x-init="count = $el.parentElement.querySelector('textarea').value.length"
+                     x-text="count + ' characters'">
+                </div>
+            </div>
+            
+            <div class="mt-4 bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <div class="flex">
+                    <svg class="w-5 h-5 text-purple-500 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="text-sm text-purple-700">
+                        <strong>Legal Note:</strong> Ensure your consent form complies with local privacy laws and institutional review board requirements. Include information about data collection, storage, and participant rights.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Consent Form Preview -->
+        <div class="bg-white rounded-lg border border-purple-200 p-6">
+            <h4 class="font-medium text-gray-900 mb-4">Consent Form Preview</h4>
+            <div class="bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto">
+                <div class="text-sm text-gray-700 whitespace-pre-line" 
+                     x-data="{ preview: '' }" 
+                     x-init="preview = document.querySelector('[name=consent_form_text]').value"
+                     x-text="preview">
+                </div>
+            </div>
+            <div class="mt-4 text-xs text-gray-500">
+                This is how the consent form will appear to patients. Make sure all required information is included and the language is clear and accessible.
+            </div>
+        </div>
+
+        <!-- Quick Templates -->
+        <div class="bg-white rounded-lg border border-purple-200 p-6">
+            <h4 class="font-medium text-gray-900 mb-4">Quick Templates</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button type="button" onclick="loadTemplate('research')" 
+                        class="text-left p-4 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors">
+                    <div class="font-medium text-gray-900">Research Study</div>
+                    <div class="text-sm text-gray-600 mt-1">Standard research consent with data collection disclosure</div>
+                </button>
+                <button type="button" onclick="loadTemplate('clinical')" 
+                        class="text-left p-4 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors">
+                    <div class="font-medium text-gray-900">Clinical Assessment</div>
+                    <div class="text-sm text-gray-600 mt-1">Healthcare setting consent for assessment purposes</div>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadTemplate(type) {
+    const textarea = document.querySelector('[name=consent_form_text]');
+    
+    const templates = {
+        research: `CONSENT TO PARTICIPATE IN MENTAL HEALTH RESEARCH
+
+I understand that I am being asked to participate in a research study about mental health assessment that includes:
+• Completion of standardized questionnaires (PHQ-9)
+• Participation in an AI-assisted conversation about my mental health
+• Optional audio/video recording during the assessment for research purposes
+
+I understand that:
+• My participation is voluntary and I can withdraw at any time without penalty
+• My responses will be kept confidential and used only for research purposes
+• The data collected may be used in aggregate form for research publications
+• If I express thoughts of self-harm, appropriate resources will be provided
+• This assessment is not a substitute for professional mental health treatment
+• My data will be stored securely and destroyed after the study period
+
+I consent to participate in this research and understand my rights as described above.
+
+By clicking "I Agree" below, I indicate my informed consent to participate.`,
+
+        clinical: `CONSENT FOR MENTAL HEALTH ASSESSMENT
+
+I understand that I am about to complete a mental health assessment that includes:
+• Standardized questionnaires about my mental health
+• Conversation with an AI assistant about my current state
+• Possible recording for quality assurance purposes
+
+I understand that:
+• This assessment is part of my healthcare evaluation
+• My responses will be kept confidential according to healthcare privacy laws
+• The information may be shared with my healthcare team as appropriate
+• Emergency protocols will be followed if I express thoughts of self-harm
+• I can stop the assessment at any time
+
+By proceeding, I consent to this mental health assessment.`
+    };
+    
+    if (templates[type] && confirm('Replace current consent text with this template?')) {
+        textarea.value = templates[type];
+        textarea.dispatchEvent(new Event('input'));
+    }
+}
+</script>

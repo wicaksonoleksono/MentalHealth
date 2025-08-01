@@ -548,3 +548,30 @@ def serve_emotion_file(emotion_id):
         )
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+# Patient routes for their own data
+@patient_bp.route('/export-my-session/<session_id>')
+@login_required
+@patient_required
+def export_my_session(session_id):
+    """Allow patients to export their own session data"""
+    try:
+        assessment = Assessment.query.filter_by(
+            session_id=session_id,
+            user_id=current_user.id
+        ).first()
+        if not assessment:
+            return jsonify({'error': 'Session not found or access denied'}), 404
+        # Export the session
+        zip_path = ExportService.export_session_data(session_id, current_user.id)
+        # 
+        return send_file(
+            zip_path,
+            as_attachment=True,
+            download_name=f"my_assessment_{session_id}.zip",
+            mimetype='application/zip'
+        )
+        # 
+    except ExportException as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Export failed: {str(e)}'}), 500

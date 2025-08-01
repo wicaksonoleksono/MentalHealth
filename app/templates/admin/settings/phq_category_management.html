@@ -1,0 +1,339 @@
+<!-- PHQ-9 Category Management - Clean Implementation -->
+<div class="space-y-6">
+    <!-- Scale Configuration -->
+    {% include 'admin/settings/phq_scale_settings.html' %}
+    
+    <!-- PHQ-9 Categories Management -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900">PHQ-9 Categories</h3>
+                <p class="text-sm text-gray-600 mt-1">Manage assessment categories and their questions</p>
+            </div>
+            <button type="button" onclick="addNewCategory()" 
+                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                Add Category
+            </button>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+            <div class="flex flex-wrap gap-3">
+                <button type="button" onclick="loadDefaultCategories()" 
+                        class="bg-green-600 text-white px-3 py-2 rounded text-sm hover:bg-green-700">
+                    Load Default PHQ-9 Categories
+                </button>
+                <button type="button" onclick="clearAllCategories()" 
+                        class="bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700">
+                    Clear All Categories
+                </button>
+            </div>
+        </div>
+
+        <!-- Categories List -->
+        <div id="categories-list" class="space-y-4">
+            {% for cat_num in range(1, 20) %}
+                {% set exists_key = 'phq_category_' ~ cat_num ~ '_exists' %}
+                {% if settings_data.get(exists_key) == '1' %}
+                    {% set questions_key = 'phq_category_' ~ cat_num ~ '_questions' %}
+                    {% set questions = settings_data.get(questions_key, []) %}
+                    {% set name_key = 'phq_category_' ~ cat_num ~ '_name' %}
+                    {% set category_name = settings_data.get(name_key, 'Category ' ~ cat_num) %}
+                    
+                    <div class="category-item border border-gray-200 rounded-lg p-4" data-category="{{ cat_num }}">
+                        <input type="hidden" name="phq_category_{{ cat_num }}_exists" value="1">
+                        
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex-1">
+                                <div class="flex items-center mb-2">
+                                    <span class="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium mr-3">{{ cat_num }}</span>
+                                    <input type="text" name="phq_category_{{ cat_num }}_name" 
+                                           value="{{ category_name }}" 
+                                           class="font-medium text-gray-900 bg-transparent border-none p-0 focus:ring-0 focus:border-blue-500 border-b-2 border-transparent hover:border-gray-300"
+                                           placeholder="Category Name">
+                                </div>
+                            </div>
+                            <button type="button" onclick="removeCategory({{ cat_num }})" 
+                                    class="text-red-600 hover:text-red-800 p-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <div class="questions-container" data-category="{{ cat_num }}">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Questions:</label>
+                            {% for question in questions %}
+                                <div class="question-row flex items-center mb-2">
+                                    <input type="text" name="phq_category_{{ cat_num }}_question_{{ loop.index0 }}" 
+                                           value="{{ question }}" 
+                                           class="flex-1 p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
+                                           placeholder="Enter question...">
+                                    <button type="button" onclick="removeQuestion(this)" 
+                                            class="ml-2 text-red-600 hover:text-red-800 p-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            {% endfor %}
+                            {% if not questions %}
+                                <div class="question-row flex items-center mb-2">
+                                    <input type="text" name="phq_category_{{ cat_num }}_question_0" 
+                                           value="" 
+                                           class="flex-1 p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
+                                           placeholder="Enter question...">
+                                    <button type="button" onclick="removeQuestion(this)" 
+                                            class="ml-2 text-red-600 hover:text-red-800 p-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            {% endif %}
+                            
+                            <button type="button" onclick="addQuestion({{ cat_num }})" 
+                                    class="mt-2 text-blue-600 hover:text-blue-800 text-sm flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                </svg>
+                                Add Question
+                            </button>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="text-center py-8 text-gray-500 {{ 'hidden' if existing_categories else '' }}">
+            <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+            <p class="text-lg font-medium">No categories created yet</p>
+            <p class="text-sm">Click "Add Category" or "Load Default PHQ-9 Categories" to get started</p>
+        </div>
+    </div>
+</div>
+
+<script>
+// Default PHQ-9 categories for reference
+const defaultPHQCategories = [
+    { number: 1, name: "Anhedonia", question: "Kurang tertarik atau bergairah dalam melakukan apapun" },
+    { number: 2, name: "Depressed Mood", question: "Merasa murung, muram, atau putus asa" },
+    { number: 3, name: "Sleep Disturbance", question: "Sulit tidur atau mudah terbangun, atau terlalu banyak tidur" },
+    { number: 4, name: "Fatigue", question: "Merasa lelah atau kurang bertenaga" },
+    { number: 5, name: "Appetite Changes", question: "Kurang nafsu makan atau terlalu banyak makan" },
+    { number: 6, name: "Worthlessness", question: "Kurang percaya diri — atau merasa bahwa Anda adalah orang yang gagal atau telah mengecewakan diri sendiri atau keluarga" },
+    { number: 7, name: "Concentration", question: "Sulit berkonsentrasi pada sesuatu, misalnya membaca koran atau menonton televisi" },
+    { number: 8, name: "Psychomotor", question: "Bergerak atau berbicara sangat lambat sehingga orang lain memperhatikannya. Atau sebaliknya — merasa resah atau gelisah sehingga Anda lebih sering bergerak dari biasanya" },
+    { number: 9, name: "Suicidal Ideation", question: "Merasa lebih baik mati atau ingin melukai diri sendiri dengan cara apapun" }
+];
+
+function getNextCategoryNumber() {
+    const existing = document.querySelectorAll('.category-item');
+    const usedNumbers = Array.from(existing).map(el => parseInt(el.dataset.category));
+    
+    for (let i = 1; i <= 20; i++) {
+        if (!usedNumbers.includes(i)) {
+            return i;
+        }
+    }
+    return null;
+}
+
+function addNewCategory() {
+    const categoryNum = getNextCategoryNumber();
+    if (!categoryNum) {
+        alert('Maximum number of categories reached (20)');
+        return;
+    }
+    
+    const categoriesList = document.getElementById('categories-list');
+    const emptyState = document.getElementById('empty-state');
+    
+    const categoryHtml = `
+        <div class="category-item border border-gray-200 rounded-lg p-4" data-category="${categoryNum}">
+            <input type="hidden" name="phq_category_${categoryNum}_exists" value="1">
+            
+            <div class="flex items-start justify-between mb-4">
+                <div class="flex-1">
+                    <div class="flex items-center mb-2">
+                        <span class="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium mr-3">${categoryNum}</span>
+                        <input type="text" name="phq_category_${categoryNum}_name" 
+                               value="Category ${categoryNum}" 
+                               class="font-medium text-gray-900 bg-transparent border-none p-0 focus:ring-0 focus:border-blue-500 border-b-2 border-transparent hover:border-gray-300"
+                               placeholder="Category Name">
+                    </div>
+                </div>
+                <button type="button" onclick="removeCategory(${categoryNum})" 
+                        class="text-red-600 hover:text-red-800 p-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="questions-container" data-category="${categoryNum}">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Questions:</label>
+                <div class="question-row flex items-center mb-2">
+                    <input type="text" name="phq_category_${categoryNum}_question_0" 
+                           value="" 
+                           class="flex-1 p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
+                           placeholder="Enter question...">
+                    <button type="button" onclick="removeQuestion(this)" 
+                            class="ml-2 text-red-600 hover:text-red-800 p-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <button type="button" onclick="addQuestion(${categoryNum})" 
+                        class="mt-2 text-blue-600 hover:text-blue-800 text-sm flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                    Add Question
+                </button>
+            </div>
+        </div>
+    `;
+    
+    categoriesList.insertAdjacentHTML('beforeend', categoryHtml);
+    emptyState.classList.add('hidden');
+}
+
+function removeCategory(categoryNum) {
+    if (!confirm(`Remove category ${categoryNum} and all its questions?`)) return;
+    
+    const categoryEl = document.querySelector(`[data-category="${categoryNum}"]`);
+    categoryEl.remove();
+    
+    // Show empty state if no categories left
+    const remaining = document.querySelectorAll('.category-item');
+    if (remaining.length === 0) {
+        document.getElementById('empty-state').classList.remove('hidden');
+    }
+}
+
+function addQuestion(categoryNum) {
+    const container = document.querySelector(`[data-category="${categoryNum}"] .questions-container`);
+    const questions = container.querySelectorAll('.question-row');
+    const questionIndex = questions.length;
+    
+    const questionHtml = `
+        <div class="question-row flex items-center mb-2">
+            <input type="text" name="phq_category_${categoryNum}_question_${questionIndex}" 
+                   value="" 
+                   class="flex-1 p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
+                   placeholder="Enter question...">
+            <button type="button" onclick="removeQuestion(this)" 
+                    class="ml-2 text-red-600 hover:text-red-800 p-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+    `;
+    
+    const addButton = container.querySelector('button[onclick^="addQuestion"]');
+    addButton.insertAdjacentHTML('beforebegin', questionHtml);
+}
+
+function removeQuestion(button) {
+    const questionRow = button.closest('.question-row');
+    const container = questionRow.closest('.questions-container');
+    const categoryNum = container.dataset.category;
+    
+    // Don't allow removing if it's the last question
+    const questions = container.querySelectorAll('.question-row');
+    if (questions.length <= 1) {
+        alert('Each category must have at least one question');
+        return;
+    }
+    
+    questionRow.remove();
+    
+    // Re-index remaining questions
+    const remainingQuestions = container.querySelectorAll('.question-row input');
+    remainingQuestions.forEach((input, index) => {
+        input.name = `phq_category_${categoryNum}_question_${index}`;
+    });
+}
+
+function loadDefaultCategories() {
+    if (!confirm('This will add the standard PHQ-9 categories. Continue?')) return;
+    
+    defaultPHQCategories.forEach(cat => {
+        // Check if category already exists
+        if (document.querySelector(`[data-category="${cat.number}"]`)) return;
+        
+        const categoriesList = document.getElementById('categories-list');
+        const emptyState = document.getElementById('empty-state');
+        
+        const categoryHtml = `
+            <div class="category-item border border-gray-200 rounded-lg p-4" data-category="${cat.number}">
+                <input type="hidden" name="phq_category_${cat.number}_exists" value="1">
+                
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex-1">
+                        <div class="flex items-center mb-2">
+                            <span class="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium mr-3">${cat.number}</span>
+                            <input type="text" name="phq_category_${cat.number}_name" 
+                                   value="${cat.name}" 
+                                   class="font-medium text-gray-900 bg-transparent border-none p-0 focus:ring-0 focus:border-blue-500 border-b-2 border-transparent hover:border-gray-300"
+                                   placeholder="Category Name">
+                        </div>
+                    </div>
+                    <button type="button" onclick="removeCategory(${cat.number})" 
+                            class="text-red-600 hover:text-red-800 p-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="questions-container" data-category="${cat.number}">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Questions:</label>
+                    <div class="question-row flex items-center mb-2">
+                        <input type="text" name="phq_category_${cat.number}_question_0" 
+                               value="${cat.question}" 
+                               class="flex-1 p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
+                               placeholder="Enter question...">
+                        <button type="button" onclick="removeQuestion(this)" 
+                                class="ml-2 text-red-600 hover:text-red-800 p-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <button type="button" onclick="addQuestion(${cat.number})" 
+                            class="mt-2 text-blue-600 hover:text-blue-800 text-sm flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        Add Question
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        categoriesList.insertAdjacentHTML('beforeend', categoryHtml);
+        emptyState.classList.add('hidden');
+    });
+}
+
+function clearAllCategories() {
+    if (!confirm('Remove ALL categories and questions? This cannot be undone.')) return;
+    
+    const categories = document.querySelectorAll('.category-item');
+    categories.forEach(cat => cat.remove());
+    
+    document.getElementById('empty-state').classList.remove('hidden');
+}
+</script>
