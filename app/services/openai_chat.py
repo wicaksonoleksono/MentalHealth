@@ -1,5 +1,6 @@
-# app/services/openai_chat.py - Fixed Implementation
+# app/services/openai_chat.py
 import asyncio
+import json
 from datetime import datetime
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
@@ -7,7 +8,6 @@ from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from app import db
 from app.models.settings import AppSetting
 from app.models.assessment import Assessment, OpenQuestionResponse
-
 load_dotenv()
 class OpenAIChatService:
     def __init__(self):
@@ -32,80 +32,26 @@ class OpenAIChatService:
             raise Exception(f"Missing required setting: openquestion_instructions. Run: flask add-chat-settings")
         settings['instructions'] = instructions_setting.value
         
-        settings['max_exchanges'] = 5
         settings['enable_followup'] = True
         settings['response_style'] = 'empathetic'
         
         return settings
     
     def create_chat_session(self, assessment_session_id, user_id):
-        """Initialize chat session with system prompt."""
         settings = self.get_chat_settings()
-        
         system_prompt = settings['openquestion_prompt']
-        context_addon = f"""
-
-Context: This is part of a mental health assessment. The user is participating in an open-ended conversation portion. 
-Be supportive, empathetic, and ask thoughtful follow-up questions to understand their mental state.
-Keep responses natural and conversational. Aim for 1-3 sentences per response.
-        """
-        
-        full_system_prompt = system_prompt + context_addon
-        
+        full_system_prompt = system_prompt
         chat_session = {
             'system_prompt': full_system_prompt,
-            'messages': [{'type': 'system', 'content': full_system_prompt}],
+            'messages': [{'type': 'system', 'content': full_system_prompt, 'timestamp': datetime.utcnow().isoformat()}],
             'settings': settings,
             'exchange_count': 0,
             'started_at': datetime.utcnow().isoformat()
         }
-        
         return chat_session
     
-    async def stream_response_chunks(self, chat_session, user_message):
-        """Stream response chunks for real-time display."""
-        langchain_messages = []
-        for msg in chat_session['messages']:
-            if msg['type'] == 'system':
-                langchain_messages.append(SystemMessage(content=msg['content']))
-            elif msg['type'] == 'human':
-                langchain_messages.append(HumanMessage(content=msg['content']))
-            elif msg['type'] == 'ai':
-                langchain_messages.append(AIMessage(content=msg['content']))
-        
-        langchain_messages.append(HumanMessage(content=user_message))
-        
-        async for chunk in self.llm.astream(langchain_messages):
-            if hasattr(chunk, 'content') and chunk.content:
-                yield chunk.content
-    
-    async def generate_streaming_response_async(self, chat_session, user_message):
-        """Generate async full response from OpenAI."""
-        langchain_messages = []
-        for msg in chat_session['messages']:
-            if msg['type'] == 'system':
-                langchain_messages.append(SystemMessage(content=msg['content']))
-            elif msg['type'] == 'human':
-                langchain_messages.append(HumanMessage(content=msg['content']))
-            elif msg['type'] == 'ai':
-                langchain_messages.append(AIMessage(content=msg['content']))
-        
-        langchain_messages.append(HumanMessage(content=user_message))
-        
-        response_chunks = []
-        async for chunk in self.llm.astream(langchain_messages):
-            if hasattr(chunk, 'content') and chunk.content:
-                response_chunks.append(chunk.content)
-        
-        full_response = ''.join(response_chunks)
-        chat_session['messages'].append({'type': 'human', 'content': user_message})
-        chat_session['messages'].append({'type': 'ai', 'content': full_response})
-        chat_session['exchange_count'] += 1
-        
-        return full_response
-    
     def generate_streaming_response(self, chat_session, user_message):
-        """Sync wrapper for streaming response."""
+        """Generate streaming response and update chat session."""
         langchain_messages = []
         for msg in chat_session['messages']:
             if msg['type'] == 'system':
@@ -114,7 +60,6 @@ Keep responses natural and conversational. Aim for 1-3 sentences per response.
                 langchain_messages.append(HumanMessage(content=msg['content']))
             elif msg['type'] == 'ai':
                 langchain_messages.append(AIMessage(content=msg['content']))
-        
         langchain_messages.append(HumanMessage(content=user_message))
         
         response_chunks = []
@@ -124,12 +69,23 @@ Keep responses natural and conversational. Aim for 1-3 sentences per response.
                 yield chunk.content
         
         full_response = ''.join(response_chunks)
-        chat_session['messages'].append({'type': 'human', 'content': user_message})
-        chat_session['messages'].append({'type': 'ai', 'content': full_response})
+        current_time = datetime.utcnow().isoformat()
+        
+        # Add to chat session with timestamps
+        chat_session['messages'].append({
+            'type': 'human', 
+            'content': user_message,
+            'timestamp': current_time
+        })
+        chat_session['messages'].append({
+            'type': 'ai', 
+            'content': full_response,
+            'timestamp': current_time
+        })
         chat_session['exchange_count'] += 1
     
-    def save_chat_exchange(self, assessment_session_id, user_id, user_message, bot_response, response_time_ms=None):
-        """Save chat exchange to database."""
+    def save_conversation(self, assessment_session_id, user_id, conversation_data):
+        """Save entire conversation as raw JSON with proper timestamping."""
         assessment = Assessment.query.filter_by(
             session_id=assessment_session_id,
             user_id=user_id
@@ -138,30 +94,31 @@ Keep responses natural and conversational. Aim for 1-3 sentences per response.
         if not assessment:
             raise Exception(f"Assessment session not found: {assessment_session_id}")
         
-        user_response = OpenQuestionResponse(
-            assessment_id=assessment.id,
-            question_text="User Message",
-            response_text=user_message,
-            response_time_ms=response_time_ms
-        )
-        db.session.add(user_response)
+        # Prepare conversation metadata
+        conversation_metadata = {
+            'conversation_data': conversation_data,
+            'total_exchanges': conversation_data.get('exchange_count', 0),
+            'session_duration_seconds': None,
+            'completed_at': datetime.utcnow().isoformat()
+        }
         
-        bot_response_record = OpenQuestionResponse(
+        # Calculate session duration if possible
+        if 'started_at' in conversation_data:
+            try:
+                start_time = datetime.fromisoformat(conversation_data['started_at'])
+                end_time = datetime.utcnow()
+                duration = (end_time - start_time).total_seconds()
+                conversation_metadata['session_duration_seconds'] = duration
+            except:
+                pass
+        
+        # Save conversation as single record with JSON data
+        conversation_record = OpenQuestionResponse(
             assessment_id=assessment.id,
-            question_text="Bot Response", 
-            response_text=bot_response,
+            question_text="Full Conversation Log",
+            response_text=json.dumps(conversation_metadata, indent=2),
             response_time_ms=None
         )
-        db.session.add(bot_response_record)
-        
+        db.session.add(conversation_record)
         db.session.commit()
         return assessment
-    
-    def should_continue_chat(self, chat_session):
-        """Determine if chat should continue based on settings."""
-        settings = chat_session['settings']
-        
-        if chat_session['exchange_count'] >= settings['max_exchanges']:
-            return False, "Thank you for sharing. That completes the open questions portion of the assessment."
-        
-        return True, None

@@ -1,7 +1,7 @@
 <!-- app/templates/components/phq_category_management.html -->
 <div class="space-y-6">
     <!-- Scale Configuration -->
-    {% include 'components/phq_scale_settings.html' %}
+    {% include 'admin/phq_scale_settings.html' %}
     <!-- PHQ Categories Builder -->
     <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100 p-6">
         <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
@@ -13,7 +13,6 @@
             PHQ-9 Categories Builder
         </h3>
         <p class="text-gray-600 mb-6">Build your PHQ-9 assessment by adding categories and questions</p>
-        
         <!-- Quick Actions -->
         <div class="mb-6 p-4 bg-white rounded-lg border border-green-200">
             <div class="flex flex-wrap gap-4">
@@ -142,9 +141,7 @@
         </div>
     </div>
 </div>
-
 <script>
-// Default category data from enum
 const defaultCategories = {
     {% for category_type in phq_category_types %}
     {{ category_type.number }}: {

@@ -1,0 +1,270 @@
+<!-- app/templates/admin/export_data.html -->
+<div class="min-h-screen bg-gray-50 p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Data Export Management</h1>
+            <p class="text-gray-600 mt-2">Export assessment data for users and sessions</p>
+        </div>
+
+        <!-- Users List -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-800">Users with Assessment Data</h2>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sessions</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Latest Activity</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="users-table-body">
+                        <!-- Users will be loaded here via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Session Details Modal -->
+        <div id="session-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
+                    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-lg font-semibold text-gray-900" id="modal-title">User Sessions</h3>
+                        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="p-6" id="modal-content">
+                        <!-- Session details will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let usersData = [];
+
+        // Load users data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUsersData();
+        });
+
+        async function loadUsersData() {
+            try {
+                const response = await fetch('/admin/export/users');
+                const data = await response.json();
+                usersData = data.users;
+                renderUsersTable();
+            } catch (error) {
+                console.error('Error loading users data:', error);
+                showNotification('Error loading users data', 'error');
+            }
+        }
+
+        function renderUsersTable() {
+            const tbody = document.getElementById('users-table-body');
+            tbody.innerHTML = '';
+
+            usersData.forEach(user => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">${user.username}</div>
+                                <div class="text-sm text-gray-500">${user.email}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${user.total_sessions}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${user.completed_sessions}</div>
+                        <div class="text-sm text-gray-500">${user.in_progress_sessions} in progress</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${formatDate(user.latest_activity)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        <button onclick="viewSessions(${user.user_id})" 
+                                class="text-indigo-600 hover:text-indigo-900">
+                            View Sessions
+                        </button>
+                        <button onclick="exportUserData(${user.user_id})" 
+                                class="text-green-600 hover:text-green-900">
+                            Export All Data
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        async function viewSessions(userId) {
+            try {
+                const response = await fetch(`/admin/export/user/${userId}/sessions`);
+                const data = await response.json();
+                
+                showSessionModal(data);
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+                showNotification('Error loading sessions', 'error');
+            }
+        }
+
+        function showSessionModal(data) {
+            const modal = document.getElementById('session-modal');
+            const title = document.getElementById('modal-title');
+            const content = document.getElementById('modal-content');
+            
+            title.textContent = `Sessions for ${data.username} (${data.total_sessions} total)`;
+            
+            content.innerHTML = `
+                <div class="space-y-4">
+                    ${data.sessions.map(session => `
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <h4 class="font-medium text-gray-900">Session: ${session.session_id}</h4>
+                                    <p class="text-sm text-gray-600">Status: <span class="capitalize">${session.status}</span></p>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm text-gray-500">
+                                        <div>Started: ${formatDate(session.started_at)}</div>
+                                        ${session.completed_at ? `<div>Completed: ${formatDate(session.completed_at)}</div>` : ''}
+                                    </div>
+                                    <button onclick="exportSessionData('${session.session_id}')" 
+                                            class="mt-2 text-xs bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">
+                                        Export Session
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="font-medium">First Assessment:</span> ${session.first_assessment_type || 'Not started'}
+                                </div>
+                                <div>
+                                    <span class="font-medium">PHQ-9 Score:</span> ${session.phq9_score || 'Not completed'}
+                                </div>
+                                <div>
+                                    <span class="font-medium">PHQ-9:</span> ${session.phq9_completed ? 'Completed' : 'Not completed'}
+                                </div>
+                                <div>
+                                    <span class="font-medium">Open Questions:</span> ${session.open_questions_completed ? 'Completed' : 'Not completed'}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('session-modal').classList.add('hidden');
+        }
+
+        async function exportUserData(userId) {
+            try {
+                showNotification('Preparing export...', 'info');
+                
+                const response = await fetch(`/admin/export/user/${userId}/data`);
+                
+                if (!response.ok) {
+                    throw new Error('Export failed');
+                }
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `user_${userId}_data_${new Date().toISOString().slice(0, 10)}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                showNotification('Export downloaded successfully', 'success');
+            } catch (error) {
+                console.error('Error exporting data:', error);
+                showNotification('Error exporting data', 'error');
+            }
+        }
+
+        async function exportSessionData(sessionId) {
+            try {
+                showNotification('Preparing session export...', 'info');
+                
+                const response = await fetch(`/admin/export/session/${sessionId}/data`);
+                
+                if (!response.ok) {
+                    throw new Error('Session export failed');
+                }
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `session_${sessionId}_${new Date().toISOString().slice(0, 10)}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                showNotification('Session export downloaded successfully', 'success');
+            } catch (error) {
+                console.error('Error exporting session:', error);
+                showNotification('Error exporting session data', 'error');
+            }
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            return new Date(dateString).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+                type === 'success' ? 'bg-green-500 text-white' :
+                type === 'error' ? 'bg-red-500 text-white' :
+                'bg-blue-500 text-white'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('session-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</div>

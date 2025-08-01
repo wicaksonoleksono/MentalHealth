@@ -12,37 +12,23 @@ class AssessmentBalanceService:
             phq9_first_count = Assessment.query.filter_by(first_assessment_type='phq9').count()
             open_questions_first_count = Assessment.query.filter_by(first_assessment_type='open_questions').count()
             total_assessments = phq9_first_count + open_questions_first_count
-            
-            # If no assessments yet, random choice
             if total_assessments == 0:
                 return random.choice(['phq_first', 'questions_first'])
-            
-            # Calculate current ratio
             phq9_ratio = phq9_first_count / total_assessments
-            
-            # If PHQ-9 first is significantly higher, assign Open Questions first
             if phq9_ratio > 0.55:  # More than 55% PHQ-9 first
                 return 'questions_first'
-            # If Open Questions first is significantly higher, assign PHQ-9 first  
             elif phq9_ratio < 0.45:  # Less than 45% PHQ-9 first
                 return 'phq_first'
             else:
-                # Within acceptable range (45-55%), random choice
                 return random.choice(['phq_first', 'questions_first'])
-                
         except Exception as e:
-            # Fallback to random if any error
             return random.choice(['phq_first', 'questions_first'])
-
     @staticmethod  
     def get_balance_statistics():
-        """Get current balance statistics."""
         try:
             phq9_first_count = Assessment.query.filter_by(first_assessment_type='phq9').count() 
             open_questions_first_count = Assessment.query.filter_by(first_assessment_type='open_questions').count()
-            
             total_assessments = phq9_first_count + open_questions_first_count
-            
             if total_assessments == 0:
                 return {
                     'phq9_first_count': 0,

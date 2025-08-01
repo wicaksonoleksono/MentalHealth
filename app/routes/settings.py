@@ -35,3 +35,5 @@ def save_settings():
         flash(f'An unexpected error occurred: {str(e)}', 'error')
     
     return redirect(url_for('settings.show_settings', tab=active_tab))
+
+    

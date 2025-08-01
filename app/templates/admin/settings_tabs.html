@@ -1,8 +1,10 @@
-<!-- app/templates/components/settings_tabs.html -->
-<div class="bg-white rounded-t-2xl shadow-xl overflow-hidden" x-data="{ activeTab: '{{ active_tab or 'openquestion' }}' }" @switch-tab.window="activeTab = $event.detail">
+<!-- app/templates/admin/settings_tabs.html -->
+<div class="min-h-screen bg-white shadow-xl overflow-hidden w-full" 
+     x-data="{ activeTab: '{{ active_tab or 'openquestion' }}' }" 
+     @switch-tab.window="activeTab = $event.detail">
     <div class="border-b border-gray-200">
-        <nav class="flex space-x-8 px-6" aria-label="Tabs">
-            <button @click="activeTab = 'openquestion'" 
+        <nav class="flex space-x-16 px-6" aria-label="Tabs">
+            <button @click="activeTab = 'openquestion'"
                     :class="activeTab === 'openquestion' ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                     class="whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm transition-all duration-200 rounded-t-lg">
                 <div class="flex items-center">
@@ -13,7 +15,7 @@
                 </div>
             </button>
             
-            <button @click="activeTab = 'consent'" 
+            <button @click="activeTab = 'consent'"
                     :class="activeTab === 'consent' ? 'border-purple-500 text-purple-600 bg-purple-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                     class="whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm transition-all duration-200 rounded-t-lg">
                 <div class="flex items-center">
@@ -24,7 +26,7 @@
                 </div>
             </button>
             
-            <button @click="activeTab = 'phq9'" 
+            <button @click="activeTab = 'phq9'"
                     :class="activeTab === 'phq9' ? 'border-green-500 text-green-600 bg-green-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                     class="whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm transition-all duration-200 rounded-t-lg">
                 <div class="flex items-center">
@@ -35,7 +37,7 @@
                 </div>
             </button>
             
-            <button @click="activeTab = 'image_capture'" 
+            <button @click="activeTab = 'image_capture'"
                     :class="activeTab === 'image_capture' ? 'border-orange-500 text-orange-600 bg-orange-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                     class="whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm transition-all duration-200 rounded-t-lg">
                 <div class="flex items-center">
@@ -49,47 +51,52 @@
         </nav>
     </div>
 
-    <!-- Main Settings Form -->
-    <form method="POST" action="{{ url_for('settings.save_settings') }}" class="p-8">
+    <!-- Main Settings Form with flex layout for full height -->
+    <form method="POST" action="{{ url_for('settings.save_settings') }}" class="flex flex-col min-h-[calc(100vh-80px)]">
         <input type="hidden" name="active_tab" :value="activeTab">
-        <!-- AI Assistant Tab -->
-        <div x-show="activeTab === 'openquestion'" 
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0 transform translate-y-4"
-             x-transition:enter-end="opacity-100 transform translate-y-0"
-             class="space-y-6">
-            {% include 'components/openquestion_tab.html' %}
+        
+        <!-- Content area that grows to fill space -->
+        <div class="flex-1 p-8">
+            <!-- AI Assistant Tab -->
+            <div x-show="activeTab === 'openquestion'"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform translate-y-4"
+                 x-transition:enter-end="opacity-100 transform translate-y-0"
+                 class="space-y-6 h-full">
+                {% include 'admin/openquestion_tab.html' %}
+            </div>
+
+            <!-- Consent Form Tab -->
+            <div x-show="activeTab === 'consent'"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform translate-y-4"
+                 x-transition:enter-end="opacity-100 transform translate-y-0"
+                 class="space-y-6 h-full">
+                {% include 'admin/consent_tab.html' %}
+            </div>
+
+            <!-- PHQ-9 Settings Tab (Combined) -->
+            <div x-show="activeTab === 'phq9'"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform translate-y-4"
+                 x-transition:enter-end="opacity-100 transform translate-y-0"
+                 class="space-y-6 h-full">
+                {% include 'admin/phq_category_management.html' %}
+            </div>
+
+            <!-- Image Capture Tab -->
+            <div x-show="activeTab === 'image_capture'"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform translate-y-4"
+                 x-transition:enter-end="opacity-100 transform translate-y-0"
+                 class="space-y-6 h-full">
+                {% include 'admin/image_capture_tab.html' %}
+            </div>
         </div>
 
-        <!-- Consent Form Tab -->
-        <div x-show="activeTab === 'consent'" 
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0 transform translate-y-4"
-             x-transition:enter-end="opacity-100 transform translate-y-0"
-             class="space-y-6">
-            {% include 'components/consent_tab.html' %}
-        </div>
-
-        <!-- PHQ-9 Settings Tab (Combined) -->
-        <div x-show="activeTab === 'phq9'" 
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0 transform translate-y-4"
-             x-transition:enter-end="opacity-100 transform translate-y-0"
-             class="space-y-6">
-            {%include 'components/phq_category_management.html'%}
-        </div>
-
-        <!-- Image Capture Tab -->
-        <div x-show="activeTab === 'image_capture'" 
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0 transform translate-y-4"
-             x-transition:enter-end="opacity-100 transform translate-y-0"
-             class="space-y-6">
-            {% include 'components/image_capture_tab.html' %}
-        </div>
-        <!-- Save Button -->
-        <div class="flex justify-end pt-8 pb-8 pr-8 border-t border-gray-200 mt-8">
-            <button type="submit" 
+        <!-- Save Button - pinned to bottom -->
+        <div class="flex justify-end pt-8 pb-8 pr-8 border-t border-gray-200 bg-white">
+            <button type="submit"
                     class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-xl font-medium hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform transition-all duration-200 hover:scale-105 shadow-lg">
                 <div class="flex items-center">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

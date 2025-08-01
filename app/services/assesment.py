@@ -5,7 +5,6 @@ from app.models.assessment import Assessment, PHQ9Response, OpenQuestionResponse
 from app.models.user import User
 import uuid
 
-
 class AssessmentService:
     @staticmethod
     def create_assessment_session(user_id):

@@ -1,107 +1,17 @@
 <!-- app/templates/components/patient_navbar.html -->
-<nav class="bg-white shadow-sm border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<nav class="bg-white shadow border-b">
+    <div class="max-w-7xl mx-auto px-4">
         <div class="flex justify-between h-16">
+            <!-- Left: Title -->
             <div class="flex items-center">
-                <div class="flex items-center space-x-4">
-                    <!-- Logo/Icon -->
-                    <div class="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                    </div>
-                    
-                    <!-- Title -->
-                    <h1 class="text-xl font-semibold text-gray-900">
-                        {{ page_title or "Assessment Portal" }}
-                    </h1>
-                    
-                    <!-- Optional subtitle -->
-                    {% if page_subtitle %}
-                        <span class="text-sm text-gray-500 hidden md:inline">{{ page_subtitle }}</span>
-                    {% endif %}
-                </div>
+                <h1 class="text-xl font-semibold text-gray-900">Mental Health Assessment</h1>
             </div>
             
-            <!-- Right side - User info and actions -->
+            <!-- Right: User + Navigation -->
             <div class="flex items-center space-x-4">
-                <!-- Assessment Status (if in assessment) -->
-                {% if assessment_session_id %}
-                    <div class="hidden md:flex items-center space-x-2 text-sm text-gray-600">
-                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span>Assessment Active</span>
-                    </div>
-                {% endif %}
-                
-                <!-- User dropdown -->
-                <div class="relative" x-data="{ open: false }">
-                    <button @click="open = !open" 
-                            class="flex items-center space-x-3 text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 p-2 hover:bg-gray-50">
-                        <!-- User avatar -->
-                        <div class="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
-                            <span class="text-white font-medium text-sm">
-                                {{ current_user.username[0].upper() }}
-                            </span>
-                        </div>
-                        
-                        <!-- User name -->
-                        <span class="text-gray-700 font-medium hidden sm:block">{{ current_user.username }}</span>
-                        
-                        <!-- Dropdown arrow -->
-                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                        </svg>
-                    </button>
-                    
-                    <!-- Dropdown menu -->
-                    <div x-show="open" 
-                         @click.away="open = false"
-                         x-transition:enter="transition ease-out duration-100"
-                         x-transition:enter-start="transform opacity-0 scale-95"
-                         x-transition:enter-end="transform opacity-100 scale-100"
-                         x-transition:leave="transition ease-in duration-75"
-                         x-transition:leave-start="transform opacity-100 scale-100"
-                         x-transition:leave-end="transform opacity-0 scale-95"
-                         class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200"
-                         style="display: none;">
-                        
-                        <!-- User info header -->
-                        <div class="px-4 py-2 border-b border-gray-100">
-                            <p class="text-sm font-medium text-gray-900">{{ current_user.username }}</p>
-                            <p class="text-xs text-gray-500">{{ current_user.email }}</p>
-                        </div>
-                        
-                        <!-- Navigation items -->
-                        <a href="{{ url_for('patient.dashboard') }}" 
-                           class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
-                            <svg class="w-4 h-4 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
-                            </svg>
-                            Dashboard
-                        </a>
-                        
-                        {% if assessment_session_id %}
-                        <div class="px-4 py-2 text-xs text-gray-500 border-t border-gray-100">
-                            <div class="flex items-center">
-                                <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                                Active Session
-                            </div>
-                            <div class="text-xs text-gray-400 mt-1">{{ assessment_session_id[:8] }}...</div>
-                        </div>
-                        {% endif %}
-                        
-                        <!-- Logout -->
-                        <div class="border-t border-gray-100">
-                            <a href="{{ url_for('auth.logout') }}" 
-                               class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center">
-                                <svg class="w-4 h-4 mr-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                                </svg>
-                                Sign Out
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                <span class="text-gray-700 font-medium">{{ current_user.username }}</span>
+                <a href="{{ url_for('patient.dashboard') }}" class="text-gray-600 hover:text-gray-900 text-sm">Dashboard</a>
+                <a href="{{ url_for('auth.logout') }}" class="text-red-600 hover:text-red-700 text-sm">Logout</a>
             </div>
         </div>
     </div>

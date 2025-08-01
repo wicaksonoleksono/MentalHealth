@@ -1,5 +1,6 @@
 <!-- app/templates/patient/consent.html -->
-{% extends "base.html" %}
+{% extends "patient/base.html" %}
+
 {% block title %}Consent Form - Assessment{% endblock %}
 
 {% block nav %}
@@ -20,23 +21,7 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
-    <!-- Progress Bar -->
-    <div class="mb-8">
-        <div class="flex items-center justify-between text-sm font-medium text-gray-600 mb-2">
-            <span>Assessment Progress</span>
-            <span>Step 1 of 4</span>
-        </div>
-        <div class="w-full bg-gray-200 rounded-full h-2">
-            <div class="bg-purple-600 h-2 rounded-full transition-all duration-300" style="width: 25%"></div>
-        </div>
-        <div class="flex justify-between text-xs text-gray-500 mt-1">
-            <span>Consent</span>
-            <span>Open Questions</span>
-            <span>PHQ-9</span>
-            <span>Complete</span>
-        </div>
-    </div>
-
+    
     <div class="bg-white rounded-lg shadow-lg overflow-hidden">
         <!-- Header -->
         <div class="bg-gradient-to-r from-purple-600 to-indigo-600 px-8 py-6">

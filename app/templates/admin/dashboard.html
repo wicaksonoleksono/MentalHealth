@@ -17,8 +17,7 @@
                        class="text-secondary-600 hover:text-secondary-900 pb-4 pt-4">
                         Settings
                     </a>
-                    <a href="#" 
-                       class="text-secondary-600 hover:text-secondary-900 pb-4 pt-4">
+                    <a href="#" class="text-secondary-600 hover:text-secondary-900 pb-4 pt-4">
                         Sessions
                     </a>
                 </div>
@@ -37,32 +36,141 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- Stats Cards -->
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-lg font-medium text-secondary-900 mb-2">Active Sessions</h3>
-            <p class="text-3xl font-bold text-primary-600">{{ active_sessions or 0 }}</p>
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-medium text-secondary-900">Active Sessions</h3>
+                    <p class="text-3xl font-bold text-primary-600">{{ active_sessions }}</p>
+                </div>
+            </div>
         </div>
-        
+
         <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-lg font-medium text-secondary-900 mb-2">Total Patients</h3>
-            <p class="text-3xl font-bold text-primary-600">{{ total_patients or 0 }}</p>
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-medium text-secondary-900">Total Patients</h3>
+                    <p class="text-3xl font-bold text-primary-600">{{ total_patients }}</p>
+                </div>
+            </div>
         </div>
-        
+
         <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-lg font-medium text-secondary-900 mb-2">Completed Today</h3>
-            <p class="text-3xl font-bold text-primary-600">{{ completed_today or 0 }}</p>
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-medium text-secondary-900">Completed Today</h3>
+                    <p class="text-3xl font-bold text-primary-600">{{ completed_today }}</p>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Recent Activity -->
-    <div class="mt-8 bg-white rounded-lg shadow">
+    <!-- Recent Sessions -->
+    <div class="bg-white rounded-lg shadow">
         <div class="px-6 py-4 border-b border-secondary-200">
             <h3 class="text-lg font-medium text-secondary-900">Recent Sessions</h3>
         </div>
-        <div class="p-6">
-            <p class="text-secondary-500">No recent sessions</p>
+        
+        {% if recent_sessions %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Session ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">First Assessment</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PHQ-9 Score</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Started</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for session in recent_sessions %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">{{ session.username }}</div>
+                                <div class="text-sm text-gray-500">{{ session.email }}</div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-sm text-gray-900 font-mono">{{ session.session_id[:8] }}...</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-full bg-gray-200 rounded-full h-2 mr-3" style="width: 60px;">
+                                    <div class="bg-blue-600 h-2 rounded-full" style="width: {{ (session.progress_count / 2 * 100) }}%"></div>
+                                </div>
+                                <span class="text-sm font-medium text-gray-900">{{ session.progress_text }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if session.first_type %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
+                                           {% if session.first_type == 'phq9' %}bg-blue-100 text-blue-800{% else %}bg-green-100 text-green-800{% endif %}">
+                                    {{ session.first_type.replace('_', ' ').title() }}
+                                </span>
+                            {% else %}
+                                <span class="text-sm text-gray-400">Not started</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if session.phq9_score is not none %}
+                                <div>
+                                    <span class="text-sm font-medium text-gray-900">{{ session.phq9_score }}/27</span>
+                                    <div class="text-xs text-gray-500 capitalize">{{ session.phq9_severity.replace('_', ' ') if session.phq9_severity else '' }}</div>
+                                </div>
+                            {% else %}
+                                <span class="text-sm text-gray-400">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {{ session.status_class }}">
+                                {{ session.status }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div>{{ session.started_at.strftime('%m/%d/%Y') }}</div>
+                            <div>{{ session.started_at.strftime('%I:%M %p') }}</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+        {% else %}
+        <div class="p-6">
+            <div class="text-center">
+                <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                </svg>
+                <p class="text-secondary-500">No recent sessions</p>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
