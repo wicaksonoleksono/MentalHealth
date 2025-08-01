@@ -79,7 +79,7 @@ class SettingsService:
         settings['phq9_questions_per_page'] = int(phq9_per_page.value) if phq9_per_page else 1
         
         # PHQ Categories
-        from app.models.phq import PHQCategoryType
+        from app.models.assessment import PHQCategoryType
         settings['phq_category_types'] = PHQCategoryType.get_all_data()
         
         existing_categories = []

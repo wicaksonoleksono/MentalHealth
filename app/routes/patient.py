@@ -10,7 +10,7 @@ from app.services.assesment import AssessmentService
 from app.services.assessment_balance import AssessmentBalanceService
 from app.services.phq import PHQService
 from app.services.openai_chat import OpenAIChatService
-
+from app.services.media_file import MediaFileService, MediaFileException
 patient_bp = Blueprint('patient', __name__)
 
 
@@ -411,3 +411,140 @@ def assessment_complete():
     }
 
     return render_template('patient/assessment_complete.html', **completion_data)
+@patient_bp.route('/capture-emotion', methods=['POST'])
+@login_required
+@patient_required
+def capture_emotion():
+    """Capture emotion data (image or video) during assessment"""
+    try:
+        data = request.get_json()
+        # Validate required fields
+        assessment_session_id = session.get('assessment_session_id')
+        if not assessment_session_id:
+            return jsonify({'success': False, 'message': 'No assessment session found'}), 400
+        assessment_type = data.get('assessment_type')  # 'phq9' or 'open_questions'
+        question_identifier = data.get('question_identifier')  # Question number or ID
+        media_type = data.get('media_type')  # 'image' or 'video'
+        file_data = data.get('file_data')  # Base64 encoded file data
+        
+        if not all([assessment_type, question_identifier, media_type, file_data]):
+            return jsonify({'success': False, 'message': 'Missing required fields'}), 400
+        
+        # Decode base64 file data
+        if file_data.startswith('data:'):
+            # Remove data URL prefix (e.g., "data:image/jpeg;base64,")
+            file_data = file_data.split(',')[1]
+        
+        file_bytes = base64.b64decode(file_data)
+        
+        # Prepare metadata
+        metadata = {
+            'resolution': data.get('resolution'),
+            'quality': data.get('quality'),
+            'duration_ms': data.get('duration_ms')
+        }
+        
+        # Save using MediaFileService
+        emotion_data = MediaFileService.save_emotion_capture(
+            session_id=assessment_session_id,
+            user_id=current_user.id,
+            assessment_type=assessment_type,
+            question_identifier=question_identifier,
+            file_data=file_bytes,
+            media_type=media_type,
+            original_filename=data.get('filename'),
+            metadata=metadata
+        )
+        
+        return jsonify({
+            'success': True,
+            'emotion_id': emotion_data.id,
+            'file_path': emotion_data.file_path,
+            'file_size': emotion_data.file_size,
+            'message': f'{media_type.title()} captured successfully'
+        })
+        
+    except MediaFileException as e:
+        return jsonify({'success': False, 'message': str(e)}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Capture failed: {str(e)}'}), 500
+
+
+@patient_bp.route('/session-files')
+@login_required
+@patient_required
+def get_session_files():
+    """Get all captured files for current session"""
+    assessment_session_id = session.get('assessment_session_id')
+    if not assessment_session_id:
+        return jsonify({'success': False, 'message': 'No assessment session found'}), 400
+    
+    try:
+        files = MediaFileService.get_session_files(assessment_session_id, current_user.id)
+        
+        return jsonify({
+            'success': True,
+            'files': files,
+            'total_files': len(files),
+            'total_size': sum(f['file_size'] for f in files if f['file_size'])
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@patient_bp.route('/validate-session-files')
+@login_required
+@patient_required
+def validate_session_files():
+    """Validate that all database records have corresponding files"""
+    assessment_session_id = session.get('assessment_session_id')
+    if not assessment_session_id:
+        return jsonify({'success': False, 'message': 'No assessment session found'}), 400
+    
+    try:
+        validation_result = MediaFileService.validate_session_files(assessment_session_id, current_user.id)
+        
+        return jsonify({
+            'success': True,
+            'validation': validation_result
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+# Optional: Route to serve captured files (for testing/preview)
+@patient_bp.route('/emotion-file/<int:emotion_id>')
+@login_required
+@patient_required
+def serve_emotion_file(emotion_id):
+    """Serve captured emotion file"""
+    from flask import send_file
+    
+    # Get emotion data record
+    emotion_data = EmotionData.query.filter_by(id=emotion_id).first()
+    if not emotion_data:
+        return jsonify({'error': 'File not found'}), 404
+    
+    # Verify user owns this file
+    assessment = Assessment.query.filter_by(
+        id=emotion_data.assessment_id,
+        user_id=current_user.id
+    ).first()
+    
+    if not assessment:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    # Check if file exists
+    if not emotion_data.file_exists():
+        return jsonify({'error': 'Physical file not found'}), 404
+    
+    try:
+        return send_file(
+            emotion_data.get_full_path(),
+            mimetype=emotion_data.mime_type,
+            as_attachment=False
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

@@ -2,7 +2,6 @@
 from app import db
 from app.models.user import User
 from app.models.patient_profile import PatientProfile
-
 class UserService:
     @staticmethod
     def create_patient(username, email, password, profile_data=None):
