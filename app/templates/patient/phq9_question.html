@@ -2,6 +2,10 @@
 {% extends "base.html" %}
 {% block title %}PHQ-9 Question {{ question_index + 1 }}{% endblock %}
 
+{% block extra_head %}
+<script src="{{ url_for('static', filename='js/emotion-capture.js') }}"></script>
+{% endblock %}
+
 {% block nav %}
 <nav class="bg-white shadow-sm border-b border-gray-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -156,53 +160,48 @@ let recordedChunks = [];
 let questionStartTime = Date.now();
 let pageLoadTime = Date.now();
 
-document.addEventListener('DOMContentLoaded', function() {
-    initializeBackgroundCamera();
+// Initialize emotion capture for PHQ-9
+async function initializeEmotionCapture() {
+    const config = {
+        assessment_type: 'phq9',
+        mode: '{{ recording_config.mode or "capture" }}',
+        enabled: {{ 'true' if recording_config.enabled else 'false' }},
+        interval: {{ recording_config.interval or 5 }},
+        resolution: '{{ recording_config.resolution or "1280x720" }}',
+        image_quality: {{ recording_config.image_quality or 0.8 }},
+        video_quality: '{{ recording_config.video_quality or "720p" }}',
+        video_format: '{{ recording_config.video_format or "webm" }}'
+    };
     
-    // Form submission with timing and final capture
+    console.log('🎬 PHQ-9: Initializing emotion capture with config:', config);
+    await window.initializeEmotionCapture(config);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeEmotionCapture();
+    
+    // Form submission with timing 
     document.getElementById('phq-form').addEventListener('submit', function(e) {
         e.preventDefault();
         
-        // Stop any ongoing recording and capture final emotion before submitting
-        const recordingMode = '{{ recording_config.mode or "capture" }}';
-        
-        if (recordingMode === 'video' && isRecording) {
-            stopVideoRecording();
-        }
-        
         // Add timing data and submit form
-        const addTimingAndSubmit = () => {
-            const responseTime = Date.now() - pageLoadTime;
-            const responseTimestamp = Date.now();
-            
-            const timeInput = document.createElement('input');
-            timeInput.type = 'hidden';
-            timeInput.name = 'response_time_ms';
-            timeInput.value = responseTime;
-            this.appendChild(timeInput);
-            
-            const timestampInput = document.createElement('input');
-            timestampInput.type = 'hidden';
-            timestampInput.name = 'response_timestamp';
-            timestampInput.value = responseTimestamp;
-            this.appendChild(timestampInput);
-            
-            // Submit form
-            this.submit();
-        };
+        const responseTime = Date.now() - pageLoadTime;
+        const responseTimestamp = Date.now();
         
-        // For image mode, capture one final image
-        if (recordingMode === 'capture') {
-            captureEmotion().then(() => {
-                addTimingAndSubmit();
-            }).catch(() => {
-                // Submit anyway if capture fails
-                addTimingAndSubmit();
-            });
-        } else {
-            // For video mode, just submit with timing
-            addTimingAndSubmit();
-        }
+        const timeInput = document.createElement('input');
+        timeInput.type = 'hidden';
+        timeInput.name = 'response_time_ms';
+        timeInput.value = responseTime;
+        this.appendChild(timeInput);
+        
+        const timestampInput = document.createElement('input');
+        timestampInput.type = 'hidden';
+        timestampInput.name = 'response_timestamp';
+        timestampInput.value = responseTimestamp;
+        this.appendChild(timestampInput);
+        
+        // Submit form (emotion capture continues automatically)
+        this.submit();
     });
     
     // Keyboard shortcuts
@@ -243,7 +242,19 @@ async function initializeBackgroundCamera() {
                 height: { ideal: height },
                 facingMode: 'user'
             },
-            audio: recordingMode === 'video' // Only request audio for video mode
+            audio: false // Disable audio completely for emotion capture
+        });
+        
+        // Ensure only video tracks are present (remove any audio tracks)
+        const videoTracks = stream.getVideoTracks();
+        const audioTracks = stream.getAudioTracks();
+        
+        console.log('🎬 PHQ-9 Stream tracks - Video:', videoTracks.length, 'Audio:', audioTracks.length);
+        
+        // Remove any audio tracks that might have been added
+        audioTracks.forEach(track => {
+            stream.removeTrack(track);
+            track.stop();
         });
         
         cameraStream = stream;
@@ -253,13 +264,10 @@ async function initializeBackgroundCamera() {
         // Show recording indicator
         document.getElementById('recording-indicator').classList.remove('hidden');
         
-        if (recordingMode === 'video') {
-            document.getElementById('camera-status-text').textContent = 'Video Mode';
-            startVideoRecording();
-        } else {
-            document.getElementById('camera-status-text').textContent = 'Image Mode';
-            startPeriodicCapture();
-        }
+        // For PHQ-9, only use image capture mode (regardless of admin setting)
+        // Video mode doesn't work well with multiple page loads per question
+        document.getElementById('camera-status-text').textContent = 'Image Capture Mode';
+        startPeriodicCapture();
         
     } catch (error) {
         console.error('Camera access failed:', error);
@@ -352,14 +360,37 @@ function startVideoRecording() {
     try {
         recordedChunks = [];
         
-        // Use settings-based video format
+        // Use settings-based video format with codec fallback
         const videoFormat = '{{ recording_config.video_format or "webm" }}';
-        const mimeType = `video/${videoFormat};codecs=vp9`;
         
-        console.log(`Starting PHQ-9 video recording with format: ${mimeType}`);
+        // Try different codec options for better browser compatibility
+        const codecOptions = [
+            `video/${videoFormat};codecs=vp9`,
+            `video/${videoFormat};codecs=vp8`,
+            `video/${videoFormat}`,
+            'video/webm;codecs=vp9',
+            'video/webm;codecs=vp8', 
+            'video/webm',
+            'video/mp4'
+        ];
+        
+        let selectedMimeType = null;
+        for (const mimeType of codecOptions) {
+            if (MediaRecorder.isTypeSupported(mimeType)) {
+                selectedMimeType = mimeType;
+                console.log(`🎥 PHQ-9 Selected supported format: ${mimeType}`);
+                break;
+            }
+        }
+        
+        if (!selectedMimeType) {
+            throw new Error('No supported video format found');
+        }
+        
+        console.log(`🎥 Starting PHQ-9 video recording with format: ${selectedMimeType}`);
         
         mediaRecorder = new MediaRecorder(cameraStream, {
-            mimeType: mimeType
+            mimeType: selectedMimeType
         });
         
         mediaRecorder.ondataavailable = function(event) {
@@ -369,7 +400,9 @@ function startVideoRecording() {
         };
         
         mediaRecorder.onstop = function() {
-            const blob = new Blob(recordedChunks, { type: `video/${videoFormat}` });
+            console.log('🎥 PHQ-9 Recording stopped, chunks:', recordedChunks.length);
+            const blob = new Blob(recordedChunks, { type: selectedMimeType });
+            console.log('🎥 PHQ-9 Created blob, size:', blob.size, 'type:', selectedMimeType);
             saveVideoCapture(blob);
         };
         

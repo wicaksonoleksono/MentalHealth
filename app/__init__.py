@@ -17,6 +17,23 @@ def create_app():
     instance_path = os.path.join(app.root_path, '..', 'instance')
     os.makedirs(instance_path, exist_ok=True)
     
+    # Ensure upload directory structure exists
+    try:
+        upload_folder = app.config.get('UPLOAD_FOLDER', 'uploads')
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        # Create assessment storage subdirectories
+        assessment_dirs = [
+            'assessments',
+            'exports'
+        ]
+        for dir_name in assessment_dirs:
+            os.makedirs(os.path.join(upload_folder, dir_name), exist_ok=True)
+        
+        print(f"Upload directories initialized at: {upload_folder}")
+    except Exception as e:
+        print(f"Warning: Could not initialize upload directories: {e}")
+    
     # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)

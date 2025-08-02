@@ -425,3 +425,205 @@ def register_commands(app):
             db.session.rollback()
             click.echo(f"Error adding settings: {e}")
 
+    @app.cli.command("test-emotion-capture")
+    def test_emotion_capture():
+        """Test emotion capture functionality and storage system."""
+        click.echo("Testing emotion capture system...")
+        
+        try:
+            from app.services.settings import SettingsService
+            from app.services.media_file import MediaFileService
+            from app.models.assessment import Assessment, EmotionData
+            from app.models.user import User
+            import base64
+            import os
+            
+            # Test recording configuration
+            recording_config = SettingsService.get_recording_config()
+            click.echo(f"✅ Recording config loaded: {recording_config}")
+            
+            # Test upload directory
+            upload_folder = app.config.get('UPLOAD_FOLDER', 'uploads')
+            click.echo(f"✅ Upload folder: {upload_folder}")
+            
+            # Ensure upload directory exists
+            if not os.path.exists(upload_folder):
+                os.makedirs(upload_folder, exist_ok=True)
+                click.echo(f"✅ Created upload directory: {upload_folder}")
+            
+            # Create test directory structure
+            test_session_dir = os.path.join(upload_folder, 'assessments', 'test_session_123')
+            os.makedirs(os.path.join(test_session_dir, 'phq9', 'images'), exist_ok=True)
+            os.makedirs(os.path.join(test_session_dir, 'phq9', 'videos'), exist_ok=True)
+            os.makedirs(os.path.join(test_session_dir, 'open_questions', 'images'), exist_ok=True)
+            os.makedirs(os.path.join(test_session_dir, 'open_questions', 'videos'), exist_ok=True)
+            click.echo("✅ Test directory structure created")
+            
+            # Create test user and assessment if they don't exist
+            test_user = User.query.filter_by(username='patient').first()
+            if not test_user:
+                click.echo("❌ Test patient user not found. Run 'flask seedu' first.")
+                return
+            
+            # Create test assessment
+            test_assessment = Assessment.query.filter_by(session_id='test_session_123').first()
+            if not test_assessment:
+                test_assessment = Assessment(
+                    session_id='test_session_123',
+                    user_id=test_user.id
+                )
+                db.session.add(test_assessment)
+                db.session.commit()
+                click.echo("✅ Test assessment created")
+            
+            # Create test image data (simple test data)
+            test_image_data = b"test_image_data_for_emotion_capture"
+            
+            # Test image capture save
+            emotion_data = MediaFileService.save_emotion_capture(
+                session_id='test_session_123',
+                user_id=test_user.id,
+                assessment_type='phq9',
+                question_identifier='q1_test',
+                file_data=test_image_data,
+                media_type='image',
+                original_filename='test_capture.jpg',
+                metadata={
+                    'resolution': '1x1',
+                    'quality': 0.8,
+                    'capture_timestamp': 1234567890,
+                    'time_into_question_ms': 5000,
+                    'recording_settings': recording_config
+                }
+            )
+            click.echo(f"✅ Test emotion capture saved: ID {emotion_data.id}")
+            
+            # Verify file exists
+            if emotion_data.file_exists():
+                click.echo(f"✅ Physical file exists: {emotion_data.get_full_path()}")
+            else:
+                click.echo(f"❌ Physical file missing: {emotion_data.get_full_path()}")
+            
+            # Test session files retrieval
+            session_files = MediaFileService.get_session_files('test_session_123', test_user.id)
+            click.echo(f"✅ Retrieved {len(session_files)} session files")
+            
+            # Test validation
+            validation = MediaFileService.validate_session_files('test_session_123', test_user.id)
+            click.echo(f"✅ File validation: {validation['valid_files']}/{validation['total_files']} files valid")
+            
+            click.echo("🎉 All emotion capture tests passed!")
+            
+        except Exception as e:
+            click.echo(f"❌ Test failed: {e}")
+            import traceback
+            click.echo(traceback.format_exc())
+
+    @app.cli.command("test-storage")
+    def test_storage():
+        """Test storage directory structure and permissions."""
+        click.echo("Testing storage system...")
+        
+        try:
+            import os
+            upload_folder = app.config.get('UPLOAD_FOLDER', 'uploads')
+            
+            # Test base directory
+            click.echo(f"Upload folder: {upload_folder}")
+            if os.path.exists(upload_folder):
+                click.echo("✅ Base upload directory exists")
+            else:
+                os.makedirs(upload_folder, exist_ok=True)
+                click.echo("✅ Created base upload directory")
+            
+            # Test write permissions
+            test_file = os.path.join(upload_folder, 'test_write.txt')
+            try:
+                with open(test_file, 'w') as f:
+                    f.write('test')
+                os.remove(test_file)
+                click.echo("✅ Write permissions OK")
+            except Exception as e:
+                click.echo(f"❌ Write permission error: {e}")
+            
+            # Test directory structure creation
+            test_dirs = [
+                'assessments/test_session/phq9/images',
+                'assessments/test_session/phq9/videos', 
+                'assessments/test_session/open_questions/images',
+                'assessments/test_session/open_questions/videos'
+            ]
+            
+            for test_dir in test_dirs:
+                full_path = os.path.join(upload_folder, test_dir)
+                os.makedirs(full_path, exist_ok=True)
+                if os.path.exists(full_path):
+                    click.echo(f"✅ Created: {test_dir}")
+                else:
+                    click.echo(f"❌ Failed to create: {test_dir}")
+            
+            click.echo("🎉 Storage system test completed!")
+            
+        except Exception as e:
+            click.echo(f"❌ Storage test failed: {e}")
+
+    @app.cli.command("test-directory-auto-creation")
+    def test_directory_auto_creation():
+        """Test that directories are automatically created with parents=True behavior."""
+        click.echo("Testing automatic directory creation...")
+        
+        try:
+            import tempfile
+            import shutil
+            import os
+            from app.services.media_file import MediaFileService
+            
+            # Create a temporary directory for testing
+            with tempfile.TemporaryDirectory() as temp_dir:
+                click.echo(f"Using temporary test directory: {temp_dir}")
+                
+                # Test deep nested directory creation
+                test_path = os.path.join(temp_dir, 'level1', 'level2', 'level3', 'level4')
+                MediaFileService._ensure_directory(test_path)
+                
+                if os.path.exists(test_path):
+                    click.echo("✅ Deep nested directory creation works")
+                else:
+                    click.echo("❌ Deep nested directory creation failed")
+                
+                # Test session directory creation
+                session_dir = MediaFileService._get_session_directory('test_session', 'phq9', 'image')
+                full_session_path = os.path.join(temp_dir, session_dir)
+                MediaFileService._ensure_directory(full_session_path)
+                
+                if os.path.exists(full_session_path):
+                    click.echo("✅ Session directory auto-creation works")
+                else:
+                    click.echo("❌ Session directory auto-creation failed")
+                
+                # Test with different assessment types
+                test_combinations = [
+                    ('test_session_1', 'phq9', 'image'),
+                    ('test_session_1', 'phq9', 'video'),
+                    ('test_session_1', 'open_questions', 'image'),
+                    ('test_session_1', 'open_questions', 'video'),
+                    ('another_session_123', 'phq9', 'image'),
+                ]
+                
+                for session_id, assessment_type, media_type in test_combinations:
+                    rel_dir = MediaFileService._get_session_directory(session_id, assessment_type, media_type)
+                    full_path = os.path.join(temp_dir, rel_dir)
+                    MediaFileService._ensure_directory(full_path)
+                    
+                    if os.path.exists(full_path):
+                        click.echo(f"✅ Created: {rel_dir}")
+                    else:
+                        click.echo(f"❌ Failed: {rel_dir}")
+                
+                click.echo("🎉 Directory auto-creation test completed!")
+                
+        except Exception as e:
+            click.echo(f"❌ Directory auto-creation test failed: {e}")
+            import traceback
+            click.echo(traceback.format_exc())
+

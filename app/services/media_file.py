@@ -18,9 +18,30 @@ class MediaFileService:
         return current_app.config.get('UPLOAD_FOLDER', 'uploads')
     
     @staticmethod
+    def initialize_storage():
+        """Initialize upload directory structure - ensures all base directories exist"""
+        upload_root = MediaFileService._get_upload_root()
+        
+        # Create base directories
+        base_dirs = [
+            upload_root,
+            os.path.join(upload_root, 'assessments'),
+            os.path.join(upload_root, 'exports')
+        ]
+        
+        for dir_path in base_dirs:
+            MediaFileService._ensure_directory(dir_path)
+        
+        return upload_root
+    
+    @staticmethod
     def _ensure_directory(path):
-        """Create directory if it doesn't exist"""
-        os.makedirs(path, exist_ok=True)
+        """Create directory if it doesn't exist - ensures all parent directories are created"""
+        try:
+            os.makedirs(path, exist_ok=True)
+        except OSError as e:
+            # Handle permission errors gracefully
+            raise MediaFileException(f"Failed to create directory {path}: {e}")
     
     @staticmethod
     def _get_session_directory(session_id, assessment_type, media_type):
