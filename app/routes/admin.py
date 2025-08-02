@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for
 from flask_login import login_required, current_user
 from app.decorators.auth import admin_required
 from app.services.admin import AdminDashboardService
-from app.services.assessment_data import AssessmentDataService
+from app.services.assessment import AssessmentService
 from flask import send_file, request, jsonify
 from app.services.export import ExportService, ExportException
 from app.services.emotion_storage import emotion_storage
@@ -138,7 +138,7 @@ def export_preview(session_id):
 def view_assessment_data(session_id):
     """View comprehensive assessment data with all settings and responses"""
     try:
-        complete_data = AssessmentDataService.get_complete_assessment_data(session_id)
+        complete_data = AssessmentService.get_complete_assessment_data(session_id)
         if not complete_data:
             flash('Assessment session not found', 'error')
             return redirect(url_for('admin.dashboard'))
@@ -161,9 +161,9 @@ def get_assessment_data_api(session_id):
         format_type = request.args.get('format', 'complete')
         
         if format_type == 'summary':
-            data = AssessmentDataService.get_assessment_summary(session_id)
+            data = AssessmentService.get_assessment_summary(session_id)
         else:
-            data = AssessmentDataService.get_complete_assessment_data(session_id)
+            data = AssessmentService.get_complete_assessment_data(session_id)
         
         if not data:
             return jsonify({'error': 'Assessment session not found'}), 404

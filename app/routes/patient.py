@@ -9,7 +9,7 @@ from app import db
 from app.decorators.auth import patient_required
 from app.models.settings import AppSetting
 from app.models.assessment import Assessment, EmotionData
-from app.services.assesment import AssessmentService
+from app.services.assessment import AssessmentService
 from app.services.assessment_balance import AssessmentBalanceService
 from app.services.phq import PHQService
 from app.services.openai_chat import OpenAIChatService

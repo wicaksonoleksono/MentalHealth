@@ -5,7 +5,7 @@ from datetime import datetime
 from app import db
 from app.models.settings import AppSetting, SettingsKey
 from app.models.assessment import Assessment, PHQ9Response
-from app.services.assesment import AssessmentService
+from app.services.assessment import AssessmentService
 from app.services.settings import SettingsService
 
 

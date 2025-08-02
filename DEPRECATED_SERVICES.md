@@ -55,33 +55,56 @@ emotion_data = emotion_storage.save_video(
 ### **Old Routes Removed:**
 - ❌ `/patient/capture-emotion` - Removed (old base64 JSON approach)
 
-## 📝 **Safe to Delete:**
+## 📝 **DELETED Services:**
 
-**After verifying everything works, these files can be deleted:**
+**✅ Successfully removed redundant files:**
 
 ```bash
-# Old services (functionality moved to emotion_storage.py)
-rm app/services/media_file.py
-rm app/services/vps_storage.py
+# Old emotion capture services (merged into emotion_storage.py)
+❌ app/services/media_file.py          # DELETED
+❌ app/services/vps_storage.py         # DELETED
 
-# Update any remaining imports to use:
-# from app.services.emotion_storage import emotion_storage
+# Old assessment services (merged into assessment.py)  
+❌ app/services/assesment.py           # DELETED (patient workflow)
+❌ app/services/assessment_data.py     # DELETED (admin/export)
+
+# New unified services:
+✅ app/services/emotion_storage.py     # Handles all file operations
+✅ app/services/assessment.py          # Handles all assessment operations
 ```
 
 ## 🎯 **Result:**
 
 **Before (Messy):**
 ```python
-# 3 separate operations, error-prone
+# EMOTION CAPTURE: 3 separate operations, error-prone
 result = vps_storage.save_video(...)          # Save file
 emotion_data = EmotionData(...)               # Create DB record  
 db.session.add(emotion_data); db.session.commit()  # Manual SQL
+
+# ASSESSMENT DATA: 2 services with duplicate functions
+from app.services.assesment import AssessmentService           # Patient workflow
+from app.services.assessment_data import AssessmentDataService  # Admin/export
+assessment = AssessmentService.get_assessment_summary(...)     # Duplicate function!
+data = AssessmentDataService.get_assessment_summary(...)       # Same function!
 ```
 
 **After (Clean):**
 ```python
-# 1 clean operation, transaction-safe
+# EMOTION CAPTURE: 1 clean operation, transaction-safe
 emotion_data = emotion_storage.save_video(...)  # Does everything!
+
+# ASSESSMENT: 1 unified service for everything
+from app.services.assessment import AssessmentService
+assessment = AssessmentService.create_assessment_session(...)  # Patient workflow
+data = AssessmentService.get_complete_assessment_data(...)     # Admin/export
+summary = AssessmentService.get_assessment_summary(...)       # No more duplicates!
 ```
 
 **No more cluster fuck!** 🎉
+
+## 📊 **File Count Reduction:**
+
+**Before:** 6 messy services
+**After:** 2 clean services  
+**Reduction:** 67% fewer files!
