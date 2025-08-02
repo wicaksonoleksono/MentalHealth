@@ -182,13 +182,13 @@ function chatInterface() {
         async initializeEmotionCapture() {
             const config = {
                 assessment_type: 'open_questions',
-                mode: '{{ recording_config.mode or "capture" }}',
+                mode: '{{ recording_config.mode }}',
                 enabled: {{ 'true' if recording_config.enabled else 'false' }},
-                interval: {{ recording_config.interval or 5 }},
-                resolution: '{{ recording_config.resolution or "1280x720" }}',
-                image_quality: {{ recording_config.image_quality or 0.8 }},
-                video_quality: '{{ recording_config.video_quality or "720p" }}',
-                video_format: '{{ recording_config.video_format or "webm" }}'
+                interval: {{ recording_config.interval }},
+                resolution: '{{ recording_config.resolution }}',
+                image_quality: {{ recording_config.image_quality }},
+                video_quality: '{{ recording_config.video_quality }}',
+                video_format: '{{ recording_config.video_format }}'
             };
             
             console.log('🎬 Open Questions: Initializing emotion capture with config:', config);

@@ -152,26 +152,18 @@
 <script src="{{ url_for('static', filename='js/emotion-capture.js') }}"></script>
 
 <script>
-// PHQ-9 Question Assessment
 let pageLoadTime = Date.now();
-
-// Initialize emotion capture for PHQ-9
 async function initializePHQ9EmotionCapture() {
-    console.log('🔧 PHQ-9: Function called!');
-    
     try {
-        console.log('🔧 PHQ-9: Building config object...');
-        
-        // Create config object with hardcoded values first to test
         const config = {
             assessment_type: 'phq9',
-            mode: 'video',
-            enabled: true,
-            interval: 5,
-            resolution: '640x480',
-            image_quality: 0.8,
-            video_quality: '480p',
-            video_format: 'webm'
+            mode: '{{ recording_config.mode }}',
+            enabled: {{ 'true' if recording_config.enabled else 'false' }},
+            interval: {{ recording_config.interval }},
+            resolution: '{{ recording_config.resolution }}',
+            image_quality: {{ recording_config.image_quality }},
+            video_quality: '{{ recording_config.video_quality }}',
+            video_format: '{{ recording_config.video_format }}'
         };
         
         console.log('🔧 PHQ-9: Config object created:', config);
@@ -187,15 +179,10 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('🎯 PHQ-9: DOMContentLoaded fired');
     console.log('🎯 PHQ-9: window.initializeEmotionCapture exists:', typeof window.initializeEmotionCapture);
     initializePHQ9EmotionCapture();
-    
-    // Form submission with timing 
     document.getElementById('phq-form').addEventListener('submit', function(e) {
         e.preventDefault();
-        
-        // Add timing data and submit form
         const responseTime = Date.now() - pageLoadTime;
         const responseTimestamp = Date.now();
-        
         const timeInput = document.createElement('input');
         timeInput.type = 'hidden';
         timeInput.name = 'response_time_ms';
