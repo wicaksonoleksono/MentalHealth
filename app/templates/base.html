@@ -62,7 +62,7 @@
 
     {% block head %}{% endblock %}
 </head>
-<body class="h-full bg-secondary-50 text-secondary-900">
+<body class="h-full bg-secondary-50 text-secondary-900 overflow-x-hidden">
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}

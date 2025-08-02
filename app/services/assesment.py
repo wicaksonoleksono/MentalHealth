@@ -252,5 +252,46 @@ class AssessmentService:
                 'open_questions_completed': open_questions_completed
             }
         }
+# Additional helper methods for settings integration
+
+    @staticmethod
+    def get_assessment_configuration():
+        """Get current assessment configuration from settings for both PHQ and OpenAI services."""
+        from app.services.phq import PHQService
+        from app.services.openai_chat import OpenAIChatService
+        from app.services.settings import SettingsService
+        
+        try:
+            phq_settings = PHQService.get_phq_settings()
+            chat_settings = OpenAIChatService.get_chat_settings()
+            recording_config = SettingsService.get_recording_config()
+            
+            return {
+                'phq9': {
+                    'total_questions': phq_settings['total_questions'],
+                    'questions_per_page': phq_settings['questions_per_page'],
+                    'randomize_questions': phq_settings['randomize_questions'],
+                    'show_progress': phq_settings['show_progress'],
+                    'has_custom_categories': len(phq_settings['active_categories']) > 0
+                },
+                'open_questions': {
+                    'has_prompt': bool(chat_settings.get('openquestion_prompt')),
+                    'has_instructions': bool(chat_settings.get('instructions')),
+                    'enable_followup': chat_settings.get('enable_followup', True)
+                },
+                'recording': {
+                    'enabled': recording_config['enabled'],
+                    'mode': recording_config['mode'],
+                    'resolution': recording_config['resolution']
+                }
+            }
+        except Exception as e:
+            return {
+                'error': str(e),
+                'phq9': {'total_questions': 0, 'has_custom_categories': False},
+                'open_questions': {'has_prompt': False},
+                'recording': {'enabled': False}
+            }
+
 # Legacy method removed: save_emotion_data() 
 # Now use MediaFileService.save_emotion_capture() directly in routes

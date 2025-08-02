@@ -23,6 +23,11 @@ class Assessment(db.Model):
     # Results
     phq9_score = db.Column(db.Integer)
     phq9_severity = db.Column(db.String(20))  # 'minimal', 'mild', 'moderate', 'severe'
+    # Settings used during assessment (JSON)
+    phq9_settings = db.Column(db.Text)  # JSON string of PHQ-9 settings used
+    recording_settings = db.Column(db.Text)  # JSON string of recording settings used
+    chat_settings = db.Column(db.Text)  # JSON string of chat settings used
+    assessment_order = db.Column(db.String(20))  # 'phq_first' or 'questions_first'
     # Relationships
     phq9_responses = db.relationship('PHQ9Response', backref='assessment', lazy=True, cascade='all, delete-orphan')
     open_responses = db.relationship('OpenQuestionResponse', backref='assessment', lazy=True, cascade='all, delete-orphan')
@@ -50,12 +55,59 @@ class Assessment(db.Model):
                 'open_questions_completed': self.open_questions_completed,
                 'both_completed': self.phq9_completed and self.open_questions_completed
             }
+    def set_phq9_settings(self, settings_dict):
+        """Store PHQ-9 settings as JSON"""
+        import json
+        self.phq9_settings = json.dumps(settings_dict, ensure_ascii=False)
+    
+    def get_phq9_settings(self):
+        """Retrieve PHQ-9 settings from JSON"""
+        import json
+        if self.phq9_settings:
+            try:
+                return json.loads(self.phq9_settings)
+            except json.JSONDecodeError:
+                return {}
+        return {}
+    
+    def set_recording_settings(self, settings_dict):
+        """Store recording settings as JSON"""
+        import json
+        self.recording_settings = json.dumps(settings_dict, ensure_ascii=False)
+    
+    def get_recording_settings(self):
+        """Retrieve recording settings from JSON"""
+        import json
+        if self.recording_settings:
+            try:
+                return json.loads(self.recording_settings)
+            except json.JSONDecodeError:
+                return {}
+        return {}
+    
+    def set_chat_settings(self, settings_dict):
+        """Store chat settings as JSON"""
+        import json
+        self.chat_settings = json.dumps(settings_dict, ensure_ascii=False)
+    
+    def get_chat_settings(self):
+        """Retrieve chat settings from JSON"""
+        import json
+        if self.chat_settings:
+            try:
+                return json.loads(self.chat_settings)
+            except json.JSONDecodeError:
+                return {}
+        return {}
+
     def __repr__(self):
         return f'<Assessment {self.session_id} - User {self.user_id}>'
 class PHQ9Response(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     assessment_id = db.Column(db.Integer, db.ForeignKey('assessment.id'), nullable=False)
-    question_number = db.Column(db.Integer, nullable=False)  # 1-9
+    question_number = db.Column(db.Integer, nullable=False)  # Category number (1-20)
+    question_index_in_category = db.Column(db.Integer, default=0)  # Index within category (0,1,2...)
+    question_text = db.Column(db.Text)  # Store the actual question text
     response_value = db.Column(db.Integer, nullable=False)   # 0-3
     response_time_ms = db.Column(db.Integer)  # Time taken to answer in milliseconds
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

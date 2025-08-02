@@ -32,11 +32,15 @@ class SettingsKey(Enum):
     SCALE_LABEL_1 = ('scale_label_1', 'string', 'Scale label for 1', 'Several days')
     SCALE_LABEL_2 = ('scale_label_2', 'string', 'Scale label for 2', 'More than half the days')
     SCALE_LABEL_3 = ('scale_label_3', 'string', 'Scale label for 3', 'Nearly every day')
+    SCALE_LABEL_4 = ('scale_label_4', 'string', 'Scale label for 4', 'Always')
+    SCALE_LABEL_5 = ('scale_label_5', 'string', 'Scale label for 5', 'Extremely')
+    SCALE_LABEL_6 = ('scale_label_6', 'string', 'Scale label for 6', 'Very high')
+    SCALE_LABEL_7 = ('scale_label_7', 'string', 'Scale label for 7', 'Maximum')
+    SCALE_LABEL_8 = ('scale_label_8', 'string', 'Scale label for 8', 'Severe')
+    SCALE_LABEL_9 = ('scale_label_9', 'string', 'Scale label for 9', 'Critical')
     
     # PHQ9 Behavior Settings
     PHQ9_RANDOMIZE_QUESTIONS = ('phq9_randomize_questions', 'boolean', 'Randomize PHQ9 questions', False)
-    PHQ9_SHOW_PROGRESS = ('phq9_show_progress', 'boolean', 'Show progress bar', True)
-    PHQ9_QUESTIONS_PER_PAGE = ('phq9_questions_per_page', 'integer', 'Questions per page', 1)
     
     def __init__(self, key, data_type, description, default=None):
         self.key = key
@@ -73,9 +77,10 @@ class SettingsKey(Enum):
         """Get all PHQ9-related settings"""
         phq9_keys = {
             cls.PHQ9_INSTRUCTIONS, cls.PHQ9_RANDOMIZE_QUESTIONS,
-            cls.PHQ9_SHOW_PROGRESS, cls.PHQ9_QUESTIONS_PER_PAGE,
             cls.SCALE_MIN, cls.SCALE_MAX,
-            cls.SCALE_LABEL_0, cls.SCALE_LABEL_1, cls.SCALE_LABEL_2, cls.SCALE_LABEL_3
+            cls.SCALE_LABEL_0, cls.SCALE_LABEL_1, cls.SCALE_LABEL_2, cls.SCALE_LABEL_3,
+            cls.SCALE_LABEL_4, cls.SCALE_LABEL_5, cls.SCALE_LABEL_6, cls.SCALE_LABEL_7,
+            cls.SCALE_LABEL_8, cls.SCALE_LABEL_9
         }
         return phq9_keys
     

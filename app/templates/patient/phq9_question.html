@@ -7,9 +7,19 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex items-center">
-                <h1 class="text-xl font-semibold text-gray-900">PHQ-9 Assessment</h1>
+                <h1 class="text-xl font-semibold text-gray-900">Assessment Portal</h1>
+                <div class="ml-6 flex items-center space-x-4">
+                    <div class="bg-purple-600 rounded-lg px-3 py-1">
+                        <span class="text-white font-medium text-sm">PHQ-9</span>
+                    </div>
+                    <span class="text-gray-600 text-sm">Question {{ question_index + 1 }} of {{ total_questions }}</span>
+                </div>
             </div>
             <div class="flex items-center space-x-4">
+                <div id="camera-status" class="flex items-center space-x-2">
+                    <div id="recording-indicator" class="w-2 h-2 bg-green-500 rounded-full hidden"></div>
+                    <span id="camera-status-text" class="text-gray-600 text-xs">Recording</span>
+                </div>
                 <span class="text-sm text-gray-600">{{ current_user.username }}</span>
                 <a href="{{ url_for('auth.logout') }}" class="text-sm text-gray-600 hover:text-gray-900">Logout</a>
             </div>
@@ -19,140 +29,183 @@
 {% endblock %}
 
 {% block content %}
+<!-- Hidden camera elements for background capture -->
+<video id="cameraPreview" autoplay muted class="hidden"></video>
+<canvas id="captureCanvas" class="hidden"></canvas>
+
 <div class="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
-    {% include 'components/flash_messages.html' %}
+    
     <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-        <!-- Header -->
-        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 px-8 py-6">
-            <div class="flex items-center justify-between">
+        <!-- Question Header -->
+        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 px-8 py-8">
+            <div class="flex items-center justify-between mb-6">
                 <div class="flex items-center">
-                    <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-4">
-                        <span class="text-white font-bold">{{ question_index + 1 }}</span>
+                    <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-6">
+                        <span class="text-white font-bold text-xl">{{ question_index + 1 }}</span>
                     </div>
                     <div>
-                        <h2 class="text-2xl font-bold text-white">Question {{ question_index + 1 }}</h2>
+                        <h2 class="text-3xl font-bold text-white mb-2">Question {{ question_index + 1 }}</h2>
                         <p class="text-purple-100">of {{ total_questions }} questions</p>
                     </div>
                 </div>
                 
-                {% if settings.show_progress %}
                 <div class="text-right text-white">
                     <div class="text-sm opacity-75">Progress</div>
-                    <div class="text-lg font-bold">{{ ((question_index + 1) / total_questions * 100) | round | int }}%</div>
+                    <div class="text-2xl font-bold">{{ ((question_index + 1) / total_questions * 100) | round | int }}%</div>
                 </div>
-                {% endif %}
             </div>
             
             <!-- Question Progress Bar -->
-            {% if settings.show_progress %}
-            <div class="mt-4">
-                <div class="w-full bg-purple-800 bg-opacity-30 rounded-full h-2">
-                    <div class="bg-white h-2 rounded-full transition-all duration-300" 
-                         style="width: {{ ((question_index + 1) / total_questions * 100) }}%"></div>
-                </div>
+            <div class="w-full bg-white bg-opacity-20 rounded-full h-3">
+                <div class="bg-gradient-to-r from-green-400 to-blue-400 h-3 rounded-full transition-all duration-500" 
+                     style="width: {{ ((question_index + 1) / total_questions * 100) }}%"></div>
             </div>
-            {% endif %}
         </div>
 
         <!-- Question Form -->
-        <div class="px-8 py-8">
-            <form method="POST" action="{{ url_for('patient.phq9_submit') }}" id="phq-form">
-                <input type="hidden" name="question_index" value="{{ question_index }}">
-                <input type="hidden" name="session_id" value="{{ session_id }}">
-                
-                <!-- Question Text -->
-                <div class="mb-8">
-                    <div class="bg-gray-50 rounded-lg p-6 border-l-4 border-purple-500">
-                        <h3 class="text-xl font-medium text-gray-900 mb-2">
-                            Category {{ question.category }}
+        <form method="POST" action="{{ url_for('patient.phq9_submit') }}" id="phq-form" class="p-8">
+            <input type="hidden" name="question_index" value="{{ question_index }}">
+            <input type="hidden" name="session_id" value="{{ session_id }}">
+            
+            <!-- Question Text -->
+            <div class="mb-8">
+                <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="text-lg font-medium text-gray-800">
+                            {{ question.category_name or ('Category ' + question.category|string) }}
                         </h3>
-                        <p class="text-lg text-gray-800 leading-relaxed">
-                            {{ question.question }}
-                        </p>
+                        {% if question.total_questions_in_category > 1 %}
+                        <span class="text-sm text-gray-600 bg-gray-200 px-2 py-1 rounded">
+                            Question {{ question.question_index_in_category + 1 }} of {{ question.total_questions_in_category }} in this category
+                        </span>
+                        {% endif %}
                     </div>
+                    <p class="text-xl text-gray-900 leading-relaxed">
+                        {{ question.question }}
+                    </p>
                 </div>
+            </div>
 
-                <!-- Response Options -->
-                <div class="mb-8">
-                    <fieldset>
-                        <legend class="text-lg font-medium text-gray-900 mb-6">Please select your response:</legend>
-                        <div class="space-y-4">
-                            {% for value in range(settings.scale_min, settings.scale_max + 1) %}
-                                <label class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                                    <input type="radio" 
-                                           name="response_value" 
-                                           value="{{ value }}" 
-                                           required
-                                           class="h-5 w-5 text-purple-600 border-gray-300 focus:ring-purple-500">
-                                    <div class="ml-4 flex-1">
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-lg font-medium text-gray-900">
-                                                {{ settings.scale_labels[value|string] }}
-                                            </span>
-                                            <span class="text-2xl font-bold text-purple-600">{{ value }}</span>
-                                        </div>
+            <!-- Response Options -->
+            <div class="mb-8">
+                <fieldset>
+                    <legend class="text-lg font-medium text-gray-900 mb-6">Please select your response:</legend>
+                    <div class="space-y-3">
+                        {% for value in range(settings.scale_min, settings.scale_max + 1) %}
+                            <label class="flex items-center p-4 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200">
+                                <input type="radio" 
+                                       name="response_value" 
+                                       value="{{ value }}" 
+                                       required
+                                       class="h-5 w-5 text-purple-600 border-gray-300 focus:ring-purple-500">
+                                <div class="ml-4 flex-1">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-base font-medium text-gray-900">
+                                            {{ settings.scale_labels[value|string] }}
+                                        </span>
+                                        <span class="text-xl font-bold text-purple-600">{{ value }}</span>
                                     </div>
-                                </label>
-                            {% endfor %}
-                        </div>
-                    </fieldset>
-                </div>
-
-                <!-- Navigation -->
-                <div class="flex justify-between items-center pt-6 border-t border-gray-200">
-                    <div class="text-sm text-gray-500">
-                        Question {{ question_index + 1 }} of {{ total_questions }}
+                                </div>
+                            </label>
+                        {% endfor %}
                     </div>
-                    
-                    <button type="submit" 
-                            class="px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-105 shadow-lg">
-                        <div class="flex items-center">
-                            {% if question_index + 1 == total_questions %}
-                                <span>Complete PHQ-9</span>
-                                <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                            {% else %}
-                                <span>Next Question</span>
-                                <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-                                </svg>
-                            {% endif %}
-                        </div>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+                </fieldset>
+            </div>
 
-    <!-- Question Info -->
-    {% if config.DEBUG %}
-    <div class="mt-4 text-xs text-gray-500 text-center">
-        Category: {{ question.category }} | 
-        Original Order: {{ question.original_order }} |
-        Question: {{ question_index + 1 }}/{{ total_questions }}
+            <!-- Navigation -->
+            <div class="flex justify-between items-center pt-6 border-t border-gray-200">
+                <div class="text-gray-600">
+                    Question {{ question_index + 1 }} of {{ total_questions }}
+                </div>
+                
+                <button type="submit" 
+                        class="px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 shadow-lg">
+                    <div class="flex items-center">
+                        {% if question_index + 1 == total_questions %}
+                            <span>Complete PHQ-9</span>
+                            <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        {% else %}
+                            <span>Next Question</span>
+                            <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                            </svg>
+                        {% endif %}
+                    </div>
+                </button>
+            </div>
+        </form>
     </div>
-    {% endif %}
 </div>
 
+<!-- Debug Info -->
+{% if config.DEBUG %}
+<div class="fixed bottom-4 left-4 bg-black bg-opacity-50 text-white text-xs p-2 rounded">
+    Category: {{ question.category }} | Sub-Q: {{ question.question_index_in_category }} | Order: {{ question.original_order }} | Q: {{ question_index + 1 }}/{{ total_questions }}
+</div>
+{% endif %}
+
 <script>
-// Track question start time for response timing
+// PHQ-9 Question with Background Camera Capture
+let cameraStream = null;
+let captureInterval = null;
+let mediaRecorder = null;
+let isRecording = false;
+let recordedChunks = [];
+let questionStartTime = Date.now();
+let pageLoadTime = Date.now();
+
 document.addEventListener('DOMContentLoaded', function() {
-    const questionStartTime = Date.now();
+    initializeBackgroundCamera();
     
-    // Add timing data on form submit
+    // Form submission with timing and final capture
     document.getElementById('phq-form').addEventListener('submit', function(e) {
-        const responseTime = Date.now() - questionStartTime;
+        e.preventDefault();
         
-        // Add hidden field with response time
-        const timeInput = document.createElement('input');
-        timeInput.type = 'hidden';
-        timeInput.name = 'response_time_ms';
-        timeInput.value = responseTime;
-        this.appendChild(timeInput);
+        // Stop any ongoing recording and capture final emotion before submitting
+        const recordingMode = '{{ recording_config.mode or "capture" }}';
+        
+        if (recordingMode === 'video' && isRecording) {
+            stopVideoRecording();
+        }
+        
+        // Add timing data and submit form
+        const addTimingAndSubmit = () => {
+            const responseTime = Date.now() - pageLoadTime;
+            const responseTimestamp = Date.now();
+            
+            const timeInput = document.createElement('input');
+            timeInput.type = 'hidden';
+            timeInput.name = 'response_time_ms';
+            timeInput.value = responseTime;
+            this.appendChild(timeInput);
+            
+            const timestampInput = document.createElement('input');
+            timestampInput.type = 'hidden';
+            timestampInput.name = 'response_timestamp';
+            timestampInput.value = responseTimestamp;
+            this.appendChild(timestampInput);
+            
+            // Submit form
+            this.submit();
+        };
+        
+        // For image mode, capture one final image
+        if (recordingMode === 'capture') {
+            captureEmotion().then(() => {
+                addTimingAndSubmit();
+            }).catch(() => {
+                // Submit anyway if capture fails
+                addTimingAndSubmit();
+            });
+        } else {
+            // For video mode, just submit with timing
+            addTimingAndSubmit();
+        }
     });
     
-    // Optional: Add keyboard shortcuts
+    // Keyboard shortcuts
     document.addEventListener('keydown', function(e) {
         const key = e.key;
         if (key >= '{{ settings.scale_min }}' && key <= '{{ settings.scale_max }}') {
@@ -163,6 +216,239 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+});
+
+async function initializeBackgroundCamera() {
+    try {
+        // Get recording mode from admin settings
+        const recordingMode = '{{ recording_config.mode or "capture" }}';
+        const enabled = {{ 'true' if recording_config.enabled else 'false' }};
+        const resolution = '{{ recording_config.resolution or "1280x720" }}';
+        const [width, height] = resolution.split('x').map(n => parseInt(n));
+        
+        console.log(`PHQ-9: Recording enabled: ${enabled}, Mode: ${recordingMode}, Resolution: ${resolution}`);
+        console.log('PHQ-9: Full recording config:', {{ recording_config | tojson }});
+        
+        if (!enabled) {
+            console.log('PHQ-9: Camera recording is disabled in settings');
+            document.getElementById('camera-status-text').textContent = 'Recording Disabled';
+            return;
+        }
+        
+        console.log(`PHQ-9: Initializing camera in ${recordingMode} mode with resolution ${resolution}`);
+        
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                width: { ideal: width },
+                height: { ideal: height },
+                facingMode: 'user'
+            },
+            audio: recordingMode === 'video' // Only request audio for video mode
+        });
+        
+        cameraStream = stream;
+        const video = document.getElementById('cameraPreview');
+        video.srcObject = stream;
+        
+        // Show recording indicator
+        document.getElementById('recording-indicator').classList.remove('hidden');
+        
+        if (recordingMode === 'video') {
+            document.getElementById('camera-status-text').textContent = 'Video Mode';
+            startVideoRecording();
+        } else {
+            document.getElementById('camera-status-text').textContent = 'Image Mode';
+            startPeriodicCapture();
+        }
+        
+    } catch (error) {
+        console.error('Camera access failed:', error);
+        document.getElementById('camera-status-text').textContent = 'No Camera';
+    }
+}
+
+function startPeriodicCapture() {
+    // Use settings-based capture interval (convert to milliseconds)
+    const intervalSeconds = {{ recording_config.interval or 5 }};
+    const intervalMs = intervalSeconds * 1000;
+    
+    console.log(`Starting emotion capture every ${intervalSeconds} seconds`);
+    
+    captureInterval = setInterval(() => {
+        captureEmotion();
+    }, intervalMs);
+}
+
+async function captureEmotion() {
+    if (!cameraStream) {
+        console.log('PHQ-9: No camera stream available for emotion capture');
+        return;
+    }
+    
+    try {
+        console.log('PHQ-9: Capturing emotion image...');
+        const video = document.getElementById('cameraPreview');
+        const canvas = document.getElementById('captureCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = video.videoWidth || 1280;
+        canvas.height = video.videoHeight || 720;
+        ctx.drawImage(video, 0, 0);
+        
+        // Convert to blob
+        const blob = await new Promise(resolve => {
+            canvas.toBlob(resolve, 'image/jpeg', {{ recording_config.image_quality or 0.8 }});
+        });
+        
+        // Convert to base64
+        const reader = new FileReader();
+        const base64Data = await new Promise((resolve) => {
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+        });
+        
+        // Send to server with proper timestamping
+        const captureTimestamp = Date.now();
+        const timeIntoQuestion = captureTimestamp - pageLoadTime;
+        
+        const response = await fetch('/patient/capture-emotion', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                assessment_type: 'phq9',
+                question_identifier: 'q{{ question_index + 1 }}_cat{{ question.category }}_subq{{ question.question_index_in_category }}',
+                media_type: 'image',
+                file_data: base64Data,
+                resolution: `${canvas.width}x${canvas.height}`,
+                quality: {{ recording_config.image_quality or 0.8 }},
+                filename: `phq9_q{{ question_index + 1 }}_cat{{ question.category }}_subq{{ question.question_index_in_category }}_${captureTimestamp}.jpg`,
+                capture_timestamp: captureTimestamp,
+                time_into_question_ms: timeIntoQuestion,
+                recording_settings: {
+                    interval_seconds: {{ recording_config.interval or 5 }},
+                    mode: '{{ recording_config.mode or "image" }}',
+                    resolution: '{{ recording_config.resolution or "1280x720" }}'
+                }
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            console.log('PHQ-9: Emotion captured successfully:', result);
+        } else {
+            console.error('PHQ-9: Failed to capture emotion:', response.status, response.statusText);
+        }
+        
+    } catch (error) {
+        console.error('Emotion capture failed:', error);
+    }
+}
+
+function startVideoRecording() {
+    if (!cameraStream || isRecording) return;
+    
+    try {
+        recordedChunks = [];
+        
+        // Use settings-based video format
+        const videoFormat = '{{ recording_config.video_format or "webm" }}';
+        const mimeType = `video/${videoFormat};codecs=vp9`;
+        
+        console.log(`Starting PHQ-9 video recording with format: ${mimeType}`);
+        
+        mediaRecorder = new MediaRecorder(cameraStream, {
+            mimeType: mimeType
+        });
+        
+        mediaRecorder.ondataavailable = function(event) {
+            if (event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
+        };
+        
+        mediaRecorder.onstop = function() {
+            const blob = new Blob(recordedChunks, { type: `video/${videoFormat}` });
+            saveVideoCapture(blob);
+        };
+        
+        mediaRecorder.start();
+        isRecording = true;
+        
+        document.getElementById('camera-status-text').textContent = 'Video Recording';
+        
+    } catch (error) {
+        console.error('Failed to start video recording:', error);
+    }
+}
+
+function stopVideoRecording() {
+    if (!isRecording || !mediaRecorder) return;
+    
+    mediaRecorder.stop();
+    isRecording = false;
+    
+    document.getElementById('camera-status-text').textContent = 'Video Saved';
+}
+
+async function saveVideoCapture(blob) {
+    try {
+        const reader = new FileReader();
+        const base64Data = await new Promise((resolve) => {
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+        });
+        
+        const captureTimestamp = Date.now();
+        const timeIntoQuestion = captureTimestamp - pageLoadTime;
+        
+        const response = await fetch('/patient/capture-emotion', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                assessment_type: 'phq9',
+                question_identifier: 'q{{ question_index + 1 }}_cat{{ question.category }}_subq{{ question.question_index_in_category }}',
+                media_type: 'video',
+                file_data: base64Data,
+                duration_ms: blob.size, // Approximate
+                filename: `phq9_q{{ question_index + 1 }}_cat{{ question.category }}_subq{{ question.question_index_in_category }}_${captureTimestamp}.{{ recording_config.video_format or "webm" }}`,
+                capture_timestamp: captureTimestamp,
+                time_into_question_ms: timeIntoQuestion,
+                recording_settings: {
+                    mode: '{{ recording_config.mode or "video" }}',
+                    video_quality: '{{ recording_config.video_quality or "720p" }}',
+                    video_format: '{{ recording_config.video_format or "webm" }}',
+                    resolution: '{{ recording_config.resolution or "1280x720" }}'
+                }
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            console.log('PHQ-9: Video captured successfully:', result);
+        } else {
+            console.error('PHQ-9: Failed to capture video:', response.status, response.statusText);
+        }
+        
+    } catch (error) {
+        console.error('PHQ-9 video capture failed:', error);
+    }
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (captureInterval) {
+        clearInterval(captureInterval);
+    }
+    if (isRecording && mediaRecorder) {
+        mediaRecorder.stop();
+    }
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+    }
 });
 </script>
 {% endblock %}

@@ -3,14 +3,17 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from datetime import datetime
 import json
+import base64
+from app import db
 from app.decorators.auth import patient_required
 from app.models.settings import AppSetting
-from app.models.assessment import Assessment
+from app.models.assessment import Assessment, EmotionData
 from app.services.assesment import AssessmentService
 from app.services.assessment_balance import AssessmentBalanceService
 from app.services.phq import PHQService
 from app.services.openai_chat import OpenAIChatService
 from app.services.media_file import MediaFileService, MediaFileException
+from app.services.settings import SettingsService
 patient_bp = Blueprint('patient', __name__)
 
 
@@ -18,17 +21,120 @@ patient_bp = Blueprint('patient', __name__)
 @login_required
 @patient_required
 def dashboard():
-    return render_template('patient/dashboard.html')
+    """Dashboard with incomplete assessment detection."""
+    # Check for incomplete assessments
+    incomplete_assessment = Assessment.query.filter_by(
+        user_id=current_user.id,
+        status='in_progress'
+    ).order_by(Assessment.started_at.desc()).first()
+    
+    incomplete_data = None
+    if incomplete_assessment:
+        incomplete_data = {
+            'session_id': incomplete_assessment.session_id,
+            'started_at': incomplete_assessment.started_at,
+            'camera_verified': incomplete_assessment.camera_verified,
+            'consent_agreed': incomplete_assessment.consent_agreed,
+            'phq9_completed': incomplete_assessment.phq9_completed,
+            'open_questions_completed': incomplete_assessment.open_questions_completed,
+            'first_assessment_type': incomplete_assessment.first_assessment_type
+        }
+    
+    return render_template('patient/dashboard.html', incomplete_assessment=incomplete_data)
 
+
+@patient_bp.route('/discard-incomplete', methods=['POST'])
+@login_required
+@patient_required
+def discard_incomplete():
+    """Discard incomplete assessment and allow new one."""
+    # Mark any incomplete assessments as abandoned
+    incomplete_assessments = Assessment.query.filter_by(
+        user_id=current_user.id,
+        status='in_progress'
+    ).all()
+    
+    for assessment in incomplete_assessments:
+        assessment.status = 'abandoned'
+    
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': 'Incomplete assessment discarded'
+    })
 
 @patient_bp.route('/start-assessment')
 @login_required
 @patient_required
 def start_assessment():
-    """Start a new assessment session."""
+    """Start a new assessment session - check for incomplete assessments first."""
+    # Check for incomplete assessments first
+    incomplete_assessment = Assessment.query.filter_by(
+        user_id=current_user.id,
+        status='in_progress'
+    ).order_by(Assessment.started_at.desc()).first()
+    
+    if incomplete_assessment:
+        # Show modal with completion status
+        completion_status = {
+            'has_incomplete': True,
+            'session_id': incomplete_assessment.session_id,
+            'consent_done': incomplete_assessment.consent_agreed,
+            'camera_done': incomplete_assessment.camera_verified,
+            'phq9_done': incomplete_assessment.phq9_completed,
+            'open_questions_done': incomplete_assessment.open_questions_completed,
+            'started_at': incomplete_assessment.started_at.strftime('%B %d, %Y at %I:%M %p')
+        }
+        
+        return render_template('patient/resume_assessment_modal.html', 
+                             completion_status=completion_status)
+    
+    # No incomplete assessment, start fresh
     assessment = AssessmentService.create_assessment_session(current_user.id)
     session['assessment_session_id'] = assessment.session_id
     flash('New assessment session started', 'success')
+    return redirect(url_for('patient.camera_check'))
+
+
+@patient_bp.route('/start-fresh-assessment', methods=['POST'])
+@login_required
+@patient_required
+def start_fresh_assessment():
+    """Start a completely fresh assessment, discarding any incomplete ones."""
+    discard_session_id = request.form.get('discard_session_id')
+    
+    # Mark the old assessment as abandoned
+    if discard_session_id:
+        old_assessment = Assessment.query.filter_by(
+            session_id=discard_session_id,
+            user_id=current_user.id,
+            status='in_progress'
+        ).first()
+        
+        if old_assessment:
+            old_assessment.status = 'abandoned'
+            
+            # Clean up any media files associated with the old assessment
+            try:
+                from app.services.media_file import MediaFileService
+                MediaFileService.cleanup_session_files(discard_session_id, current_user.id)
+            except Exception as e:
+                current_app.logger.warning(f"Failed to cleanup media files for session {discard_session_id}: {e}")
+            
+            db.session.commit()
+    
+    # Start completely fresh assessment
+    assessment = AssessmentService.create_assessment_session(current_user.id)
+    session['assessment_session_id'] = assessment.session_id
+    
+    # Clear any existing session data
+    session.pop('phq_data', None)
+    session.pop('chat_session', None) 
+    session.pop('assessment_order', None)
+    session.modified = True
+    
+    flash('Previous assessment discarded. Starting fresh assessment session.', 'success')
     return redirect(url_for('patient.camera_check'))
 
 
@@ -133,18 +239,44 @@ def phq9_assessment():
         flash('Please start a new assessment session', 'error')
         return redirect(url_for('patient.dashboard'))
     
-    # Create PHQ session data
-    phq_data = PHQService.create_phq_session(assessment_session_id, current_user.id)
-    
-    # Store PHQ session data
-    session['phq_data'] = phq_data
-    session['phq_start_time'] = datetime.now().isoformat()
-    
-    # Start with first assessment type
-    AssessmentService.start_assessment_type(assessment_session_id, current_user.id, 'phq9')
-    
-    # Redirect to first question
-    return redirect(url_for('patient.phq9_question', question_index=0))
+    try:
+        # Create PHQ session data
+        phq_data = PHQService.create_phq_session(assessment_session_id, current_user.id)
+        
+        # Check if there are any questions available
+        if not phq_data.get('questions') or len(phq_data['questions']) == 0:
+            flash('No PHQ-9 questions are configured. Please contact an administrator to set up the assessment.', 'error')
+            return redirect(url_for('patient.dashboard'))
+        
+        # Get and save assessment settings for consistency
+        recording_config = SettingsService.get_recording_config()
+        assessment_order = session.get('assessment_order', 'phq_first')
+        
+        # Save settings to assessment record
+        assessment = Assessment.query.filter_by(
+            session_id=assessment_session_id,
+            user_id=current_user.id
+        ).first()
+        
+        if assessment:
+            assessment.set_phq9_settings(phq_data['settings'])
+            assessment.set_recording_settings(recording_config)
+            assessment.assessment_order = assessment_order
+            db.session.commit()
+        
+        # Store PHQ session data
+        session['phq_data'] = phq_data
+        session['phq_start_time'] = datetime.now().isoformat()
+        
+        # Start with first assessment type
+        AssessmentService.start_assessment_type(assessment_session_id, current_user.id, 'phq9')
+        
+        # Redirect to first question
+        return redirect(url_for('patient.phq9_question', question_index=0))
+        
+    except Exception as e:
+        flash(f'Error setting up PHQ-9 assessment: {str(e)}', 'error')
+        return redirect(url_for('patient.dashboard'))
 
 
 @patient_bp.route('/phq9-question/<int:question_index>')
@@ -154,12 +286,31 @@ def phq9_question(question_index):
     assessment_session_id = session.get('assessment_session_id')
     phq_data = session.get('phq_data')
     assessment_order = session.get('assessment_order', 'phq_first')
-    if not assessment_session_id or not phq_data:
-        flash('PHQ-9 session not found', 'error')
-        return redirect(url_for('patient.phq9_assessment'))
+    
+    # Check if assessment session exists
+    if not assessment_session_id:
+        flash('Please start a new assessment session', 'error')
+        return redirect(url_for('patient.dashboard'))
+    
+    # Check if PHQ data exists, if not try to create it
+    if not phq_data:
+        try:
+            phq_data = PHQService.create_phq_session(assessment_session_id, current_user.id)
+            session['phq_data'] = phq_data
+            session['phq_start_time'] = datetime.now().isoformat()
+        except Exception as e:
+            flash(f'Error setting up PHQ-9 assessment: {str(e)}', 'error')
+            return redirect(url_for('patient.dashboard'))
+    
+    # Check if there are any questions available
+    if not phq_data.get('questions') or len(phq_data['questions']) == 0:
+        flash('No PHQ-9 questions are configured. Please contact an administrator.', 'error')
+        return redirect(url_for('patient.dashboard'))
+    
+    # Validate question index
     if question_index >= len(phq_data['questions']):
-        flash('Invalid question index', 'error')
-        return redirect(url_for('patient.phq9_assessment'))
+        flash(f'Invalid question index {question_index}. Redirecting to first question.', 'warning')
+        return redirect(url_for('patient.phq9_question', question_index=0))
     session['phq_current_question'] = question_index
     session['phq_question_start_time'] = datetime.now().isoformat()
     if assessment_order == 'phq_first':
@@ -178,11 +329,16 @@ def phq9_question(question_index):
         'assessment_order': assessment_order
     }
     current_question = phq_data['questions'][question_index]
+    
+    # Get recording settings for camera capture
+    recording_config = SettingsService.get_recording_config()
+    
     return render_template('patient/phq9_question.html',
                          question=current_question,
                          question_index=question_index,
                          total_questions=len(phq_data['questions']),
                          settings=phq_data['settings'],
+                         recording_config=recording_config,
                          session_id=assessment_session_id,
                          **progress_data)
 
@@ -197,6 +353,7 @@ def phq9_submit():
     question_index = int(request.form.get('question_index'))
     response_value = int(request.form.get('response_value'))
     response_time_ms = request.form.get('response_time_ms')
+    response_timestamp = request.form.get('response_timestamp')
     assessment_order = session.get('assessment_order', 'phq_first')
     
     if not assessment_session_id or not phq_data:
@@ -211,15 +368,18 @@ def phq9_submit():
     current_question = phq_data['questions'][question_index]
     category_number = current_question['category']
     question_text = current_question['question']
+    question_index_in_category = current_question.get('question_index_in_category', 0)
     
-    # Save response
+    # Save response with timestamp and question index
     PHQService.save_phq_response(
         assessment_session_id,
         current_user.id,
         category_number,
         response_value,
         question_text,
-        response_time_ms
+        response_time_ms,
+        response_timestamp,
+        question_index_in_category
     )
     next_question_index = question_index + 1
     if next_question_index >= len(phq_data['questions']):
@@ -252,9 +412,29 @@ def open_questions_assessment():
     if not assessment_session_id:
         flash('Please start a new assessment session', 'error')
         return redirect(url_for('patient.dashboard'))
+    
+    # Create chat session and get settings
     chat_service = OpenAIChatService()
     chat_session = chat_service.create_chat_session(assessment_session_id, current_user.id)
     session['chat_session'] = chat_session
+    
+    # Get recording settings for consistency
+    recording_config = SettingsService.get_recording_config()
+    
+    # Save chat and recording settings to assessment record
+    assessment = Assessment.query.filter_by(
+        session_id=assessment_session_id,
+        user_id=current_user.id
+    ).first()
+    
+    if assessment:
+        assessment.set_chat_settings(chat_session['settings'])
+        # Update recording settings if not already set
+        if not assessment.recording_settings:
+            assessment.set_recording_settings(recording_config)
+        if not assessment.assessment_order:
+            assessment.assessment_order = assessment_order
+        db.session.commit()
     if assessment_order == 'phq_first':
         progress_percentage = 75
         step_text = 'Step 3 of 4'
@@ -266,8 +446,12 @@ def open_questions_assessment():
         'progress_percentage': progress_percentage,
         'assessment_order': assessment_order
     }
+    # Get recording settings for camera capture
+    recording_config = SettingsService.get_recording_config()
+    
     return render_template('patient/open_questions_assessment.html', 
                          chat_settings=chat_session['settings'],
+                         recording_config=recording_config,
                          session_id=assessment_session_id,
                          **progress_data)
 
@@ -437,11 +621,15 @@ def capture_emotion():
         
         file_bytes = base64.b64decode(file_data)
         
-        # Prepare metadata
+        # Prepare metadata with enhanced timestamping
         metadata = {
             'resolution': data.get('resolution'),
             'quality': data.get('quality'),
-            'duration_ms': data.get('duration_ms')
+            'duration_ms': data.get('duration_ms'),
+            'capture_timestamp': data.get('capture_timestamp'),
+            'time_into_question_ms': data.get('time_into_question_ms'),
+            'conversation_elapsed_ms': data.get('conversation_elapsed_ms'),
+            'recording_settings': data.get('recording_settings', {})
         }
         
         # Save using MediaFileService
@@ -548,30 +736,30 @@ def serve_emotion_file(emotion_id):
         )
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-# Patient routes for their own data
-@patient_bp.route('/export-my-session/<session_id>')
-@login_required
-@patient_required
-def export_my_session(session_id):
-    """Allow patients to export their own session data"""
-    try:
-        assessment = Assessment.query.filter_by(
-            session_id=session_id,
-            user_id=current_user.id
-        ).first()
-        if not assessment:
-            return jsonify({'error': 'Session not found or access denied'}), 404
-        # Export the session
-        zip_path = ExportService.export_session_data(session_id, current_user.id)
-        # 
-        return send_file(
-            zip_path,
-            as_attachment=True,
-            download_name=f"my_assessment_{session_id}.zip",
-            mimetype='application/zip'
-        )
-        # 
-    except ExportException as e:
-        return jsonify({'error': str(e)}), 400
-    except Exception as e:
-        return jsonify({'error': f'Export failed: {str(e)}'}), 500
+# # Patient routes for their own data
+# @patient_bp.route('/export-my-session/<session_id>')
+# @login_required
+# @patient_required
+# def export_my_session(session_id):
+#     """Allow patients to export their own session data"""
+#     try:
+#         assessment = Assessment.query.filter_by(
+#             session_id=session_id,
+#             user_id=current_user.id
+#         ).first()
+#         if not assessment:
+#             return jsonify({'error': 'Session not found or access denied'}), 404
+#         # Export the session
+#         zip_path = ExportService.export_session_data(session_id, current_user.id)
+#         # 
+#         return send_file(
+#             zip_path,
+#             as_attachment=True,
+#             download_name=f"my_assessment_{session_id}.zip",
+#             mimetype='application/zip'
+#         )
+#         # 
+#     except ExportException as e:
+#         return jsonify({'error': str(e)}), 400
+#     except Exception as e:
+#         return jsonify({'error': f'Export failed: {str(e)}'}), 500

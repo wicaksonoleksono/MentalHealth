@@ -1,13 +1,15 @@
 # app/services/openai_chat.py
-import asyncio
 import json
 from datetime import datetime
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+from langchain.memory import ConversationBufferMemory
+from langchain.schema import BaseMessage
 from app import db
-from app.models.settings import AppSetting
+from app.models.settings import AppSetting, SettingsKey
 from app.models.assessment import Assessment, OpenQuestionResponse
+from app.services.settings import SettingsService
 load_dotenv()
 class OpenAIChatService:
     def __init__(self):
@@ -16,76 +18,120 @@ class OpenAIChatService:
             temperature=0.1,
             streaming=True
         )
+        # Initialize conversation memory for context preservation
+        self.memory = ConversationBufferMemory(
+            return_messages=True,
+            memory_key="chat_history"
+        )
     
     @staticmethod
     def get_chat_settings():
-        """Load chat settings from database."""
-        settings = {}
+        """Load chat settings from database using SettingsService for consistency."""
+        text_settings = SettingsService.get_group(SettingsKey.get_text_settings)
         
-        preprompt_setting = AppSetting.query.filter_by(key='openquestion_prompt').first()
-        if not preprompt_setting:
-            raise Exception(f"Missing required setting: openquestion_prompt. Run: flask add-chat-settings")
-        settings['openquestion_prompt'] = preprompt_setting.value
+        settings = {
+            'openquestion_prompt': text_settings.get('openquestion_prompt', ''),
+            'instructions': text_settings.get('openquestion_instructions', ''),
+            'enable_followup': True,
+            'response_style': 'empathetic'
+        }
         
-        instructions_setting = AppSetting.query.filter_by(key='openquestion_instructions').first()
-        if not instructions_setting:
-            raise Exception(f"Missing required setting: openquestion_instructions. Run: flask add-chat-settings")
-        settings['instructions'] = instructions_setting.value
-        
-        settings['enable_followup'] = True
-        settings['response_style'] = 'empathetic'
+        # Validate required settings
+        if not settings['openquestion_prompt']:
+            raise Exception("Missing required setting: openquestion_prompt. Please configure in admin settings.")
+        if not settings['instructions']:
+            raise Exception("Missing required setting: openquestion_instructions. Please configure in admin settings.")
         
         return settings
     
     def create_chat_session(self, assessment_session_id, user_id):
+        """Create a new chat session with LangChain conversation memory."""
         settings = self.get_chat_settings()
         system_prompt = settings['openquestion_prompt']
-        full_system_prompt = system_prompt
+        
+        # Create fresh memory for this session
+        self.memory = ConversationBufferMemory(
+            return_messages=True,
+            memory_key="chat_history"
+        )
+        
+        # Initialize with system message
+        system_message = SystemMessage(content=system_prompt)
+        
+        # Store serializable session data (no LangChain objects)
         chat_session = {
-            'system_prompt': full_system_prompt,
-            'messages': [{'type': 'system', 'content': full_system_prompt, 'timestamp': datetime.utcnow().isoformat()}],
+            'system_prompt': system_prompt,
+            'message_history': [{'type': 'system', 'content': system_prompt}],  # Serializable message history
+            'conversation_history': [],  # Store for display/logging
             'settings': settings,
             'exchange_count': 0,
-            'started_at': datetime.utcnow().isoformat()
+            'started_at': datetime.utcnow().isoformat(),
+            'assessment_session_id': assessment_session_id,
+            'user_id': user_id
         }
+        
+        # Add system message to conversation history for logging
+        chat_session['conversation_history'].append({
+            'type': 'system', 
+            'content': system_prompt, 
+            'timestamp': datetime.utcnow().isoformat()
+        })
+        
         return chat_session
     
     def generate_streaming_response(self, chat_session, user_message):
-        """Generate streaming response and update chat session."""
+        """Generate streaming response using LangChain conversation chain with proper context."""
+        current_time = datetime.utcnow().isoformat()
+        
+        # Add user message to serializable message history
+        chat_session['message_history'].append({'type': 'human', 'content': user_message})
+        
+        # Add to conversation history for logging
+        chat_session['conversation_history'].append({
+            'type': 'human', 
+            'content': user_message,
+            'timestamp': current_time
+        })
+        
+        # Rebuild LangChain messages from serializable history
         langchain_messages = []
-        for msg in chat_session['messages']:
+        for msg in chat_session['message_history']:
             if msg['type'] == 'system':
                 langchain_messages.append(SystemMessage(content=msg['content']))
             elif msg['type'] == 'human':
                 langchain_messages.append(HumanMessage(content=msg['content']))
             elif msg['type'] == 'ai':
                 langchain_messages.append(AIMessage(content=msg['content']))
-        langchain_messages.append(HumanMessage(content=user_message))
         
+        # Use the full conversation context for streaming
         response_chunks = []
         for chunk in self.llm.stream(langchain_messages):
             if hasattr(chunk, 'content') and chunk.content:
                 response_chunks.append(chunk.content)
                 yield chunk.content
         
+        # Build full response
         full_response = ''.join(response_chunks)
-        current_time = datetime.utcnow().isoformat()
         
-        # Add to chat session with timestamps
-        chat_session['messages'].append({
-            'type': 'human', 
-            'content': user_message,
-            'timestamp': current_time
-        })
-        chat_session['messages'].append({
+        # Add AI response to serializable message history
+        chat_session['message_history'].append({'type': 'ai', 'content': full_response})
+        
+        # Add to conversation history for logging
+        chat_session['conversation_history'].append({
             'type': 'ai', 
             'content': full_response,
             'timestamp': current_time
         })
+        
+        # Update exchange count
         chat_session['exchange_count'] += 1
+        
+        # Update memory with the exchange
+        self.memory.chat_memory.add_user_message(user_message)
+        self.memory.chat_memory.add_ai_message(full_response)
     
     def save_conversation(self, assessment_session_id, user_id, conversation_data):
-        """Save entire conversation as raw JSON with proper timestamping."""
+        """Save entire LangChain conversation with proper context preservation."""
         assessment = Assessment.query.filter_by(
             session_id=assessment_session_id,
             user_id=user_id
@@ -94,31 +140,79 @@ class OpenAIChatService:
         if not assessment:
             raise Exception(f"Assessment session not found: {assessment_session_id}")
         
-        # Prepare conversation metadata
-        conversation_metadata = {
-            'conversation_data': conversation_data,
-            'total_exchanges': conversation_data.get('exchange_count', 0),
-            'session_duration_seconds': None,
-            'completed_at': datetime.utcnow().isoformat()
-        }
-        
-        # Calculate session duration if possible
+        # Calculate session duration
+        session_duration_seconds = None
         if 'started_at' in conversation_data:
             try:
                 start_time = datetime.fromisoformat(conversation_data['started_at'])
                 end_time = datetime.utcnow()
-                duration = (end_time - start_time).total_seconds()
-                conversation_metadata['session_duration_seconds'] = duration
+                session_duration_seconds = (end_time - start_time).total_seconds()
             except:
                 pass
         
-        # Save conversation as single record with JSON data
+        # Get current settings to save with conversation
+        current_chat_settings = self.get_chat_settings()
+        current_recording_settings = None
+        try:
+            from app.services.settings import SettingsService
+            current_recording_settings = SettingsService.get_recording_config()
+        except:
+            pass
+        
+        # Prepare comprehensive conversation metadata
+        conversation_metadata = {
+            'system_prompt': conversation_data.get('system_prompt', ''),
+            'settings_used': conversation_data.get('settings', {}),
+            'conversation_history': conversation_data.get('conversation_history', []),
+            'message_history': conversation_data.get('message_history', []),
+            'total_exchanges': conversation_data.get('exchange_count', 0),
+            'session_duration_seconds': session_duration_seconds,
+            'started_at': conversation_data.get('started_at'),
+            'completed_at': datetime.utcnow().isoformat(),
+            'current_settings_snapshot': {
+                'chat_settings': current_chat_settings,
+                'recording_settings': current_recording_settings,
+                'assessment_order': assessment.assessment_order if hasattr(assessment, 'assessment_order') else None
+            },
+            'langchain_context': {
+                'message_count': len(conversation_data.get('message_history', [])),
+                'has_system_prompt': bool(conversation_data.get('system_prompt')),
+                'memory_preserved': True
+            }
+        }
+        
+        # Save the complete conversation as structured JSON
         conversation_record = OpenQuestionResponse(
             assessment_id=assessment.id,
-            question_text="Full Conversation Log",
-            response_text=json.dumps(conversation_metadata, indent=2),
-            response_time_ms=None
+            question_text="Complete LangChain Conversation",
+            response_text=json.dumps(conversation_metadata, indent=2, ensure_ascii=False),
+            response_time_ms=int(session_duration_seconds * 1000) if session_duration_seconds else None
         )
         db.session.add(conversation_record)
+        
+        # Also save individual exchanges for easier analysis with timestamps
+        for i, msg in enumerate(conversation_data.get('conversation_history', [])):
+            if msg['type'] in ['human', 'ai']:
+                # Parse timestamp from conversation history
+                msg_timestamp = None
+                if 'timestamp' in msg:
+                    try:
+                        msg_timestamp = datetime.fromisoformat(msg['timestamp'])
+                    except (ValueError, TypeError):
+                        pass
+                
+                exchange_data = {
+                    'assessment_id': assessment.id,
+                    'question_text': f"Exchange {i//2 + 1} - {msg['type'].title()}",
+                    'response_text': msg['content'],
+                    'response_time_ms': None
+                }
+                
+                if msg_timestamp:
+                    exchange_data['created_at'] = msg_timestamp
+                
+                exchange_record = OpenQuestionResponse(**exchange_data)
+                db.session.add(exchange_record)
+        
         db.session.commit()
         return assessment

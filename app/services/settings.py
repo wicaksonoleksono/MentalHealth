@@ -152,14 +152,15 @@ class SettingsService:
         """Get recording configuration for frontend"""
         recording_settings = SettingsService.get_group(SettingsKey.get_recording_settings)
         
+        # Provide defaults if settings aren't configured
         return {
-            'mode': recording_settings['recording_mode'],
-            'enabled': recording_settings['enable_recording'],
-            'interval': recording_settings['capture_interval'],
-            'resolution': recording_settings['resolution'],
-            'image_quality': recording_settings['image_quality'],
-            'video_quality': recording_settings['video_quality'],
-            'video_format': recording_settings['video_format']
+            'mode': recording_settings.get('recording_mode', 'capture'),
+            'enabled': recording_settings.get('enable_recording', True),
+            'interval': recording_settings.get('capture_interval', 5),
+            'resolution': recording_settings.get('resolution', '1280x720'),
+            'image_quality': recording_settings.get('image_quality', 0.8),
+            'video_quality': recording_settings.get('video_quality', '720p'),
+            'video_format': recording_settings.get('video_format', 'webm')
         }
     
     @staticmethod
@@ -180,8 +181,6 @@ class SettingsService:
         return {
             'instructions': phq9_settings['phq9_instructions'],
             'randomize': phq9_settings['phq9_randomize_questions'],
-            'show_progress': phq9_settings['phq9_show_progress'],
-            'questions_per_page': phq9_settings['phq9_questions_per_page'],
             'scale': {
                 'min': min_val,
                 'max': max_val,
