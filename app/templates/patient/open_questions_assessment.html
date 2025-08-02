@@ -80,14 +80,9 @@
                     <div :class="message.type === 'user' ? 'bg-blue-600 text-white rounded-2xl px-6 py-4 max-w-xl border border-blue-200' : 'bg-gray-50 rounded-2xl px-6 py-4 max-w-2xl border border-gray-200'">
                         <p :class="message.type === 'user' ? 'text-white' : 'text-gray-900'" x-text="message.content"></p>
                         
-                        <!-- Typing indicator for streaming -->
-                        <div x-show="message.type === 'bot' && message.streaming" class="flex items-center space-x-1 mt-3">
-                            <div class="flex space-x-1">
-                                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
-                                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
-                            </div>
-                            <span class="text-gray-600 text-sm ml-2">AI is thinking...</span>
+                        <!-- Simple typing indicator only when content is empty -->
+                        <div x-show="message.type === 'bot' && message.streaming && message.content === ''" class="flex items-center mt-2">
+                            <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                         </div>
                     </div>
 
@@ -106,7 +101,7 @@
                     type="text" 
                     x-model="currentMessage"
                     :disabled="isTyping"
-                    placeholder="Share your thoughts, feelings, or anything on your mind..."
+                    :placeholder="isTyping ? 'AI is responding...' : 'Share your thoughts, feelings, or anything on your mind...'"
                     class="flex-1 bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:opacity-50"
                     maxlength="1000">
                 
@@ -121,10 +116,8 @@
                         </svg>
                     </span>
                     <span x-show="isTyping" class="flex items-center">
-                        <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                        </svg>
-                        Processing...
+                        <div class="w-2 h-2 bg-white rounded-full animate-pulse mr-2"></div>
+                        <span>Responding</span>
                     </span>
                 </button>
             </form>
@@ -211,7 +204,7 @@ function chatInterface() {
                 timestamp: new Date()
             });
             
-            // Add bot message placeholder
+            // Add bot message placeholder - start empty and stream into it
             const botMessageId = this.messageId++;
             this.messages.push({
                 id: botMessageId,
@@ -228,7 +221,8 @@ function chatInterface() {
             const encodedMessage = encodeURIComponent(userMessage);
             const eventSource = new EventSource(`/patient/chat-stream/${encodedMessage}`);
             
-            let botMessage = this.messages.find(m => m.id === botMessageId);
+            // Get reference to the bot message we just added
+            const botMessage = this.messages[this.messages.length - 1];
             
             eventSource.onmessage = (event) => {
                 try {
@@ -247,7 +241,13 @@ function chatInterface() {
                         fetch('/patient/update-chat-session', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'}
-                        }).catch(error => console.error('Session update error:', error));
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('Session updated:', data);
+                            console.log('Total messages in history:', data.message_count);
+                        })
+                        .catch(error => console.error('Session update error:', error));
                         
                     } else if (data.type === 'error') {
                         botMessage.content = data.message || 'Sorry, I encountered an error. Please try again.';

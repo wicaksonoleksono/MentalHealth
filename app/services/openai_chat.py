@@ -27,20 +27,25 @@ class OpenAIChatService:
     @staticmethod
     def get_chat_settings():
         """Load chat settings from database using SettingsService for consistency."""
-        text_settings = SettingsService.get_group(SettingsKey.get_text_settings)
+        from app.models.settings import AppSetting
+        
+        # Get settings directly from database
+        openquestion_prompt = AppSetting.query.filter_by(key='openquestion_prompt').first()
+        openquestion_instructions = AppSetting.query.filter_by(key='openquestion_instructions').first()
         
         settings = {
-            'openquestion_prompt': text_settings.get('openquestion_prompt', ''),
-            'instructions': text_settings.get('openquestion_instructions', ''),
+            'openquestion_prompt': openquestion_prompt.value if openquestion_prompt else '',
+            'instructions': openquestion_instructions.value if openquestion_instructions else '',
             'enable_followup': True,
             'response_style': 'empathetic'
         }
         
-        # Validate required settings
+        # Don't raise exceptions, just use defaults if missing
         if not settings['openquestion_prompt']:
-            raise Exception("Missing required setting: openquestion_prompt. Please configure in admin settings.")
+            settings['openquestion_prompt'] = "You are a compassionate mental health assessment assistant. Help the user express their thoughts and feelings."
+        
         if not settings['instructions']:
-            raise Exception("Missing required setting: openquestion_instructions. Please configure in admin settings.")
+            settings['instructions'] = "Please share your thoughts and feelings openly. This is a safe space."
         
         return settings
     
@@ -48,6 +53,10 @@ class OpenAIChatService:
         """Create a new chat session with LangChain conversation memory."""
         settings = self.get_chat_settings()
         system_prompt = settings['openquestion_prompt']
+        
+        # Use default if system prompt is empty
+        if not system_prompt or system_prompt.strip() == '':
+            system_prompt = "You are a compassionate mental health assessment assistant. Help the user express their thoughts and feelings."
         
         # Create fresh memory for this session
         self.memory = ConversationBufferMemory(
@@ -102,6 +111,8 @@ class OpenAIChatService:
                 langchain_messages.append(HumanMessage(content=msg['content']))
             elif msg['type'] == 'ai':
                 langchain_messages.append(AIMessage(content=msg['content']))
+        
+        # Process messages for streaming
         
         # Use the full conversation context for streaming
         response_chunks = []

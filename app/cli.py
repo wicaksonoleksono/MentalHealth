@@ -340,10 +340,7 @@ def register_commands(app):
             click.echo(f"Error setting value: {e}")
     @app.cli.command("test-openai")
     def test_openai():
-        """Test OpenAI chat service with dummy message."""
         click.echo("Testing OpenAI chat service...")
-        
-        # Check database settings first
         preprompt = AppSetting.query.filter_by(key='openquestion_prompt').first()
         instructions = AppSetting.query.filter_by(key='openquestion_instructions').first()
         
@@ -360,7 +357,7 @@ def register_commands(app):
         click.echo(" Database settings found")
         
         # Test OpenAI service
-        async def test_async():
+        def test_sync():
             try:
                 from app.services.openai_chat import OpenAIChatService
                 
@@ -371,22 +368,30 @@ def register_commands(app):
                 chat_session = service.create_chat_session("test-session", 999)
                 click.echo(" Chat session created")
                 
-                # Test async response
+                # Test streaming response (synchronous)
                 click.echo("🤖 Testing with message: 'Hello, how are you?'")
                 
-                full_response = await service.generate_streaming_response_async(chat_session, "Hello, how are you?")
-                click.echo(f" Full response ({len(full_response)} chars): {full_response[:100]}...")
-                
-                click.echo("🎉 OpenAI async service working correctly!")
+                # Collect streaming response
+                response_chunks = []
+                try:
+                    for chunk in service.generate_streaming_response(chat_session, "Hello, how are you?"):
+                        response_chunks.append(chunk)
+                    
+                    full_response = ''.join(response_chunks)
+                    click.echo(f" Full response ({len(full_response)} chars): {full_response[:100]}...")
+                    
+                    click.echo("🎉 OpenAI service working correctly!")
+                except Exception as stream_error:
+                    click.echo(f"Streaming error: {str(stream_error)}")
+                    raise
                 
             except Exception as e:
                 click.echo(f"OpenAI service error: {str(e)}")
                 import traceback
                 click.echo(traceback.format_exc())
         
-        # Run async test
-        import asyncio
-        asyncio.run(test_async())
+        # Run test (no longer async)
+        test_sync()
     
     @app.cli.command("add-chat-settings")
     def add_chat_settings():

@@ -142,6 +142,9 @@ class EmotionData(db.Model):
     duration_ms = db.Column(db.Integer)  # For videos or capture duration
     resolution = db.Column(db.String(20))  # "1280x720"
     quality_setting = db.Column(db.Float)  # 0.8 for images, etc.
+    capture_timestamp = db.Column(db.BigInteger)  # Epoch timestamp when captured
+    time_into_question_ms = db.Column(db.Integer)  # Time since question started
+    recording_settings = db.Column(db.Text)  # JSON of recording settings used
     def __repr__(self):
         return f'<EmotionData {self.media_type} - {self.assessment_type} - {self.file_path}>'
     def get_full_path(self):

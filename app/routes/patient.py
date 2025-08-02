@@ -1,6 +1,7 @@
 # app/routes/aspy
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session, Response
 from flask_login import login_required, current_user
+from flask import current_app
 from datetime import datetime
 import json
 import base64
@@ -15,7 +16,6 @@ from app.services.openai_chat import OpenAIChatService
 from app.services.media_file import MediaFileService, MediaFileException
 from app.services.settings import SettingsService
 patient_bp = Blueprint('patient', __name__)
-
 
 @patient_bp.route('/dashboard')
 @login_required
@@ -455,21 +455,74 @@ def open_questions_assessment():
                          session_id=assessment_session_id,
                          **progress_data)
 
+@patient_bp.route('/test-chat', methods=['GET'])
+@login_required
+@patient_required
+def test_chat():
+    """Test route to check if OpenAI service is working"""
+    try:
+        from app.services.openai_chat import OpenAIChatService
+        chat_service = OpenAIChatService()
+        
+        # Test settings
+        settings = chat_service.get_chat_settings()
+        
+        # Test chat session creation
+        test_session = chat_service.create_chat_session("test-session", current_user.id)
+        
+        return jsonify({
+            'success': True,
+            'settings_loaded': bool(settings.get('openquestion_prompt')),
+            'session_created': bool(test_session.get('system_prompt')),
+            'system_prompt_length': len(test_session.get('system_prompt', '')),
+            'message': 'OpenAI service is working correctly'
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Test chat error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'OpenAI service test failed'
+        }), 500
+
 @patient_bp.route('/chat-stream/<message>')
 @login_required
 @patient_required
 def chat_stream(message):
     assessment_session_id = session.get('assessment_session_id')
     chat_session = session.get('chat_session')
+    
     if not assessment_session_id or not chat_session or not message:
         return Response("data: " + json.dumps({'type': 'error', 'message': 'Invalid request'}) + "\n\n",
                        mimetype='text/event-stream')
-    chat_service = OpenAIChatService()
+    
+    # Pre-add user message to both histories
+    current_time = datetime.utcnow().isoformat()
+    chat_session['message_history'].append({'type': 'human', 'content': message})
+    chat_session['conversation_history'].append({
+        'type': 'human', 
+        'content': message,
+        'timestamp': current_time
+    })
+    
     def generate():
+        response_content = ""
+        chat_service = OpenAIChatService()
+        
         for chunk in chat_service.generate_streaming_response(chat_session, message):
+            response_content += chunk
             yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
         
-        # Send completion
+        # Add AI response to both histories and update count
+        chat_session['message_history'].append({'type': 'ai', 'content': response_content})
+        chat_session['conversation_history'].append({
+            'type': 'ai', 
+            'content': response_content,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+        chat_session['exchange_count'] = chat_session.get('exchange_count', 0) + 1
+        
         yield f"data: {json.dumps({'type': 'complete', 'exchange_count': chat_session['exchange_count']})}\n\n"
     
     response = Response(generate(), mimetype='text/event-stream')
@@ -489,14 +542,16 @@ def update_chat_session():
     if not assessment_session_id or not chat_session:
         return jsonify({'success': False, 'message': 'No chat session found'}), 400
     
-    # Update the session with latest chat_session data
+    # Just save the current chat session back to Flask session
     session['chat_session'] = chat_session
     session.modified = True
     
     return jsonify({
         'success': True,
-        'exchange_count': chat_session.get('exchange_count', 0)
+        'exchange_count': chat_session.get('exchange_count', 0),
+        'message_count': len(chat_session.get('message_history', []))
     })
+
 
 
 @patient_bp.route('/save-conversation', methods=['POST'])
@@ -511,23 +566,36 @@ def save_conversation():
         return jsonify({'success': False, 'message': 'No conversation to save'}), 400
     
     try:
+        # Log conversation summary before saving
+        current_app.logger.info(f"Saving conversation for session {assessment_session_id}, "
+                               f"exchanges: {chat_session.get('exchange_count', 0)}, "
+                               f"messages: {len(chat_session.get('message_history', []))}")
+        
         chat_service = OpenAIChatService()
-        chat_service.save_conversation(
+        saved_assessment = chat_service.save_conversation(
             assessment_session_id,
             current_user.id,
             chat_session
         )
         
+        # Mark assessment as having open questions completed
+        AssessmentService.start_assessment_type(assessment_session_id, current_user.id, 'open_questions')
+        
         # Clear chat session from Flask session
         session.pop('chat_session', None)
         session.modified = True
         
+        current_app.logger.info(f"Successfully saved conversation for session {assessment_session_id}")
+        
         return jsonify({
             'success': True,
-            'message': 'Conversation saved successfully'
+            'message': 'Conversation saved successfully',
+            'exchanges_saved': chat_session.get('exchange_count', 0),
+            'assessment_id': saved_assessment.id
         })
     
     except Exception as e:
+        current_app.logger.error(f"Failed to save conversation for session {assessment_session_id}: {str(e)}")
         return jsonify({
             'success': False,
             'message': f'Failed to save conversation: {str(e)}'
@@ -621,10 +689,10 @@ def capture_emotion():
         
         file_bytes = base64.b64decode(file_data)
         
-        # Prepare metadata with enhanced timestamping
+        # Prepare metadata with enhanced timestamping and recording settings
         metadata = {
             'resolution': data.get('resolution'),
-            'quality': data.get('quality'),
+            'quality': data.get('quality', data.get('quality_setting')),
             'duration_ms': data.get('duration_ms'),
             'capture_timestamp': data.get('capture_timestamp'),
             'time_into_question_ms': data.get('time_into_question_ms'),

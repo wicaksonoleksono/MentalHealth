@@ -25,13 +25,13 @@ class MediaFileService:
     @staticmethod
     def _get_session_directory(session_id, assessment_type, media_type):
         """Generate organized directory path for session files"""
-        # Structure: assessments/{session_id}/camera/{media_type}s/{assessment_type}/
+        # Structure: assessments/{session_id}/{assessment_type}/{media_type}s/
+        # Example: assessments/sess_abc123/phq9/images/ or assessments/sess_abc123/open_questions/videos/
         relative_path = os.path.join(
             'assessments',
             session_id,
-            'camera',
-            f"{media_type}s",  # 'images' or 'videos'
-            assessment_type
+            assessment_type,
+            f"{media_type}s"  # 'images' or 'videos'
         )
         return relative_path
     
@@ -72,7 +72,7 @@ class MediaFileService:
         file_size = len(file_data)
         mime_type = MediaFileService._get_mime_type(media_type, file_extension)
         
-        # Create database record
+        # Create database record with enhanced metadata
         emotion_data = EmotionData(
             assessment_id=assessment.id,
             assessment_type=assessment_type,
@@ -84,7 +84,10 @@ class MediaFileService:
             mime_type=mime_type,
             resolution=metadata.get('resolution') if metadata else None,
             quality_setting=metadata.get('quality') if metadata else None,
-            duration_ms=metadata.get('duration_ms') if metadata else None
+            duration_ms=metadata.get('duration_ms') if metadata else None,
+            capture_timestamp=metadata.get('capture_timestamp') if metadata else None,
+            time_into_question_ms=metadata.get('time_into_question_ms') if metadata else None,
+            recording_settings=str(metadata.get('recording_settings', {})) if metadata else None
         )
         
         db.session.add(emotion_data)

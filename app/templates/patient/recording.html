@@ -1,0 +1,241 @@
+{% macro recording_controls(recording_config, assessment_type, session_id, question_identifier) %}
+<div x-data="mediaRecorder('{{ recording_config.mode }}', '{{ assessment_type }}', '{{ session_id }}', '{{ question_identifier }}', {{ recording_config|tojson }})" class="media-recorder-container">
+    <video x-ref="videoElement" autoplay muted playsinline class="w-full h-auto bg-gray-900 rounded-lg shadow-lg"></video>
+    
+    <div x-show="mode === 'video'" class="controls mt-4 flex justify-center items-center space-x-4">
+        <button @click="startRecording()" x-show="!isRecording && !isPaused" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+            Start Recording
+        </button>
+        <button @click="pauseRecording()" x-show="isRecording" class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600">
+            Pause
+        </button>
+        <button @click="resumeRecording()" x-show="isPaused" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+            Resume
+        </button>
+        <button @click="stopRecording()" x-show="isRecording || isPaused" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+            Stop Recording
+        </button>
+    </div>
+
+    <div x-show="isRecording" class="recording-indicator mt-2 text-center text-red-500 font-bold">
+        <span class="animate-pulse">Recording...</span>
+        <span x-text="elapsedTime"></span>
+    </div>
+
+    <div x-show="lastVideoUrl" class="mt-4">
+        <h4 class="text-lg font-semibold">Last Recording:</h4>
+        <video :src="lastVideoUrl" controls class="w-full h-auto"></video>
+    </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('mediaRecorder', (mode, assessmentType, sessionId, questionIdentifier, config) => ({
+        mode: mode,
+        assessmentType: assessmentType,
+        sessionId: sessionId,
+        questionIdentifier: questionIdentifier,
+        config: config,
+        isRecording: false,
+        isPaused: false,
+        mediaStream: null,
+        mediaRecorder: null,
+        recordedChunks: [],
+        lastVideoUrl: null,
+        timer: null,
+        elapsedTime: '00:00',
+        captureInterval: null,
+
+        init() {
+            console.log('mediaRecorder init called');
+            this.setupMedia();
+            if (this.mode === 'video') {
+                if (this.assessmentType === 'open_questions') {
+                    console.log('Starting video recording for open questions');
+                    this.startRecording();
+                } else if (this.assessmentType === 'phq9') {
+                    console.log('Starting video recording for PHQ9');
+                    this.startRecording();
+                    document.getElementById('phq-form').addEventListener('submit', () => {
+                        console.log('PHQ form submitted, stopping recording');
+                        this.stopRecording();
+                    });
+                }
+            } else if (this.mode === 'capture') {
+                console.log('Starting image capture');
+                this.startImageCapture();
+            }
+        },
+
+        async setupMedia() {
+            console.log('setupMedia called');
+            try {
+                this.mediaStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: this.mode === 'video'
+                });
+                this.$refs.videoElement.srcObject = this.mediaStream;
+                console.log('Media stream obtained successfully');
+            } catch (err) {
+                console.error('Error accessing media devices.', err);
+                alert('Could not access camera and microphone. Please ensure permissions are granted.');
+            }
+        },
+
+        startRecording() {
+            console.log('startRecording called');
+            if (!this.mediaStream) {
+                console.error('No media stream available to start recording.');
+                return;
+            }
+            this.isRecording = true;
+            this.isPaused = false;
+            this.recordedChunks = [];
+            
+            const options = { mimeType: `video/${this.config.video_format};codecs=vp9` };
+            console.log('MediaRecorder options:', options);
+            this.mediaRecorder = new MediaRecorder(this.mediaStream, options);
+
+            this.mediaRecorder.ondataavailable = (event) => {
+                console.log('ondataavailable event', event.data.size);
+                if (event.data.size > 0) {
+                    this.recordedChunks.push(event.data);
+                }
+            };
+
+            this.mediaRecorder.onstop = () => {
+                console.log('onstop event');
+                const blob = new Blob(this.recordedChunks, { type: `video/${this.config.video_format}` });
+                this.lastVideoUrl = URL.createObjectURL(blob);
+                console.log('Sending video to server');
+                this.sendToServer(blob, 'video');
+                this.isRecording = false;
+                this.isPaused = false;
+                clearInterval(this.timer);
+                this.elapsedTime = '00:00';
+            };
+
+            this.mediaRecorder.start();
+            this.startTimer();
+            console.log('MediaRecorder started');
+        },
+
+        stopRecording() {
+            console.log('stopRecording called');
+            if (this.mediaRecorder) {
+                this.mediaRecorder.stop();
+            }
+            if (this.captureInterval) {
+                clearInterval(this.captureInterval);
+            }
+        },
+
+        pauseRecording() {
+            console.log('pauseRecording called');
+            if (this.mediaRecorder && this.isRecording) {
+                this.mediaRecorder.pause();
+                this.isPaused = true;
+                this.isRecording = false;
+                clearInterval(this.timer);
+            }
+        },
+
+        resumeRecording() {
+            console.log('resumeRecording called');
+            if (this.mediaRecorder && this.isPaused) {
+                this.mediaRecorder.resume();
+                this.isPaused = false;
+                this.isRecording = true;
+                this.startTimer();
+            }
+        },
+
+        startTimer() {
+            console.log('startTimer called');
+            let seconds = 0;
+            this.timer = setInterval(() => {
+                seconds++;
+                const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const secs = (seconds % 60).toString().padStart(2, '0');
+                this.elapsedTime = `${mins}:${secs}`;
+            }, 1000);
+        },
+
+        startImageCapture() {
+            console.log('startImageCapture called');
+            this.captureInterval = setInterval(() => {
+                this.captureImage();
+            }, this.config.capture_interval * 1000);
+        },
+
+        captureImage() {
+            console.log('captureImage called');
+            if (!this.mediaStream) {
+                console.error('No media stream available for image capture.');
+                return;
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = this.$refs.videoElement.videoWidth;
+            canvas.height = this.$refs.videoElement.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(this.$refs.videoElement, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob((blob) => {
+                console.log('Sending image to server');
+                this.sendToServer(blob, 'image');
+            }, 'image/jpeg', this.config.image_quality);
+        },
+
+        sendToServer(blob, mediaType) {
+            console.log(`sendToServer called for ${mediaType}`);
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = () => {
+                const base64data = reader.result;
+                fetch('/capture-emotion', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        assessment_type: this.assessmentType,
+                        question_identifier: this.questionIdentifier,
+                        media_type: mediaType,
+                        file_data: base64data,
+                        filename: `recording-${this.assessmentType}-${this.questionIdentifier}.${mediaType === 'video' ? this.config.video_format : 'jpeg'}`,
+                        resolution: `${this.config.resolution}`,
+                        quality: mediaType === 'video' ? this.config.video_quality : this.config.image_quality,
+                        duration_ms: mediaType === 'video' ? this.getDuration() : null,
+                        capture_timestamp: new Date().toISOString(),
+                        recording_settings: this.config
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log(`${mediaType} uploaded successfully:`, data);
+                    } else {
+                        console.error(`Error uploading ${mediaType}:`, data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error(`Error sending ${mediaType} to server:`, error);
+                });
+            };
+        },
+
+        getDuration() {
+            // This is an approximation. For more accuracy, you might need to inspect the blob.
+            if (this.recordedChunks.length === 0) return 0;
+            const first = this.recordedChunks[0].timeStamp;
+            const last = this.recordedChunks[this.recordedChunks.length - 1].timeStamp;
+            return last - first;
+        }
+    }));
+});
+</script>
+{% endmacro %}
