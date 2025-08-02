@@ -6,6 +6,10 @@
 
 class EmotionCapture {
     constructor(config) {
+        console.log('🏗️ EmotionCapture constructor called with:', config);
+        console.log('🏗️ Config type:', typeof config);
+        console.log('🏗️ Config keys:', config ? Object.keys(config) : 'config is null/undefined');
+        
         this.config = config;
         this.cameraStream = null;
         this.mediaRecorder = null;
@@ -22,6 +26,14 @@ class EmotionCapture {
      */
     async initialize() {
         try {
+            console.log('🔍 Initialize called - this.config:', this.config);
+            console.log('🔍 this.config type:', typeof this.config);
+            console.log('🔍 this.config keys:', this.config ? Object.keys(this.config) : 'config is null/undefined');
+            
+            if (!this.config) {
+                throw new Error('Config is null or undefined in initialize method');
+            }
+            
             console.log(`📹 Initializing emotion capture - Mode: ${this.config.mode}, Enabled: ${this.config.enabled}`);
             
             if (!this.config.enabled) {
@@ -431,25 +443,33 @@ window.emotionCapture = null;
  */
 window.initializeEmotionCapture = async function(config) {
     try {
+        console.log('🚀 initializeEmotionCapture called with config:', config);
+        
         // Cleanup any existing instance
         if (window.emotionCapture) {
+            console.log('🧹 Cleaning up existing emotion capture instance');
             window.emotionCapture.cleanup();
         }
         
         // Create new instance
+        console.log('🏗️ Creating new EmotionCapture instance');
         window.emotionCapture = new EmotionCapture(config);
         
         // Initialize
+        console.log('⚡ Initializing emotion capture...');
         const success = await window.emotionCapture.initialize();
         
         if (!success) {
-            console.error('Failed to initialize emotion capture');
+            console.error('❌ Failed to initialize emotion capture');
+        } else {
+            console.log('✅ Emotion capture initialized successfully');
         }
         
         return success;
         
     } catch (error) {
-        console.error('Error initializing emotion capture:', error);
+        console.error('💥 Error initializing emotion capture:', error);
+        console.error('💥 Error stack:', error.stack);
         return false;
     }
 };

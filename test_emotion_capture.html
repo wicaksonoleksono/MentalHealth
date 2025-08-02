@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Emotion Capture</title>
+</head>
+<body>
+    <h1>Test Emotion Capture Loading</h1>
+    <div id="camera-status-text">Testing...</div>
+    <div id="recording-indicator" class="hidden">Recording</div>
+    <video id="cameraPreview" autoplay muted style="display: none;"></video>
+    <canvas id="captureCanvas" style="display: none;"></canvas>
+
+    <script>
+        console.log('🧪 Starting emotion capture test...');
+        
+        // Test config object
+        const testConfig = {
+            assessment_type: 'phq9',
+            mode: 'video',
+            enabled: true,
+            interval: 5,
+            resolution: '640x480',
+            image_quality: 0.8,
+            video_quality: '480p',
+            video_format: 'webm'
+        };
+        
+        console.log('🧪 Test config:', testConfig);
+        console.log('🧪 Config keys:', Object.keys(testConfig));
+        console.log('🧪 Config type:', typeof testConfig);
+        
+        // Test if window.initializeEmotionCapture exists
+        console.log('🧪 window.initializeEmotionCapture exists:', typeof window.initializeEmotionCapture);
+        
+        // Try to call it
+        setTimeout(async () => {
+            if (window.initializeEmotionCapture) {
+                console.log('🧪 Calling initializeEmotionCapture...');
+                try {
+                    await window.initializeEmotionCapture(testConfig);
+                } catch (error) {
+                    console.error('🧪 Error calling initializeEmotionCapture:', error);
+                }
+            } else {
+                console.error('🧪 initializeEmotionCapture not available');
+            }
+        }, 1000);
+    </script>
+    
+    <script src="/static/js/emotion-capture.js"></script>
+</body>
+</html>

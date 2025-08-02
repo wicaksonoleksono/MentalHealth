@@ -3,7 +3,6 @@
 {% block title %}Open Questions - Mental Health Chat{% endblock %}
 
 {% block extra_head %}
-<script src="{{ url_for('static', filename='js/emotion-capture.js') }}"></script>
 {% endblock %}
 
 {% block nav %}
@@ -333,4 +332,6 @@ function startConversationTimer() {
 // Old recording functions removed - now using shared emotion-capture.js module
 
 </script>
+
+<script src="{{ url_for('static', filename='js/emotion-capture.js') }}"></script>
 {% endblock %}
