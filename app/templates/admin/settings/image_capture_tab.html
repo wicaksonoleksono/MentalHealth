@@ -133,8 +133,9 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">Video Format</label>
                     <select name="video_format" id="video_format_select"
                             class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500">
-                        <option value="webm" {{ 'selected' if settings_data.video_format == 'webm' else '' }}>WebM - Browser optimized</option>
-                        <option value="mp4" {{ 'selected' if settings_data.video_format == 'mp4' else '' }}>MP4 - Universal compatibility</option>
+                        <option value="webm" {{ 'selected' if settings_data.video_format == 'webm' else '' }}>WebM - Best browser support</option>
+                        <option value="webm;codecs=vp9" {{ 'selected' if settings_data.video_format == 'webm;codecs=vp9' else '' }}>WebM VP9 - Better compression</option>
+                        <option value="webm;codecs=vp8" {{ 'selected' if settings_data.video_format == 'webm;codecs=vp8' else '' }}>WebM VP8 - Legacy support</option>
                     </select>
                 </div>
             </div>

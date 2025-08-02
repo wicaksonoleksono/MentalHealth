@@ -129,22 +129,18 @@ function scaleConfig() {
             2: 'Lebih dari 1 minggu',
             3: 'Hampir setiap hari'
         },
-
         init() {
             this.updateRange();
         },
-
         updateRange() {
             if (this.minValue > this.maxValue) {
                 this.maxValue = this.minValue;
             }
-            
             this.responseOptions = [];
             for (let i = this.minValue; i <= this.maxValue; i++) {
                 this.responseOptions.push(i);
             }
         },
-
         getDefaultLabel(value) {
             return this.scaleLabels[value.toString()] || this.defaultLabels[value] || `Option ${value}`;
         },

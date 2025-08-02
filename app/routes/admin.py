@@ -177,3 +177,29 @@ def get_assessment_data_api(session_id):
         return jsonify({'error': str(e)}), 500
 
 
+@admin_bp.route('/storage-management')
+@login_required
+@admin_required
+def storage_management():
+    """VPS storage management dashboard"""
+    try:
+        from app.services.vps_storage import vps_storage
+        stats = vps_storage.get_storage_stats()
+        return jsonify({'success': True, 'stats': stats})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/cleanup-storage', methods=['POST'])
+@login_required
+@admin_required
+def cleanup_storage():
+    """Clean up old files (admin only)"""
+    try:
+        from app.services.vps_storage import vps_storage
+        result = vps_storage.cleanup_old_files()
+        return jsonify({'success': True, 'cleanup_result': result})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+

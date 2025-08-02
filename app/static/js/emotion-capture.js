@@ -75,20 +75,14 @@ class EmotionCapture {
                 height: { ideal: height },
                 facingMode: 'user'
             },
-            audio: false // No audio for emotion capture
+            audio: false // Disable audio - codec compatibility issues
         });
         
-        // Ensure only video tracks
+        // Log stream tracks
         const videoTracks = stream.getVideoTracks();
         const audioTracks = stream.getAudioTracks();
         
         console.log('📹 Stream tracks - Video:', videoTracks.length, 'Audio:', audioTracks.length);
-        
-        // Remove any audio tracks
-        audioTracks.forEach(track => {
-            stream.removeTrack(track);
-            track.stop();
-        });
         
         this.cameraStream = stream;
         
@@ -102,6 +96,101 @@ class EmotionCapture {
     }
 
     /**
+     * Get supported video formats for recording
+     */
+    getSupportedVideoFormats() {
+        const formatOptions = [
+            `video/${this.config.video_format};codecs=vp9`,
+            `video/${this.config.video_format};codecs=vp8`,
+            `video/${this.config.video_format}`,
+            'video/webm;codecs=vp9',
+            'video/webm;codecs=vp8', 
+            'video/webm'
+        ];
+        
+        return formatOptions.filter(format => MediaRecorder.isTypeSupported(format));
+    }
+
+    /**
+     * Select best video format from supported options
+     */
+    selectBestVideoFormat() {
+        const supportedFormats = this.getSupportedVideoFormats();
+        if (supportedFormats.length === 0) {
+            throw new Error('No supported video format found');
+        }
+        
+        const selectedFormat = supportedFormats[0];
+        console.log(`📹 Selected video format: ${selectedFormat} from ${supportedFormats.length} supported formats`);
+        return selectedFormat;
+    }
+
+    /**
+     * Update camera status display
+     */
+    updateStatus(statusText) {
+        const statusElement = document.getElementById('camera-status-text');
+        if (statusElement) {
+            statusElement.textContent = statusText;
+        }
+        console.log(`📹 Status: ${statusText}`);
+    }
+
+    /**
+     * Upload with progress tracking (VPS optimized)
+     */
+    uploadWithProgress(formData, url) {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            
+            // Track upload progress
+            xhr.upload.addEventListener('progress', (event) => {
+                if (event.lengthComputable) {
+                    const percentComplete = Math.round((event.loaded / event.total) * 100);
+                    this.updateStatus(`Uploading ${percentComplete}%`);
+                    console.log(`📤 Upload progress: ${percentComplete}%`);
+                }
+            });
+            
+            // Handle completion
+            xhr.addEventListener('load', () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    this.updateStatus('Upload complete');
+                    resolve({
+                        ok: true,
+                        status: xhr.status,
+                        json: () => Promise.resolve(JSON.parse(xhr.responseText))
+                    });
+                } else {
+                    this.updateStatus('Upload failed');
+                    resolve({
+                        ok: false,
+                        status: xhr.status,
+                        text: () => Promise.resolve(xhr.responseText)
+                    });
+                }
+            });
+            
+            // Handle errors
+            xhr.addEventListener('error', () => {
+                this.updateStatus('Upload error');
+                reject(new Error('Upload failed'));
+            });
+            
+            // Handle timeouts (important for VPS)
+            xhr.addEventListener('timeout', () => {
+                this.updateStatus('Upload timeout');
+                reject(new Error('Upload timeout'));
+            });
+            
+            // Configure request
+            xhr.open('POST', url);
+            xhr.timeout = 300000; // 5 minutes timeout for large videos on VPS
+            xhr.send(formData);
+        });
+    }
+
+    /**
      * Start video recording (continuous)
      */
     async startVideoRecording() {
@@ -110,29 +199,7 @@ class EmotionCapture {
         try {
             this.recordedChunks = [];
             
-            // Determine best supported codec
-            const codecOptions = [
-                `video/${this.config.video_format};codecs=vp9`,
-                `video/${this.config.video_format};codecs=vp8`,
-                `video/${this.config.video_format}`,
-                'video/webm;codecs=vp9',
-                'video/webm;codecs=vp8', 
-                'video/webm',
-                'video/mp4'
-            ];
-            
-            let selectedMimeType = null;
-            for (const mimeType of codecOptions) {
-                if (MediaRecorder.isTypeSupported(mimeType)) {
-                    selectedMimeType = mimeType;
-                    console.log(`📹 Selected video format: ${mimeType}`);
-                    break;
-                }
-            }
-            
-            if (!selectedMimeType) {
-                throw new Error('No supported video format found');
-            }
+            const selectedMimeType = this.selectBestVideoFormat();
             
             // Create MediaRecorder
             this.mediaRecorder = new MediaRecorder(this.cameraStream, {
@@ -249,45 +316,38 @@ class EmotionCapture {
     }
 
     /**
-     * Save video capture to server
+     * Save video capture to server (VPS optimized)
      */
     async saveVideoCapture(blob) {
         console.log('💾 Saving video capture, blob size:', blob.size);
         
         try {
-            const reader = new FileReader();
-            const base64Data = await new Promise((resolve) => {
-                reader.onload = () => resolve(reader.result);
-                reader.readAsDataURL(blob);
-            });
-            
+            // Use FormData instead of base64 JSON for better VPS performance
+            const formData = new FormData();
             const captureTimestamp = Date.now();
             const sessionDuration = captureTimestamp - this.startTime;
+            const filename = `${this.config.assessment_type}_session_${captureTimestamp}.${this.config.video_format}`;
             
-            const payload = {
-                assessment_type: this.config.assessment_type,
-                question_identifier: this.config.assessment_type === 'phq9' ? 'full_phq9_session' : 'full_session',
-                media_type: 'video',
-                file_data: base64Data,
-                duration_ms: sessionDuration,
-                filename: `${this.config.assessment_type}_session_${captureTimestamp}.${this.config.video_format}`,
-                capture_timestamp: captureTimestamp,
-                conversation_elapsed_ms: sessionDuration,
-                recording_settings: {
-                    mode: this.config.mode,
-                    video_quality: this.config.video_quality,
-                    video_format: this.config.video_format,
-                    resolution: this.config.resolution
-                }
-            };
+            // Add binary file directly (no base64 overhead)
+            formData.append('file', blob, filename);
+            formData.append('assessment_type', this.config.assessment_type);
+            formData.append('question_identifier', this.config.assessment_type === 'phq9' ? 'full_phq9_session' : 'full_session');
+            formData.append('media_type', 'video');
+            formData.append('duration_ms', sessionDuration.toString());
+            formData.append('capture_timestamp', captureTimestamp.toString());
+            formData.append('conversation_elapsed_ms', sessionDuration.toString());
+            formData.append('recording_settings', JSON.stringify({
+                mode: this.config.mode,
+                video_quality: this.config.video_quality,
+                video_format: this.config.video_format,
+                resolution: this.config.resolution
+            }));
             
-            console.log('💾 Sending video to server');
+            console.log('💾 Uploading video via FormData (VPS optimized)');
+            this.updateStatus('Uploading video...');
             
-            const response = await fetch('/patient/capture-emotion', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            // Use XMLHttpRequest for upload progress tracking (better for VPS)
+            const response = await this.uploadWithProgress(formData, '/patient/capture-emotion-binary');
             
             if (response.ok) {
                 const result = await response.json();
@@ -303,43 +363,34 @@ class EmotionCapture {
     }
 
     /**
-     * Save image capture to server
+     * Save image capture to server (VPS optimized)
      */
     async saveImageCapture(blob) {
         try {
-            const reader = new FileReader();
-            const base64Data = await new Promise((resolve) => {
-                reader.onload = () => resolve(reader.result);
-                reader.readAsDataURL(blob);
-            });
-            
+            // Use FormData for images too - consistent with video approach
+            const formData = new FormData();
             const captureTimestamp = Date.now();
             const timeElapsed = captureTimestamp - this.startTime;
+            const filename = `${this.config.assessment_type}_image_${captureTimestamp}.jpg`;
             
-            const payload = {
-                assessment_type: this.config.assessment_type,
-                question_identifier: this.config.assessment_type === 'phq9' 
-                    ? `interval_${captureTimestamp}` 
-                    : `chat_${captureTimestamp}`,
-                media_type: 'image',
-                file_data: base64Data,
-                duration_ms: 0,
-                filename: `${this.config.assessment_type}_image_${captureTimestamp}.jpg`,
-                capture_timestamp: captureTimestamp,
-                conversation_elapsed_ms: timeElapsed,
-                recording_settings: {
-                    mode: this.config.mode,
-                    interval_seconds: this.config.interval,
-                    resolution: this.config.resolution,
-                    image_quality: this.config.image_quality
-                }
-            };
+            // Add binary file directly
+            formData.append('file', blob, filename);
+            formData.append('assessment_type', this.config.assessment_type);
+            formData.append('question_identifier', this.config.assessment_type === 'phq9' 
+                ? `interval_${captureTimestamp}` 
+                : `chat_${captureTimestamp}`);
+            formData.append('media_type', 'image');
+            formData.append('duration_ms', '0');
+            formData.append('capture_timestamp', captureTimestamp.toString());
+            formData.append('conversation_elapsed_ms', timeElapsed.toString());
+            formData.append('recording_settings', JSON.stringify({
+                mode: this.config.mode,
+                interval_seconds: this.config.interval,
+                resolution: this.config.resolution,
+                image_quality: this.config.image_quality
+            }));
             
-            const response = await fetch('/patient/capture-emotion', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            const response = await this.uploadWithProgress(formData, '/patient/capture-emotion-binary');
             
             if (response.ok) {
                 console.log('📸 Image saved successfully');
