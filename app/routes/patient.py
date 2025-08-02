@@ -13,7 +13,7 @@ from app.services.assesment import AssessmentService
 from app.services.assessment_balance import AssessmentBalanceService
 from app.services.phq import PHQService
 from app.services.openai_chat import OpenAIChatService
-# MediaFileService removed - using VPS storage with database links
+from app.services.emotion_storage import emotion_storage
 from app.services.settings import SettingsService
 patient_bp = Blueprint('patient', __name__)
 
@@ -117,21 +117,8 @@ def start_fresh_assessment():
             
             # Clean up any media files associated with the old assessment
             try:
-                # Clean up VPS files for discarded session
-                from app.services.vps_storage import vps_storage
-                try:
-                    # Get files from database
-                    from app.models.assessment import Assessment, EmotionData
-                    assessment = Assessment.query.filter_by(session_id=discard_session_id).first()
-                    if assessment:
-                        # Delete physical files
-                        for emotion in assessment.emotion_data:
-                            file_path = vps_storage.base_dir / emotion.file_path
-                            if file_path.exists():
-                                file_path.unlink()
-                        # Database cleanup handled by cascade delete
-                except Exception as e:
-                    print(f"Cleanup error: {e}")  # Non-critical
+                # Clean up files for discarded session
+                emotion_storage.cleanup_session_files(discard_session_id, current_user.id)
             except Exception as e:
                 current_app.logger.warning(f"Failed to cleanup media files for session {discard_session_id}: {e}")
             
@@ -681,9 +668,8 @@ def assessment_complete():
 @login_required
 @patient_required
 def capture_emotion_binary():
-    """Handle binary file uploads (VPS optimized)"""
+    """Handle binary file uploads (unified service)"""
     try:
-        from app.services.vps_storage import vps_storage
         
         # Validate session
         assessment_session_id = session.get('assessment_session_id')
@@ -713,8 +699,7 @@ def capture_emotion_binary():
         metadata = {
             'duration_ms': int(request.form.get('duration_ms', 0)),
             'capture_timestamp': int(request.form.get('capture_timestamp', 0)),
-            'conversation_elapsed_ms': int(request.form.get('conversation_elapsed_ms', 0)),
-            'question_identifier': question_identifier
+            'conversation_elapsed_ms': int(request.form.get('conversation_elapsed_ms', 0))
         }
         
         # Parse recording settings if provided
@@ -726,21 +711,23 @@ def capture_emotion_binary():
             except:
                 pass
         
-        # Save using VPS storage service
+        # Save using unified emotion storage service (VPS + Database in one call!)
         if media_type == 'video':
-            result = vps_storage.save_video(
-                user_id=current_user.id,
+            emotion_data = emotion_storage.save_video(
                 session_id=assessment_session_id,
+                user_id=current_user.id,
                 assessment_type=assessment_type,
+                question_identifier=question_identifier,
                 video_data=file_data,
                 filename=file.filename,
                 metadata=metadata
             )
         elif media_type == 'image':
-            result = vps_storage.save_image(
-                user_id=current_user.id,
+            emotion_data = emotion_storage.save_image(
                 session_id=assessment_session_id,
+                user_id=current_user.id,
                 assessment_type=assessment_type,
+                question_identifier=question_identifier,
                 image_data=file_data,
                 filename=file.filename,
                 metadata=metadata
@@ -748,55 +735,16 @@ def capture_emotion_binary():
         else:
             return jsonify({'success': False, 'message': 'Invalid media type'}), 400
         
-        # Save to database for export functionality
-        try:
-            from app.models.assessment import Assessment, EmotionData
-            
-            # Get assessment
-            assessment = Assessment.query.filter_by(
-                session_id=assessment_session_id,
-                user_id=current_user.id
-            ).first()
-            
-            if not assessment:
-                return jsonify({'success': False, 'message': 'Assessment not found'}), 400
-            
-            # Create database record with VPS file path
-            emotion_data = EmotionData(
-                assessment_id=assessment.id,
-                assessment_type=assessment_type,
-                question_identifier=question_identifier,
-                media_type=media_type,
-                file_path=result['relative_path'],  # VPS storage path
-                original_filename=file.filename,
-                file_size=result['file_size'],
-                mime_type=f"{media_type}/webm" if media_type == 'video' else 'image/jpeg',
-                duration_ms=metadata.get('duration_ms'),
-                capture_timestamp=metadata.get('capture_timestamp'),
-                recording_settings=str(metadata.get('recording_settings', {}))
-            )
-            
-            db.session.add(emotion_data)
-            db.session.commit()
-            database_id = emotion_data.id
-            
-        except Exception as e:
-            # VPS storage succeeded, database failed - not critical but log it
-            database_id = None
-            print(f"Database save failed: {e}")
-            return jsonify({'success': False, 'message': f'File saved but database error: {e}'}), 500
-        
         return jsonify({
             'success': True,
-            'file_path': result['relative_path'],
-            'file_size': result['file_size'],
-            'filename': result['filename'],
-            'database_id': database_id,
-            'message': f'{media_type.title()} saved successfully to VPS storage'
+            'file_path': emotion_data.file_path,
+            'file_size': emotion_data.file_size,
+            'database_id': emotion_data.id,
+            'message': f'{media_type.title()} saved successfully'
         })
         
     except Exception as e:
-        print(f"Binary upload error: {e}")
+        print(f"Emotion capture error: {e}")
         return jsonify({'success': False, 'message': f'Upload failed: {str(e)}'}), 500
 
 
@@ -804,10 +752,9 @@ def capture_emotion_binary():
 @login_required
 @patient_required 
 def get_storage_stats():
-    """Get VPS storage statistics"""
+    """Get storage statistics"""
     try:
-        from app.services.vps_storage import vps_storage
-        stats = vps_storage.get_storage_stats()
+        stats = emotion_storage.get_storage_stats()
         return jsonify({'success': True, 'stats': stats})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -819,9 +766,8 @@ def get_storage_stats():
 def get_my_files():
     """Get files for current user"""
     try:
-        from app.services.vps_storage import vps_storage
         session_id = session.get('assessment_session_id')
-        files = vps_storage.get_user_files(current_user.id, session_id)
+        files = emotion_storage.get_user_files(current_user.id, session_id)
         return jsonify({'success': True, 'files': files, 'total': len(files)})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -837,24 +783,8 @@ def get_session_files():
         return jsonify({'success': False, 'message': 'No assessment session found'}), 400
     
     try:
-        # Get files from database (linked to VPS storage)
-        from app.models.assessment import Assessment, EmotionData
-        assessment = Assessment.query.filter_by(
-            session_id=assessment_session_id,
-            user_id=current_user.id
-        ).first()
-        
-        files = []
-        if assessment:
-            for emotion in assessment.emotion_data:
-                files.append({
-                    'id': emotion.id,
-                    'media_type': emotion.media_type,
-                    'assessment_type': emotion.assessment_type,
-                    'file_path': emotion.file_path,
-                    'file_size': emotion.file_size,
-                    'timestamp': emotion.timestamp.isoformat() if emotion.timestamp else None
-                })
+        # Get files using unified service
+        files = emotion_storage.get_session_files(assessment_session_id, current_user.id)
         
         return jsonify({
             'success': True,
@@ -877,37 +807,8 @@ def validate_session_files():
         return jsonify({'success': False, 'message': 'No assessment session found'}), 400
     
     try:
-        # Validate files exist on VPS storage
-        from app.services.vps_storage import vps_storage
-        from app.models.assessment import Assessment
-        
-        assessment = Assessment.query.filter_by(
-            session_id=assessment_session_id,
-            user_id=current_user.id
-        ).first()
-        
-        validation_result = {
-            'total_files': 0,
-            'valid_files': 0,
-            'missing_files': 0,
-            'is_valid': True
-        }
-        
-        if assessment:
-            total_files = len(assessment.emotion_data)
-            valid_files = 0
-            
-            for emotion in assessment.emotion_data:
-                file_path = vps_storage.base_dir / emotion.file_path
-                if file_path.exists():
-                    valid_files += 1
-            
-            validation_result = {
-                'total_files': total_files,
-                'valid_files': valid_files,
-                'missing_files': total_files - valid_files,
-                'is_valid': total_files == valid_files
-            }
+        # Validate files using unified service
+        validation_result = emotion_storage.validate_session_files(assessment_session_id, current_user.id)
         
         return jsonify({
             'success': True,

@@ -4,7 +4,7 @@ from datetime import datetime
 from app import db
 from app.models.assessment import Assessment, PHQ9Response, OpenQuestionResponse
 from app.models.user import User
-from app.services.media_file import MediaFileService
+from app.services.emotion_storage import emotion_storage
 import uuid
 
 class AssessmentService:
@@ -170,7 +170,7 @@ class AssessmentService:
             raise ValueError("Assessment session not found")
         
         # Delete all associated files first
-        deleted_files = MediaFileService.cleanup_session_files(session_id, user_id)
+        deleted_files = emotion_storage.cleanup_session_files(session_id, user_id)
         
         # Delete database records (cascading will handle related records)
         db.session.delete(assessment)
@@ -192,8 +192,8 @@ class AssessmentService:
             raise ValueError("Assessment session not found")
         
         # Get file information
-        files = MediaFileService.get_session_files(session_id, user_id)
-        file_validation = MediaFileService.validate_session_files(session_id, user_id)
+        files = emotion_storage.get_session_files(session_id, user_id)
+        file_validation = emotion_storage.validate_session_files(session_id, user_id)
         
         # Get responses
         phq9_responses = PHQ9Response.query.filter_by(assessment_id=assessment.id).all()
@@ -294,4 +294,4 @@ class AssessmentService:
             }
 
 # Legacy method removed: save_emotion_data() 
-# Now use MediaFileService.save_emotion_capture() directly in routes
+# Now use emotion_storage.save_video() or emotion_storage.save_image() directly in routes

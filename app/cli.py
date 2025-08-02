@@ -432,7 +432,7 @@ def register_commands(app):
         
         try:
             from app.services.settings import SettingsService
-            from app.services.media_file import MediaFileService
+            from app.services.emotion_storage import emotion_storage
             from app.models.assessment import Assessment, EmotionData
             from app.models.user import User
             import base64
@@ -480,7 +480,7 @@ def register_commands(app):
             test_image_data = b"test_image_data_for_emotion_capture"
             
             # Test image capture save
-            emotion_data = MediaFileService.save_emotion_capture(
+            emotion_data = emotion_storage.save_emotion_capture(
                 session_id='test_session_123',
                 user_id=test_user.id,
                 assessment_type='phq9',
@@ -505,11 +505,11 @@ def register_commands(app):
                 click.echo(f"❌ Physical file missing: {emotion_data.get_full_path()}")
             
             # Test session files retrieval
-            session_files = MediaFileService.get_session_files('test_session_123', test_user.id)
+            session_files = emotion_storage.get_session_files('test_session_123', test_user.id)
             click.echo(f"✅ Retrieved {len(session_files)} session files")
             
             # Test validation
-            validation = MediaFileService.validate_session_files('test_session_123', test_user.id)
+            validation = emotion_storage.validate_session_files('test_session_123', test_user.id)
             click.echo(f"✅ File validation: {validation['valid_files']}/{validation['total_files']} files valid")
             
             click.echo("🎉 All emotion capture tests passed!")
@@ -576,7 +576,7 @@ def register_commands(app):
             import tempfile
             import shutil
             import os
-            from app.services.media_file import MediaFileService
+            from app.services.emotion_storage import emotion_storage
             
             # Create a temporary directory for testing
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -584,7 +584,7 @@ def register_commands(app):
                 
                 # Test deep nested directory creation
                 test_path = os.path.join(temp_dir, 'level1', 'level2', 'level3', 'level4')
-                MediaFileService._ensure_directory(test_path)
+                emotion_storage._ensure_directory(test_path)
                 
                 if os.path.exists(test_path):
                     click.echo("✅ Deep nested directory creation works")
@@ -592,9 +592,9 @@ def register_commands(app):
                     click.echo("❌ Deep nested directory creation failed")
                 
                 # Test session directory creation
-                session_dir = MediaFileService._get_session_directory('test_session', 'phq9', 'image')
+                session_dir = emotion_storage._get_session_directory('test_session', 'phq9', 'image')
                 full_session_path = os.path.join(temp_dir, session_dir)
-                MediaFileService._ensure_directory(full_session_path)
+                emotion_storage._ensure_directory(full_session_path)
                 
                 if os.path.exists(full_session_path):
                     click.echo("✅ Session directory auto-creation works")
@@ -611,9 +611,9 @@ def register_commands(app):
                 ]
                 
                 for session_id, assessment_type, media_type in test_combinations:
-                    rel_dir = MediaFileService._get_session_directory(session_id, assessment_type, media_type)
+                    rel_dir = emotion_storage._get_session_directory(session_id, assessment_type, media_type)
                     full_path = os.path.join(temp_dir, rel_dir)
-                    MediaFileService._ensure_directory(full_path)
+                    emotion_storage._ensure_directory(full_path)
                     
                     if os.path.exists(full_path):
                         click.echo(f"✅ Created: {rel_dir}")
