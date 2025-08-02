@@ -159,7 +159,21 @@ async function initializePHQ9EmotionCapture() {
             assessment_type: 'phq9',
             mode: '{{ recording_config.mode }}',
             enabled: {{ 'true' if recording_config.enabled else 'false' }},
+            
+            // 🔬 SCIENTIFIC CAPTURE MODE SETTINGS
+            capture_mode: '{{ recording_config.capture_mode or "interval" }}',
+            
+            // Interval settings
             interval: {{ recording_config.interval }},
+            
+            // Event-driven settings
+            event_capture_enabled: {{ 'true' if recording_config.event_capture_enabled else 'false' }},
+            capture_on_button_click: {{ 'true' if recording_config.capture_on_button_click else 'true' }},
+            capture_on_message_send: {{ 'true' if recording_config.capture_on_message_send else 'false' }},
+            capture_on_question_start: {{ 'true' if recording_config.capture_on_question_start else 'false' }},
+            capture_on_typing_pause: {{ 'true' if recording_config.capture_on_typing_pause else 'false' }},
+            
+            // Technical settings
             resolution: '{{ recording_config.resolution }}',
             image_quality: {{ recording_config.image_quality }},
             video_quality: '{{ recording_config.video_quality }}',

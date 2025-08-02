@@ -69,7 +69,17 @@ class EmotionStorageService:
             # Get relative path for database
             relative_path = str(file_path.relative_to(self.base_dir))
             
-            # Create database record
+            # Create database record with standardized timestamps
+            now = datetime.utcnow()
+            captured_at = now  # Default to now if no timestamp provided
+            
+            # Parse capture timestamp if provided
+            if metadata.get('capture_timestamp'):
+                try:
+                    captured_at = datetime.fromtimestamp(int(metadata['capture_timestamp']) / 1000)
+                except (ValueError, TypeError):
+                    pass  # Use default
+            
             emotion_data = EmotionData(
                 assessment_id=assessment.id,
                 assessment_type=assessment_type,
@@ -79,8 +89,13 @@ class EmotionStorageService:
                 original_filename=filename,
                 file_size=len(video_data),
                 mime_type='video/webm',
+                # STANDARDIZED TIMESTAMPS
+                created_at=now,  # When saved to database
+                captured_at=captured_at,  # When user actually captured
+                question_started_at=self._parse_question_start_time(metadata),
+                # TECHNICAL METADATA
                 duration_ms=metadata.get('duration_ms'),
-                capture_timestamp=metadata.get('capture_timestamp'),
+                time_into_question_ms=metadata.get('conversation_elapsed_ms'),
                 recording_settings=str(metadata.get('recording_settings', {}))
             )
             
@@ -136,7 +151,17 @@ class EmotionStorageService:
             # Get relative path for database
             relative_path = str(file_path.relative_to(self.base_dir))
             
-            # Create database record
+            # Create database record with standardized timestamps
+            now = datetime.utcnow()
+            captured_at = now  # Default to now if no timestamp provided
+            
+            # Parse capture timestamp if provided
+            if metadata.get('capture_timestamp'):
+                try:
+                    captured_at = datetime.fromtimestamp(int(metadata['capture_timestamp']) / 1000)
+                except (ValueError, TypeError):
+                    pass  # Use default
+            
             emotion_data = EmotionData(
                 assessment_id=assessment.id,
                 assessment_type=assessment_type,
@@ -146,7 +171,12 @@ class EmotionStorageService:
                 original_filename=filename,
                 file_size=optimized_size,
                 mime_type='image/jpeg',
-                capture_timestamp=metadata.get('capture_timestamp'),
+                # STANDARDIZED TIMESTAMPS
+                created_at=now,  # When saved to database
+                captured_at=captured_at,  # When user actually captured
+                question_started_at=self._parse_question_start_time(metadata),
+                # TECHNICAL METADATA
+                time_into_question_ms=metadata.get('conversation_elapsed_ms'),
                 recording_settings=str(metadata.get('recording_settings', {}))
             )
             
@@ -181,7 +211,8 @@ class EmotionStorageService:
                     'question_identifier': emotion.question_identifier,
                     'file_path': emotion.file_path,
                     'file_size': emotion.file_size,
-                    'timestamp': emotion.timestamp.isoformat() if emotion.timestamp else None,
+                    'created_at': emotion.created_at.isoformat() if emotion.created_at else None,
+                    'captured_at': emotion.captured_at.isoformat() if emotion.captured_at else None,
                     'full_path': str(self.base_dir / emotion.file_path)
                 })
             
@@ -210,11 +241,12 @@ class EmotionStorageService:
                     'assessment_type': emotion.assessment_type,
                     'file_path': emotion.file_path,
                     'file_size': emotion.file_size,
-                    'timestamp': emotion.timestamp.isoformat() if emotion.timestamp else None,
+                    'created_at': emotion.created_at.isoformat() if emotion.created_at else None,
+                    'captured_at': emotion.captured_at.isoformat() if emotion.captured_at else None,
                     'full_path': str(self.base_dir / emotion.file_path)
                 })
             
-            return sorted(files, key=lambda x: x['timestamp'] or '', reverse=True)
+            return sorted(files, key=lambda x: x['captured_at'] or '', reverse=True)
             
         except Exception as e:
             logger.error(f"Failed to get user files: {e}")
@@ -285,7 +317,7 @@ class EmotionStorageService:
         try:
             # Get old emotion data records
             old_emotions = EmotionData.query.filter(
-                EmotionData.timestamp < cutoff_date
+                EmotionData.created_at < cutoff_date
             ).all()
             
             for emotion in old_emotions:
@@ -369,6 +401,12 @@ class EmotionStorageService:
         except Exception as e:
             logger.error(f"Failed to get storage stats: {e}")
             return {'error': str(e)}
+    
+    def _parse_question_start_time(self, metadata: Dict) -> Optional[datetime]:
+        """Parse question start time from metadata for correlation"""
+        # This will be used to correlate emotion captures with specific user actions
+        # For now, return None - will be enhanced when timing correlation is implemented
+        return None
 
 # Global instance
 emotion_storage = EmotionStorageService()

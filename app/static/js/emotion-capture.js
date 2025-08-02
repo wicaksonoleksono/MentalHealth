@@ -18,6 +18,13 @@ class EmotionCapture {
         this.imageCaptureInterval = null;
         this.startTime = Date.now();
         
+        // 🔬 SCIENTIFIC CAPTURE MODE VARIABLES
+        this.captureMode = config?.capture_mode || 'interval'; // interval, event_driven, video_continuous
+        this.eventListeners = [];
+        this.questionStartTime = null;
+        this.lastEventCapture = 0;
+        this.isEventDrivenActive = false;
+        
         console.log('🎬 EmotionCapture initialized with config:', this.config);
     }
 
@@ -45,12 +52,8 @@ class EmotionCapture {
             // Get camera stream
             await this.initializeCamera();
             
-            // Start recording based on mode
-            if (this.config.mode === 'video') {
-                await this.startVideoRecording();
-            } else {
-                this.startPeriodicImageCapture();
-            }
+            // 🔬 Start recording based on SCIENTIFIC CAPTURE MODE
+            await this.startCaptureMode();
             
             return true;
             
@@ -251,43 +254,258 @@ class EmotionCapture {
     }
 
     /**
-     * Start periodic image capture
+     * 🔬 Start capture mode based on scientific research requirements
      */
-    startPeriodicImageCapture() {
+    async startCaptureMode() {
+        console.log(`🔬 Starting scientific capture mode: ${this.captureMode}`);
+        
+        switch (this.captureMode) {
+            case 'interval':
+                this.startIntervalCapture();
+                break;
+            case 'event_driven':
+                this.startEventDrivenCapture();
+                break;
+            case 'video_continuous':
+                await this.startVideoRecording();
+                break;
+            default:
+                console.warn(`🔬 Unknown capture mode: ${this.captureMode}, defaulting to interval`);
+                this.startIntervalCapture();
+        }
+    }
+    
+    /**
+     * 🕐 INTERVAL MODE: Timer-based image capture for baseline emotional state
+     */
+    startIntervalCapture() {
         if (!this.cameraStream) return;
         
         const intervalMs = this.config.interval * 1000;
-        console.log(`📸 Starting periodic image capture every ${this.config.interval} seconds`);
+        console.log(`⏰ Starting INTERVAL capture every ${this.config.interval} seconds`);
         
-        this.updateStatus('Capturing Images');
+        this.updateStatus('📊 Interval Mode Active');
         this.showRecordingIndicator(true);
         
         // Capture first image immediately
-        this.captureImage();
+        this.captureImage('interval_baseline');
         
-        // Then capture at intervals
+        // Then capture at regular intervals
         this.imageCaptureInterval = setInterval(() => {
-            this.captureImage();
+            this.captureImage('interval_periodic');
         }, intervalMs);
+    }
+    
+    /**
+     * ⚡ EVENT-DRIVEN MODE: Capture on user actions for decision-making analysis
+     */
+    startEventDrivenCapture() {
+        if (!this.cameraStream) return;
+        
+        console.log('⚡ Starting EVENT-DRIVEN capture mode');
+        this.updateStatus('🎯 Event Mode Active');
+        this.showRecordingIndicator(true);
+        this.isEventDrivenActive = true;
+        
+        // Set up event listeners based on assessment type
+        this.setupEventListeners();
+        
+        // Capture initial baseline
+        this.captureImage('event_baseline');
+    }
+    
+    /**
+     * 🎯 Set up event listeners for different assessment types
+     */
+    setupEventListeners() {
+        // PHQ-9 Button Click Events
+        if (this.config.assessment_type === 'phq9') {
+            this.setupPHQ9EventListeners();
+        }
+        
+        // Open Questions Chat Events
+        if (this.config.assessment_type === 'open_questions') {
+            this.setupChatEventListeners();
+        }
+        
+        // Common events (question starts, etc.)
+        this.setupCommonEventListeners();
+    }
+    
+    /**
+     * 🔲 PHQ-9 specific event listeners
+     */
+    setupPHQ9EventListeners() {
+        // Listen for button clicks on PHQ-9 options
+        const responseButtons = document.querySelectorAll('input[name="response_value"], button[data-response]');
+        
+        responseButtons.forEach(button => {
+            const listener = (event) => {
+                console.log('🎯 PHQ-9 button clicked:', event.target.value || event.target.dataset.response);
+                this.triggerEventCapture('phq9_button_click', {
+                    response_value: event.target.value || event.target.dataset.response,
+                    question_element: event.target.closest('.question-container')?.id
+                });
+            };
+            
+            button.addEventListener('click', listener);
+            this.eventListeners.push({ element: button, type: 'click', listener });
+        });
+        
+        // Listen for form submissions
+        const phqForm = document.querySelector('form[action*="phq9"]');
+        if (phqForm) {
+            const listener = (event) => {
+                console.log('🎯 PHQ-9 form submitted');
+                this.triggerEventCapture('phq9_submit');
+            };
+            
+            phqForm.addEventListener('submit', listener);
+            this.eventListeners.push({ element: phqForm, type: 'submit', listener });
+        }
+    }
+    
+    /**
+     * 💬 Chat/Open Questions specific event listeners
+     */
+    setupChatEventListeners() {
+        // Listen for message send events
+        const chatForm = document.querySelector('#chatForm, form[action*="chat"]');
+        const sendButton = document.querySelector('#sendButton, button[type="submit"]');
+        
+        if (chatForm) {
+            const listener = (event) => {
+                console.log('🎯 Chat message sent');
+                const messageInput = chatForm.querySelector('input[type="text"], textarea');
+                this.triggerEventCapture('chat_message_send', {
+                    message_length: messageInput?.value.length || 0
+                });
+            };
+            
+            chatForm.addEventListener('submit', listener);
+            this.eventListeners.push({ element: chatForm, type: 'submit', listener });
+        }
+        
+        // Listen for typing events (debounced)
+        const messageInput = document.querySelector('#messageInput, input[type="text"], textarea');
+        if (messageInput) {
+            let typingTimeout;
+            const listener = () => {
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(() => {
+                    console.log('🎯 User finished typing');
+                    this.triggerEventCapture('chat_typing_pause');
+                }, 2000); // 2 second pause indicates thinking
+            };
+            
+            messageInput.addEventListener('input', listener);
+            this.eventListeners.push({ element: messageInput, type: 'input', listener });
+        }
+    }
+    
+    /**
+     * 🔄 Common event listeners for all assessment types
+     */
+    setupCommonEventListeners() {
+        // Track when questions start (for correlation)
+        this.questionStartTime = Date.now();
+        
+        // Listen for navigation/page changes
+        window.addEventListener('beforeunload', () => {
+            this.triggerEventCapture('session_end');
+        });
+    }
+    
+    /**
+     * 🎯 Trigger event-driven capture with context
+     */
+    triggerEventCapture(eventType, eventData = {}) {
+        if (!this.isEventDrivenActive) return;
+        
+        // Prevent rapid-fire captures (min 1 second between captures)
+        const now = Date.now();
+        if (now - this.lastEventCapture < 1000) {
+            console.log('🎯 Event capture rate limited');
+            return;
+        }
+        
+        this.lastEventCapture = now;
+        console.log(`🎯 EVENT CAPTURE TRIGGERED: ${eventType}`, eventData);
+        
+        // Flash indicator to show capture
+        this.flashCaptureIndicator();
+        
+        // Capture image with event context
+        this.captureImage(`event_${eventType}`, eventData);
+    }
+    
+    /**
+     * ✨ Flash the recording indicator to show event capture
+     */
+    flashCaptureIndicator() {
+        const indicator = document.querySelector('.recording-indicator, #camera-status');
+        if (indicator) {
+            indicator.style.backgroundColor = '#10b981'; // Green flash
+            setTimeout(() => {
+                indicator.style.backgroundColor = '#ef4444'; // Back to red
+            }, 200);
+        }
     }
 
     /**
-     * Stop periodic image capture
+     * 🛑 Stop all capture modes
      */
-    stopPeriodicImageCapture() {
-        console.log('🛑 Stopping periodic image capture');
+    stopCapture() {
+        console.log(`🛑 Stopping ${this.captureMode} capture mode`);
+        
+        // Stop interval capture
         if (this.imageCaptureInterval) {
             clearInterval(this.imageCaptureInterval);
             this.imageCaptureInterval = null;
         }
+        
+        // Stop event-driven capture
+        if (this.isEventDrivenActive) {
+            this.stopEventDrivenCapture();
+        }
+        
+        // Stop video recording
+        if (this.isRecording) {
+            this.stopVideoRecording();
+        }
+        
         this.showRecordingIndicator(false);
-        this.updateStatus('Image Capture Complete');
+        this.updateStatus('Capture Complete');
+    }
+    
+    /**
+     * 🛑 Stop event-driven capture and clean up listeners
+     */
+    stopEventDrivenCapture() {
+        console.log('🛑 Stopping event-driven capture');
+        this.isEventDrivenActive = false;
+        
+        // Remove all event listeners
+        this.eventListeners.forEach(({ element, type, listener }) => {
+            element.removeEventListener(type, listener);
+        });
+        this.eventListeners = [];
+        
+        // Final capture on stop
+        this.captureImage('event_session_end');
+    }
+    
+    /**
+     * 🛑 Legacy method for backward compatibility
+     */
+    stopPeriodicImageCapture() {
+        this.stopCapture();
     }
 
     /**
-     * Capture a single image
+     * 📸 Capture a single image with scientific context
      */
-    async captureImage() {
+    async captureImage(captureContext = 'manual', eventData = {}) {
         if (!this.cameraStream) return;
         
         try {
@@ -307,8 +525,8 @@ class EmotionCapture {
                 canvas.toBlob(resolve, 'image/jpeg', this.config.image_quality);
             });
             
-            console.log('📸 Image captured, size:', blob.size);
-            this.saveImageCapture(blob);
+            console.log(`📸 ${captureContext.toUpperCase()} image captured, size:`, blob.size);
+            this.saveImageCapture(blob, captureContext, eventData);
             
         } catch (error) {
             console.error('📸 Failed to capture image:', error);
@@ -365,41 +583,59 @@ class EmotionCapture {
     /**
      * Save image capture to server (VPS optimized)
      */
-    async saveImageCapture(blob) {
+    async saveImageCapture(blob, captureContext = 'manual', eventData = {}) {
         try {
-            // Use FormData for images too - consistent with video approach
+            // 🔬 Use FormData for images with scientific metadata
             const formData = new FormData();
             const captureTimestamp = Date.now();
             const timeElapsed = captureTimestamp - this.startTime;
-            const filename = `${this.config.assessment_type}_image_${captureTimestamp}.jpg`;
+            const questionDuration = this.questionStartTime ? captureTimestamp - this.questionStartTime : 0;
+            const filename = `${this.config.assessment_type}_${captureContext}_${captureTimestamp}.jpg`;
             
             // Add binary file directly
             formData.append('file', blob, filename);
             formData.append('assessment_type', this.config.assessment_type);
-            formData.append('question_identifier', this.config.assessment_type === 'phq9' 
-                ? `interval_${captureTimestamp}` 
-                : `chat_${captureTimestamp}`);
+            formData.append('question_identifier', this.generateQuestionIdentifier(captureContext));
             formData.append('media_type', 'image');
             formData.append('duration_ms', '0');
             formData.append('capture_timestamp', captureTimestamp.toString());
-            formData.append('conversation_elapsed_ms', timeElapsed.toString());
+            formData.append('conversation_elapsed_ms', questionDuration.toString());
             formData.append('recording_settings', JSON.stringify({
-                mode: this.config.mode,
+                capture_mode: this.captureMode,
+                capture_context: captureContext,
+                event_data: eventData,
                 interval_seconds: this.config.interval,
                 resolution: this.config.resolution,
-                image_quality: this.config.image_quality
+                image_quality: this.config.image_quality,
+                // 🔬 Scientific timing data
+                question_start_time: this.questionStartTime,
+                session_duration_ms: timeElapsed,
+                question_duration_ms: questionDuration
             }));
             
             const response = await this.uploadWithProgress(formData, '/patient/capture-emotion-binary');
             
             if (response.ok) {
-                console.log('📸 Image saved successfully');
+                console.log(`📸 ${captureContext.toUpperCase()} image saved successfully`);
             } else {
-                console.error('📸 Failed to save image:', response.status);
+                console.error(`📸 Failed to save ${captureContext} image:`, response.status);
             }
             
         } catch (error) {
-            console.error('📸 Error saving image:', error);
+            console.error(`📸 Error saving ${captureContext} image:`, error);
+        }
+    }
+    
+    /**
+     * 🎯 Generate question identifier based on capture context
+     */
+    generateQuestionIdentifier(captureContext) {
+        if (this.config.assessment_type === 'phq9') {
+            const questionIndex = document.querySelector('input[name="question_index"]')?.value || 'unknown';
+            return `phq9_q${questionIndex}_${captureContext}`;
+        } else {
+            const exchangeCount = window.chatSession?.exchange_count || 0;
+            return `chat_ex${exchangeCount}_${captureContext}`;
         }
     }
 

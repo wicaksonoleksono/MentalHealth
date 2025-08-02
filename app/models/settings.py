@@ -15,7 +15,18 @@ class SettingsKey(Enum):
     # Recording Settings
     RECORDING_MODE = ('recording_mode', 'choice', 'Recording mode', ['capture', 'video'])
     ENABLE_RECORDING = ('enable_recording', 'boolean', 'Enable camera recording', True)
+    
+    # NEW: Capture Mode Settings for Scientific Research
+    CAPTURE_MODE = ('capture_mode', 'choice', 'Capture timing mode', ['interval', 'event_driven', 'video_continuous'])
     CAPTURE_INTERVAL = ('capture_interval', 'integer', 'Image capture interval (seconds)', 5)
+    EVENT_CAPTURE_ENABLED = ('event_capture_enabled', 'boolean', 'Enable event-driven capture', True)
+    
+    # Event Triggers (when to capture)
+    CAPTURE_ON_BUTTON_CLICK = ('capture_on_button_click', 'boolean', 'Capture on PHQ-9 button clicks', True)
+    CAPTURE_ON_MESSAGE_SEND = ('capture_on_message_send', 'boolean', 'Capture on chat message send', True)
+    CAPTURE_ON_QUESTION_START = ('capture_on_question_start', 'boolean', 'Capture when question starts', False)
+    CAPTURE_ON_TYPING_PAUSE = ('capture_on_typing_pause', 'boolean', 'Capture on typing pauses (thinking moments)', False)
+    
     RESOLUTION = ('resolution', 'choice', 'Camera resolution', ['640x480', '1280x720', '1920x1080'])
     
     # Image Settings
@@ -67,7 +78,10 @@ class SettingsKey(Enum):
     def get_recording_settings(cls):
         """Get all recording-related settings"""
         recording_keys = {
-            cls.RECORDING_MODE, cls.ENABLE_RECORDING, cls.CAPTURE_INTERVAL,
+            cls.RECORDING_MODE, cls.ENABLE_RECORDING, cls.CAPTURE_MODE,
+            cls.CAPTURE_INTERVAL, cls.EVENT_CAPTURE_ENABLED,
+            cls.CAPTURE_ON_BUTTON_CLICK, cls.CAPTURE_ON_MESSAGE_SEND, 
+            cls.CAPTURE_ON_QUESTION_START, cls.CAPTURE_ON_TYPING_PAUSE,
             cls.RESOLUTION, cls.IMAGE_QUALITY, cls.VIDEO_QUALITY, cls.VIDEO_FORMAT
         }
         return recording_keys

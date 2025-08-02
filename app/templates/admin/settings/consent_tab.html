@@ -74,43 +74,43 @@
 <script>
 function loadTemplate(type) {
     const textarea = document.querySelector('[name=consent_form_text]');
-    
     const templates = {
-        research: `CONSENT TO PARTICIPATE IN MENTAL HEALTH RESEARCH
+        research: `PERSETUJUAN UNTUK BERPARTISIPASI DALAM PENELITIAN KESEHATAN MENTAL
 
-I understand that I am being asked to participate in a research study about mental health assessment that includes:
-• Completion of standardized questionnaires (PHQ-9)
-• Participation in an AI-assisted conversation about my mental health
-• Optional audio/video recording during the assessment for research purposes
+    Saya memahami bahwa saya diminta untuk berpartisipasi dalam sebuah studi penelitian tentang asesmen kesehatan mental yang mencakup:
+    • Pengisian kuesioner standar (PHQ-9)
+    • Partisipasi dalam percakapan berbantuan AI tentang kesehatan mental saya
+    • Perekaman audio/video opsional selama asesmen untuk tujuan penelitian
 
-I understand that:
-• My participation is voluntary and I can withdraw at any time without penalty
-• My responses will be kept confidential and used only for research purposes
-• The data collected may be used in aggregate form for research publications
-• If I express thoughts of self-harm, appropriate resources will be provided
-• This assessment is not a substitute for professional mental health treatment
-• My data will be stored securely and destroyed after the study period
+    Saya memahami bahwa:
+    • Partisipasi saya bersifat sukarela dan saya dapat mengundurkan diri kapan saja tanpa penalti
+    • Tanggapan saya akan dijaga kerahasiaannya dan hanya digunakan untuk tujuan penelitian
+    • Data yang dikumpulkan dapat digunakan dalam bentuk agregat untuk publikasi ilmiah
+    • Jika saya mengungkapkan pikiran untuk menyakiti diri sendiri, sumber daya yang sesuai akan diberikan
+    • Asesmen ini bukan pengganti perawatan kesehatan mental profesional
+    • Data saya akan disimpan dengan aman dan dimusnahkan setelah periode studi berakhir
 
-I consent to participate in this research and understand my rights as described above.
+    Saya menyetujui untuk berpartisipasi dalam penelitian ini dan memahami hak-hak saya sebagaimana dijelaskan di atas.
 
-By clicking "I Agree" below, I indicate my informed consent to participate.`,
+    Dengan mengklik "Saya Setuju" di bawah ini, saya menyatakan persetujuan saya untuk berpartisipasi.`,
 
-        clinical: `CONSENT FOR MENTAL HEALTH ASSESSMENT
+        clinical: `PERSETUJUAN UNTUK ASESMEN KESEHATAN MENTAL
 
-I understand that I am about to complete a mental health assessment that includes:
-• Standardized questionnaires about my mental health
-• Conversation with an AI assistant about my current state
-• Possible recording for quality assurance purposes
+    Saya memahami bahwa saya akan menjalani asesmen kesehatan mental yang mencakup:
+    • Kuesioner standar tentang kesehatan mental saya
+    • Percakapan dengan asisten AI mengenai kondisi saya saat ini
+    • Kemungkinan perekaman untuk tujuan penjaminan kualitas
 
-I understand that:
-• This assessment is part of my healthcare evaluation
-• My responses will be kept confidential according to healthcare privacy laws
-• The information may be shared with my healthcare team as appropriate
-• Emergency protocols will be followed if I express thoughts of self-harm
-• I can stop the assessment at any time
+    Saya memahami bahwa:
+    • Asesmen ini merupakan bagian dari evaluasi layanan kesehatan saya
+    • Tanggapan saya akan dijaga kerahasiaannya sesuai dengan undang-undang privasi layanan kesehatan
+    • Informasi dapat dibagikan kepada tim layanan kesehatan saya jika diperlukan
+    • Protokol darurat akan dijalankan jika saya mengungkapkan pikiran untuk menyakiti diri sendiri
+    • Saya dapat menghentikan asesmen kapan saja
 
-By proceeding, I consent to this mental health assessment.`
+    Dengan melanjutkan, saya menyetujui asesmen kesehatan mental ini.`
     };
+
     
     if (templates[type] && confirm('Replace current consent text with this template?')) {
         textarea.value = templates[type];

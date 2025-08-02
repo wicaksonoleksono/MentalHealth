@@ -137,13 +137,17 @@ class EmotionData(db.Model):
     original_filename = db.Column(db.String(100))
     file_size = db.Column(db.Integer)  # File size in bytes
     mime_type = db.Column(db.String(50))  # image/jpeg, video/webm, etc.
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    question_start_time = db.Column(db.DateTime)
+    
+    # STANDARDIZED TIMESTAMPS for data correlation
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # When record was saved to database
+    captured_at = db.Column(db.DateTime, nullable=False)  # When media was actually captured by user
+    question_started_at = db.Column(db.DateTime)  # When the question/conversation started (for correlation)
+    
+    # TECHNICAL METADATA
     duration_ms = db.Column(db.Integer)  # For videos or capture duration
+    time_into_question_ms = db.Column(db.Integer)  # Milliseconds since question started
     resolution = db.Column(db.String(20))  # "1280x720"
     quality_setting = db.Column(db.Float)  # 0.8 for images, etc.
-    capture_timestamp = db.Column(db.BigInteger)  # Epoch timestamp when captured
-    time_into_question_ms = db.Column(db.Integer)  # Time since question started
     recording_settings = db.Column(db.Text)  # JSON of recording settings used
     def __repr__(self):
         return f'<EmotionData {self.media_type} - {self.assessment_type} - {self.file_path}>'

@@ -29,62 +29,246 @@
             </div>
         </div>
 
-        <!-- Recording Mode -->
-        <div class="bg-white rounded-lg p-6 border border-orange-200" id="recording_mode_section">
-            <h4 class="font-medium text-gray-900 mb-4">Recording Mode</h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Image Capture Mode -->
+        <!-- 🔬 SCIENTIFIC CAPTURE MODES -->
+        <div class="bg-white rounded-lg p-6 border border-orange-200" id="capture_mode_section">
+            <div class="flex items-center mb-4">
+                <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center mr-3">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                    </svg>
+                </div>
+                <h4 class="font-medium text-gray-900">Scientific Capture Mode</h4>
+                <span class="ml-2 bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">Newest feat</span>
+            </div>
+            <p class="text-gray-600 mb-6">Choose how emotion data is captured for optimal research analysis</p>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <!-- Interval-Based Capture -->
                 <label class="relative">
-                    <input type="radio" name="recording_mode" value="capture" 
-                           {{ 'checked' if settings_data.recording_mode == 'capture' else '' }}
+                    <input type="radio" name="capture_mode" value="interval" 
+                           {{ 'checked' if settings_data.capture_mode == 'interval' else '' }}
                            class="peer sr-only">
-                    <div class="p-6 border-2 border-gray-200 rounded-xl cursor-pointer transition-all peer-checked:border-orange-500 peer-checked:bg-orange-50">
+                    <div class="p-6 border-2 border-gray-200 rounded-xl cursor-pointer transition-all peer-checked:border-blue-500 peer-checked:bg-blue-50">
                         <div class="flex items-center mb-3">
-                            <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center mr-3">
+                            <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center mr-3">
                                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                             </div>
-                            <span class="font-medium">Image Capture</span>
+                            <span class="font-semibold">Interval Mode</span>
                         </div>
-                        <p class="text-sm text-gray-600">Capture images at regular intervals</p>
-                        <ul class="text-xs text-gray-500 mt-2 list-disc list-inside">
-                            <li>Lower bandwidth usage</li>
-                            <li>Smaller file sizes</li>
-                            <li>Good for emotion detection</li>
+                        <p class="text-sm text-gray-600 mb-2">📸 Pictures every X seconds</p>
+                        <ul class="text-xs text-gray-500 list-disc list-inside space-y-1">
+                            <li><strong>Best for:</strong> General emotional state</li>
+                            <li><strong>Data:</strong> Baseline emotion tracking</li>
+                            <li><strong>Storage:</strong> Predictable file sizes</li>
+                            <li><strong>Analysis:</strong> Time-series patterns</li>
                         </ul>
                     </div>
                 </label>
 
-                <!-- Video Recording Mode -->
+                <!-- Event-Driven Capture -->
                 <label class="relative">
-                    <input type="radio" name="recording_mode" value="video" 
-                           {{ 'checked' if settings_data.recording_mode == 'video' else '' }}
+                    <input type="radio" name="capture_mode" value="event_driven" 
+                           {{ 'checked' if settings_data.capture_mode == 'event_driven' else '' }}
                            class="peer sr-only">
-                    <div class="p-6 border-2 border-gray-200 rounded-xl cursor-pointer transition-all peer-checked:border-orange-500 peer-checked:bg-orange-50">
+                    <div class="p-6 border-2 border-gray-200 rounded-xl cursor-pointer transition-all peer-checked:border-purple-500 peer-checked:bg-purple-50">
+                        <div class="flex items-center mb-3">
+                            <div class="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center mr-3">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                </svg>
+                            </div>
+                            <span class="font-semibold">Event-Driven</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-2">⚡ Pictures on user actions</p>
+                        <ul class="text-xs text-gray-500 list-disc list-inside space-y-1">
+                            <li><strong>Best for:</strong> Decision-making moments</li>
+                            <li><strong>Data:</strong> Precise action correlation</li>
+                            <li><strong>Storage:</strong> Variable based on activity</li>
+                            <li><strong>Analysis:</strong> Behavioral triggers</li>
+                        </ul>
+                    </div>
+                </label>
+
+                <!-- Continuous Video -->
+                <label class="relative">
+                    <input type="radio" name="capture_mode" value="video_continuous" 
+                           {{ 'checked' if settings_data.capture_mode == 'video_continuous' else '' }}
+                           class="peer sr-only">
+                    <div class="p-6 border-2 border-gray-200 rounded-xl cursor-pointer transition-all peer-checked:border-red-500 peer-checked:bg-red-50">
                         <div class="flex items-center mb-3">
                             <div class="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center mr-3">
                                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                                 </svg>
                             </div>
-                            <span class="font-medium">Full Video</span>
+                            <span class="font-semibold">Video Mode</span>
                         </div>
-                        <p class="text-sm text-gray-600">Record continuous video</p>
-                        <ul class="text-xs text-gray-500 mt-2 list-disc list-inside">
-                            <li>Complete interaction recording</li>
-                            <li>Higher data usage</li>
-                            <li>Detailed analysis possible</li>
+                        <p class="text-sm text-gray-600 mb-2">🎥 Continuous recording</p>
+                        <ul class="text-xs text-gray-500 list-disc list-inside space-y-1">
+                            <li><strong>Best for:</strong> Complete behavioral analysis</li>
+                            <li><strong>Data:</strong> Full interaction timeline</li>
+                            <li><strong>Storage:</strong> High usage</li>
+                            <li><strong>Analysis:</strong> Micro-expressions</li>
                         </ul>
                     </div>
                 </label>
             </div>
         </div>
 
-        <!-- Image Capture Settings -->
-        <div class="bg-white rounded-lg p-6 border border-orange-200" id="image_capture_settings">
-            <h4 class="font-medium text-gray-900 mb-4">Image Capture Settings</h4>
+        <!-- ⚡ Event-Driven Settings -->
+        <div class="bg-white rounded-lg p-6 border border-purple-200" id="event_driven_settings" style="display: none;">
+            <div class="flex items-center mb-4">
+                <svg class="w-6 h-6 text-purple-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                <h4 class="font-medium text-gray-900">Event Triggers Configuration</h4>
+                <span class="ml-2 bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded">Event based Logging</span>
+            </div>
+            
+            <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div class="flex items-start">
+                    <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <div>
+                        <h5 class="font-medium text-blue-900 mb-1">🎯 Event-Driven Research</h5>
+                        <p class="text-sm text-blue-800">Choose which user actions should trigger emotion capture. Each trigger captures the exact moment when users make decisions or interact, providing precise behavioral correlation data for research analysis.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <!-- PHQ-9 Button Clicks -->
+                <div class="border border-gray-200 rounded-lg p-5">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-2">
+                                <span class="text-lg mr-2">🟦</span>
+                                <h5 class="font-medium text-gray-900">PHQ-9 Button Clicks</h5>
+                                <span class="ml-2 bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded">Recommended</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-3">Captures emotion exactly when users select PHQ-9 response options (0-3 scale).</p>
+                            <div class="text-xs text-gray-500">
+                                <strong>Research Value:</strong> Decision-making moments, hesitation analysis, emotional state during self-assessment<br>
+                                <strong>Timing:</strong> Triggered on radio button clicks and form submissions<br>
+                                <strong>File naming:</strong> <code>phq9_q3_event_button_click_timestamp.jpg</code>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer ml-4">
+                            <input type="checkbox" name="capture_on_button_click" value="true" 
+                                   {{ 'checked' if settings_data.capture_on_button_click else '' }}
+                                   class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Chat Message Send -->
+                <div class="border border-gray-200 rounded-lg p-5">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-2">
+                                <span class="text-lg mr-2">💬</span>
+                                <h5 class="font-medium text-gray-900">Chat Message Send</h5>
+                                <span class="ml-2 bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded">Communication</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-3">Captures emotion when users send messages in open questions chat.</p>
+                            <div class="text-xs text-gray-500">
+                                <strong>Research Value:</strong> Communication emotional state, expression before/after sharing thoughts<br>
+                                <strong>Timing:</strong> Triggered on message form submission and send button clicks<br>
+                                <strong>File naming:</strong> <code>chat_ex2_event_message_send_timestamp.jpg</code>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer ml-4">
+                            <input type="checkbox" name="capture_on_message_send" value="true" 
+                                   {{ 'checked' if settings_data.capture_on_message_send else '' }}
+                                   class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Question Start -->
+                <div class="border border-gray-200 rounded-lg p-5">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-2">
+                                <span class="text-lg mr-2">🚀</span>
+                                <h5 class="font-medium text-gray-900">Question Start</h5>
+                                <span class="ml-2 bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-0.5 rounded">Optional</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-3">Captures initial emotional state when new questions or conversation turns begin.</p>
+                            <div class="text-xs text-gray-500">
+                                <strong>Research Value:</strong> Baseline emotion at question start, first impression analysis<br>
+                                <strong>Timing:</strong> Triggered when new questions load or conversation phases begin<br>
+                                <strong>File naming:</strong> <code>phq9_q1_event_question_start_timestamp.jpg</code>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer ml-4">
+                            <input type="checkbox" name="capture_on_question_start" value="true" 
+                                   {{ 'checked' if settings_data.capture_on_question_start else '' }}
+                                   class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Typing Pause Detection -->
+                <div class="border border-gray-200 rounded-lg p-5">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-2">
+                                <span class="text-lg mr-2">⏸️</span>
+                                <h5 class="font-medium text-gray-900">Typing Pause Detection</h5>
+                                <span class="ml-2 bg-orange-100 text-orange-800 text-xs font-medium px-2 py-0.5 rounded">Advanced</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-3">Captures emotion during typing pauses (2+ second breaks), indicating thinking or hesitation moments.</p>
+                            <div class="text-xs text-gray-500">
+                                <strong>Research Value:</strong> Cognitive processing moments, hesitation analysis, thinking patterns<br>
+                                <strong>Timing:</strong> Triggered after 2 seconds of typing inactivity<br>
+                                <strong>File naming:</strong> <code>chat_ex1_event_typing_pause_timestamp.jpg</code>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer ml-4">
+                            <input type="checkbox" name="capture_on_typing_pause" value="true" 
+                                   {{ 'checked' if settings_data.capture_on_typing_pause else '' }}
+                                   class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Configuration Summary -->
+            <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                <h5 class="font-medium text-gray-900 mb-2">📈 Research Configuration Summary</h5>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <strong>Recommended for:</strong><br>
+                        • Decision-making analysis<br>
+                        • Behavioral correlation studies<br>
+                        • Precise moment capture
+                    </div>
+                    <div>
+                        <strong>Data output:</strong><br>
+                        • High-precision timestamps<br>
+                        • Event context metadata<br>
+                        • Action-emotion correlation
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interval Capture Settings -->
+        <div class="bg-white rounded-lg p-6 border border-green-200" id="interval_capture_settings" style="display: none;">
+            <h4 class="font-medium text-gray-900 mb-4 flex items-center">
+                <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Interval Capture Settings
+            </h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Capture Interval</label>
@@ -286,12 +470,16 @@ let isRecording = false;
 function getCurrentSettings() {
     return {
         enabled: document.querySelector('input[name="enable_recording"]')?.checked || false,
-        mode: document.querySelector('input[name="recording_mode"]:checked')?.value || 'capture',
+        captureMode: document.querySelector('input[name="capture_mode"]:checked')?.value || 'interval',
         interval: document.querySelector('input[name="capture_interval"]')?.value || 5,
         imageQuality: parseFloat(document.querySelector('select[name="image_quality"]')?.value || 0.8),
         videoQuality: document.querySelector('select[name="video_quality"]')?.value || '720p',
         videoFormat: document.querySelector('select[name="video_format"]')?.value || 'webm',
-        resolution: document.querySelector('select[name="resolution"]')?.value || '1280x720'
+        resolution: document.querySelector('select[name="resolution"]')?.value || '1280x720',
+        // Event triggers
+        captureOnButtonClick: document.querySelector('input[name="capture_on_button_click"]')?.checked || false,
+        captureOnMessageSend: document.querySelector('input[name="capture_on_message_send"]')?.checked || false,
+        captureOnQuestionStart: document.querySelector('input[name="capture_on_question_start"]')?.checked || false
     };
 }
 
@@ -300,7 +488,14 @@ function updateCurrentSettingsDisplay() {
     
     // Update basic info
     document.getElementById('current-resolution').textContent = settings.resolution;
-    document.getElementById('current-mode').textContent = settings.mode === 'capture' ? 'Image Capture' : 'Video Recording';
+    
+    // Update mode display with scientific names
+    const modeNames = {
+        'interval': 'Interval Mode (Timer-based)',
+        'event_driven': 'Event-Driven Mode (Action-based)',
+        'video_continuous': 'Video Mode (Continuous)'
+    };
+    document.getElementById('current-mode').textContent = modeNames[settings.captureMode] || 'Interval Mode';
     
     // Show/hide mode-specific info
     const intervalInfo = document.getElementById('interval-info');
@@ -308,14 +503,22 @@ function updateCurrentSettingsDisplay() {
     const videoQualityInfo = document.getElementById('video-quality-info');
     const videoFormatInfo = document.getElementById('video-format-info');
     
-    if (settings.mode === 'capture') {
-        // Image mode - show interval and image quality
+    if (settings.captureMode === 'interval') {
+        // Interval mode - show interval and image quality
         intervalInfo.style.display = 'block';
         imageQualityInfo.style.display = 'block';
         videoQualityInfo.style.display = 'none';
         videoFormatInfo.style.display = 'none';
         
         document.getElementById('current-interval').textContent = settings.interval + 's';
+        document.getElementById('current-image-quality').textContent = Math.round(settings.imageQuality * 100) + '%';
+    } else if (settings.captureMode === 'event_driven') {
+        // Event-driven mode - show image quality, hide interval
+        intervalInfo.style.display = 'none';
+        imageQualityInfo.style.display = 'block';
+        videoQualityInfo.style.display = 'none';
+        videoFormatInfo.style.display = 'none';
+        
         document.getElementById('current-image-quality').textContent = Math.round(settings.imageQuality * 100) + '%';
     } else {
         // Video mode - show video quality and format, hide interval
@@ -341,11 +544,8 @@ function updateControlButtons() {
     const startRecordBtn = document.getElementById('start-recording-btn');
     const stopRecordBtn = document.getElementById('stop-recording-btn');
     
-    if (settings.mode === 'capture') {
-        captureBtn.style.display = 'block';
-        startRecordBtn.style.display = 'none';
-        stopRecordBtn.style.display = 'none';
-    } else {
+    if (settings.captureMode === 'video_continuous') {
+        // Video mode - show recording buttons
         captureBtn.style.display = 'none';
         if (isRecording) {
             startRecordBtn.style.display = 'none';
@@ -354,6 +554,11 @@ function updateControlButtons() {
             startRecordBtn.style.display = 'block';
             stopRecordBtn.style.display = 'none';
         }
+    } else {
+        // Interval or event-driven modes - show capture button
+        captureBtn.style.display = 'block';
+        startRecordBtn.style.display = 'none';
+        stopRecordBtn.style.display = 'none';
     }
 }
 
@@ -573,12 +778,21 @@ function calculateStorage(minutes) {
     const settings = getCurrentSettings();
     let sizeKB = 0;
     
-    if (settings.mode === 'capture') {
+    if (settings.captureMode === 'interval') {
+        // Interval mode: Regular timed captures
         const capturesPerMinute = 60 / settings.interval;
         const totalCaptures = capturesPerMinute * minutes;
         const avgImageSize = getImageSizeEstimate(settings);
         sizeKB = totalCaptures * avgImageSize;
+    } else if (settings.captureMode === 'event_driven') {
+        // Event-driven mode: Variable based on user activity
+        // Estimate: ~2-8 captures per minute depending on activity
+        const avgCapturesPerMinute = 4; // Conservative estimate
+        const totalCaptures = avgCapturesPerMinute * minutes;
+        const avgImageSize = getImageSizeEstimate(settings);
+        sizeKB = totalCaptures * avgImageSize;
     } else {
+        // Video continuous mode: Full video recording
         const avgVideoSizeMB = getVideoSizeEstimate(settings);
         sizeKB = avgVideoSizeMB * minutes * 1024;
     }
@@ -617,8 +831,9 @@ function toggleSectionVisibility() {
     console.log('Recording enabled:', enabled); // Debug log
     
     const sections = [
-        'recording_mode_section',
-        'image_capture_settings', 
+        'capture_mode_section',
+        'interval_capture_settings', 
+        'event_driven_settings',
         'video_recording_settings',
         'common_settings',
         'camera-test-section',
@@ -633,6 +848,11 @@ function toggleSectionVisibility() {
         }
     });
     
+    // Update mode-specific sections
+    if (enabled) {
+        toggleModeSpecificSettings();
+    }
+    
     // Stop camera if disabling recording
     if (!enabled && isPreviewActive) {
         stopCameraTest();
@@ -640,19 +860,24 @@ function toggleSectionVisibility() {
 }
 
 function toggleModeSpecificSettings() {
-    const mode = document.querySelector('input[name="recording_mode"]:checked')?.value || 'capture';
+    const captureMode = document.querySelector('input[name="capture_mode"]:checked')?.value || 'interval';
     
-    const imageSettings = document.getElementById('image_capture_settings');
+    const intervalSettings = document.getElementById('interval_capture_settings');
+    const eventDrivenSettings = document.getElementById('event_driven_settings');
     const videoSettings = document.getElementById('video_recording_settings');
     
-    if (imageSettings && videoSettings) {
-        if (mode === 'capture') {
-            imageSettings.style.display = 'block';
-            videoSettings.style.display = 'none';
-        } else {
-            imageSettings.style.display = 'none';
-            videoSettings.style.display = 'block';
-        }
+    // Hide all mode-specific sections first
+    if (intervalSettings) intervalSettings.style.display = 'none';
+    if (eventDrivenSettings) eventDrivenSettings.style.display = 'none';
+    if (videoSettings) videoSettings.style.display = 'none';
+    
+    // Show appropriate section based on capture mode
+    if (captureMode === 'interval' && intervalSettings) {
+        intervalSettings.style.display = 'block';
+    } else if (captureMode === 'event_driven' && eventDrivenSettings) {
+        eventDrivenSettings.style.display = 'block';
+    } else if (captureMode === 'video_continuous' && videoSettings) {
+        videoSettings.style.display = 'block';
     }
     
     updateCurrentSettingsDisplay();
@@ -678,9 +903,9 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleSectionVisibility(); // Initial state
     }
     
-    // Recording mode radio buttons
-    const modeRadios = document.querySelectorAll('input[name="recording_mode"]');
-    modeRadios.forEach(radio => {
+    // Capture mode radio buttons
+    const captureModeRadios = document.querySelectorAll('input[name="capture_mode"]');
+    captureModeRadios.forEach(radio => {
         radio.addEventListener('change', toggleModeSpecificSettings);
     });
     toggleModeSpecificSettings(); // Initial state

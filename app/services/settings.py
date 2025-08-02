@@ -149,14 +149,29 @@ class SettingsService:
     
     @staticmethod
     def get_recording_config():
-        """Get recording configuration for frontend"""
+        """🔬 Get recording configuration for frontend with scientific capture modes"""
         recording_settings = SettingsService.get_group(SettingsKey.get_recording_settings)
         
         # Provide defaults if settings aren't configured
         return {
+            # Legacy settings
             'mode': recording_settings.get('recording_mode', 'capture'),
             'enabled': recording_settings.get('enable_recording', True),
+            
+            # 🔬 NEW: Scientific capture mode settings
+            'capture_mode': recording_settings.get('capture_mode', 'interval'),
+            
+            # Interval settings
             'interval': recording_settings.get('capture_interval', 5),
+            
+            # Event-driven settings
+            'event_capture_enabled': recording_settings.get('event_capture_enabled', True),
+            'capture_on_button_click': recording_settings.get('capture_on_button_click', True),
+            'capture_on_message_send': recording_settings.get('capture_on_message_send', True),
+            'capture_on_question_start': recording_settings.get('capture_on_question_start', False),
+            'capture_on_typing_pause': recording_settings.get('capture_on_typing_pause', False),
+            
+            # Technical settings
             'resolution': recording_settings.get('resolution', '1280x720'),
             'image_quality': recording_settings.get('image_quality', 0.8),
             'video_quality': recording_settings.get('video_quality', '720p'),

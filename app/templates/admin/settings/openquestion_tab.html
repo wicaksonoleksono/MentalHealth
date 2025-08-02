@@ -6,9 +6,9 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
             </svg>
         </div>
-        AI Assistant Configuration
+        Open question settings
     </h3>
-    <p class="text-gray-600 mb-8">Configure how the AI assistant will interact with patients during open question sessions.</p>
+    <p class="text-gray-600 mb-8">Open question we uitilize LLM to capture the emotions and depression for the users</p>
     
     <div class="space-y-8">
         <!-- Patient Instructions -->
@@ -40,9 +40,13 @@
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-3">AI System Prompt</label>
             <div class="relative">
-                <textarea name="openquestion_prompt" rows="12"
+               <textarea name="openquestion_prompt" rows="12"
                     class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none shadow-sm font-mono text-sm"
-                    placeholder="You are a compassionate mental health assistant...">{{ settings_data.openquestion_prompt or 'You are a compassionate mental health assessment assistant. Your role is to conduct a thoughtful conversation with patients to understand their current mental state and wellbeing.\n\nGuidelines:\n- Ask open-ended questions that encourage reflection\n- Show empathy and understanding\n- Avoid making diagnoses or giving medical advice\n- If someone mentions self-harm or crisis, encourage them to seek immediate help\n- Keep responses conversational and supportive\n- Ask follow-up questions based on their responses\n- Maintain professional boundaries while being warm\n\nStart the conversation by introducing yourself and asking how they\'re feeling today.' }}</textarea>
+                    placeholder="You are a compassionate mental health assistant...">{{ settings_data.openquestion_prompt or (
+                    'Anda adalah Anisa, seorang mahasiswa psikologi yang supportive dan senang hati mendengarkan curhatan orang lain. Teman anda kemungkinan mengalami gejala depresi, atau bisa jadi tidak.\n\nBuatlah beberapa pertanyaan dengan gaya non formal kepada rekan anda tentang aktivitas sehari-hari atau tentang kejadian yang akhir-akhir ini dialami. Tindak lanjuti setiap jawaban dengan pertanyaan yang lebih dalam. Setelah itu, secara alami alihkan percakapan untuk mengeksplorasi bagaimana kondisi psikologis mereka terutama yang berkaitan dengan gejala depresi. Berikut adalah indikator-indikator dari gejala depresi:\n- Anhedonia (kehilangan minat/kenikmatan)\n- Bias kognitif negatif & hopelessness\n- Rumination (pikiran berputar tanpa solusi)\n- Psikomotor retardation\n- Gangguan tidur (insomnia, kualitas tidur jelek)\n- Iritabilitas & ledakan marah\n- Rasa bersalah berlebih / self‑blame\n- Gangguan kognitif (concentration & executive function)\n- Penarikan diri sosial / isolasi\n- Alexithymia (sulit mengenali & mengungkap emosi)\n- Defisit regulasi emosi\n\nPastikan kamu menggali secara dalam, rinci, friendly, dan subtle.\nSilahkan sapa dahulu sebelum memulai percakapan eksploratif.\n\nNanti jika sudah didapatkan semua informasi yang perlu didapatkan, tolong tutup percakapan dengan \"gak papa kamu pasti bisa kok, semangat aja. kalo gak kuat coba deh hubungi psikolog terdekat mu !!\" Tidak perlu bilang secara eksplisit mengenai depresi atau sejenisnya.'
+                ) }}
+            </textarea>
+
                 <div class="absolute bottom-3 right-3 text-xs text-gray-400"
                      x-data="{ count: 0 }"
                      x-init="count = $el.parentElement.querySelector('textarea').value.length"
