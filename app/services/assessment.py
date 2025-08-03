@@ -7,7 +7,7 @@ from app import db
 from app.models.assessment import Assessment, PHQ9Response, OpenQuestionResponse, EmotionData
 from app.models.user import User
 from app.models.settings import SettingsKey
-from app.services.emotion_storage import emotion_storage
+from app.services.emotion_storage import get_emotion_storage
 from app.services.settings import SettingsService
 import uuid
 
@@ -195,7 +195,7 @@ class AssessmentService:
             raise ValueError("Assessment session not found")
         
         # Delete all associated files first
-        deleted_files = emotion_storage.cleanup_session_files(session_id, user_id)
+        deleted_files = get_emotion_storage().cleanup_session_files(session_id, user_id)
         
         # Delete database records (cascading will handle related records)
         db.session.delete(assessment)
@@ -394,8 +394,8 @@ class AssessmentService:
             raise ValueError("Assessment session not found")
         
         # Get file information
-        files = emotion_storage.get_session_files(session_id, user_id or assessment.user_id)
-        file_validation = emotion_storage.validate_session_files(session_id, user_id or assessment.user_id)
+        files = get_emotion_storage().get_session_files(session_id, user_id or assessment.user_id)
+        file_validation = get_emotion_storage().validate_session_files(session_id, user_id or assessment.user_id)
         
         # Get responses
         phq9_responses = PHQ9Response.query.filter_by(assessment_id=assessment.id).all()

@@ -13,8 +13,8 @@ from app.services.assessment import AssessmentService
 from app.services.assessment_balance import AssessmentBalanceService
 from app.services.phq import PHQService
 from app.services.openai_chat import OpenAIChatService
-from app.services.chat_session_manager import chat_session_manager
-from app.services.emotion_storage import emotion_storage
+from app.services.chat_session_manager import get_chat_session_manager
+from app.services.emotion_storage import get_emotion_storage
 from app.services.settings import SettingsService
 patient_bp = Blueprint('patient', __name__)
 
@@ -119,7 +119,7 @@ def start_fresh_assessment():
             # Clean up any media files associated with the old assessment
             try:
                 # Clean up files for discarded session
-                emotion_storage.cleanup_session_files(discard_session_id, current_user.id)
+                get_emotion_storage().cleanup_session_files(discard_session_id, current_user.id)
             except Exception as e:
                 current_app.logger.warning(f"Failed to cleanup media files for session {discard_session_id}: {e}")
             
@@ -132,7 +132,7 @@ def start_fresh_assessment():
     # Clear any existing session data including server-side chat session
     chat_session_token = session.get('chat_session_token')
     if chat_session_token:
-        chat_session_manager.delete_session(chat_session_token)
+        get_chat_session_manager().delete_session(chat_session_token)
     
     session.pop('phq_data', None)
     session.pop('chat_session_token', None) 
@@ -417,22 +417,22 @@ def open_questions_assessment():
         return redirect(url_for('patient.dashboard'))
     chat_session_token = session.get('chat_session_token')
     if not chat_session_token:
-        chat_session_token = chat_session_manager.create_session(
+        chat_session_token = get_chat_session_manager().create_session(
             assessment_session_id, assessment_session_id, current_user.id
         )
         session['chat_session_token'] = chat_session_token
     else:
-        chat_session = chat_session_manager.get_session(chat_session_token)
+        chat_session = get_chat_session_manager().get_session(chat_session_token)
         if chat_session:
             pass  # Session exists, continue
         else:
-            chat_session_token = chat_session_manager.create_session(
+            chat_session_token = get_chat_session_manager().create_session(
                 assessment_session_id, assessment_session_id, current_user.id
             )
             session['chat_session_token'] = chat_session_token
     
     # Get session data for template
-    chat_session = chat_session_manager.get_session(chat_session_token)
+    chat_session = get_chat_session_manager().get_session(chat_session_token)
     
     # Get recording settings for consistency
     recording_config = SettingsService.get_recording_config()
@@ -482,22 +482,22 @@ def chat_stream(message):
                        mimetype='text/event-stream')
     
     # Add user message to server-side session BEFORE streaming
-    chat_session_manager.add_user_message(chat_session_token, message)
+    get_chat_session_manager().add_user_message(chat_session_token, message)
     
     def generate():
         response_content = ""
         
         try:
             # Stream response using session manager
-            for chunk in chat_session_manager.stream_response(chat_session_token, message):
+            for chunk in get_chat_session_manager().stream_response(chat_session_token, message):
                 response_content += chunk
                 yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
             
             # Add AI response to server-side session
-            chat_session_manager.add_ai_response(chat_session_token, response_content)
+            get_chat_session_manager().add_ai_response(chat_session_token, response_content)
             
             # Get updated session stats
-            chat_session = chat_session_manager.get_session(chat_session_token)
+            chat_session = get_chat_session_manager().get_session(chat_session_token)
             exchange_count = chat_session.get('exchange_count', 0) if chat_session else 0
             
             yield f"data: {json.dumps({'type': 'complete', 'exchange_count': exchange_count})}\n\n"
@@ -520,7 +520,7 @@ def update_chat_session():
     if not chat_session_token:
         return jsonify({'success': False, 'message': 'No chat session found'}), 400
     
-    chat_session = chat_session_manager.get_session(chat_session_token)
+    chat_session = get_chat_session_manager().get_session(chat_session_token)
     if not chat_session:
         return jsonify({'success': False, 'message': 'Chat session expired'}), 400
     
@@ -544,7 +544,7 @@ def save_conversation():
         return jsonify({'success': False, 'message': 'No conversation to save'}), 400
     
     # Get session from manager
-    chat_session = chat_session_manager.get_session(chat_session_token)
+    chat_session = get_chat_session_manager().get_session(chat_session_token)
     if not chat_session:
         return jsonify({'success': False, 'message': 'Chat session expired'}), 400
     
@@ -565,7 +565,7 @@ def save_conversation():
         AssessmentService.start_assessment_type(assessment_session_id, current_user.id, 'open_questions')
         
         # Clear server-side chat session and Flask token
-        chat_session_manager.delete_session(chat_session_token)
+        get_chat_session_manager().delete_session(chat_session_token)
         session.pop('chat_session_token', None)
         session.modified = True
         
@@ -638,7 +638,7 @@ def assessment_complete():
     # Clean up server-side chat session
     chat_session_token = session.get('chat_session_token')
     if chat_session_token:
-        chat_session_manager.delete_session(chat_session_token)
+        get_chat_session_manager().delete_session(chat_session_token)
     
     session.pop('assessment_session_id', None)
     session.pop('phq_data', None)
@@ -702,7 +702,7 @@ def capture_emotion_binary():
         
         # Save using unified emotion storage service (VPS + Database in one call!)
         if media_type == 'video':
-            emotion_data = emotion_storage.save_video(
+            emotion_data = get_emotion_storage().save_video(
                 session_id=assessment_session_id,
                 user_id=current_user.id,
                 assessment_type=assessment_type,
@@ -712,7 +712,7 @@ def capture_emotion_binary():
                 metadata=metadata
             )
         elif media_type == 'image':
-            emotion_data = emotion_storage.save_image(
+            emotion_data = get_emotion_storage().save_image(
                 session_id=assessment_session_id,
                 user_id=current_user.id,
                 assessment_type=assessment_type,
@@ -742,7 +742,7 @@ def capture_emotion_binary():
 def get_storage_stats():
     """Get storage statistics"""
     try:
-        stats = emotion_storage.get_storage_stats()
+        stats = get_emotion_storage().get_storage_stats()
         return jsonify({'success': True, 'stats': stats})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -755,7 +755,7 @@ def get_my_files():
     """Get files for current user"""
     try:
         session_id = session.get('assessment_session_id')
-        files = emotion_storage.get_user_files(current_user.id, session_id)
+        files = get_emotion_storage().get_user_files(current_user.id, session_id)
         return jsonify({'success': True, 'files': files, 'total': len(files)})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -772,7 +772,7 @@ def get_session_files():
     
     try:
         # Get files using unified service
-        files = emotion_storage.get_session_files(assessment_session_id, current_user.id)
+        files = get_emotion_storage().get_session_files(assessment_session_id, current_user.id)
         
         return jsonify({
             'success': True,
@@ -796,7 +796,7 @@ def validate_session_files():
     
     try:
         # Validate files using unified service
-        validation_result = emotion_storage.validate_session_files(assessment_session_id, current_user.id)
+        validation_result = get_emotion_storage().validate_session_files(assessment_session_id, current_user.id)
         
         return jsonify({
             'success': True,

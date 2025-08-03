@@ -408,5 +408,12 @@ class EmotionStorageService:
         # For now, return None - will be enhanced when timing correlation is implemented
         return None
 
-# Global instance
-emotion_storage = EmotionStorageService()
+# Lazy initialization to avoid issues with Gunicorn/multi-process deployment
+_emotion_storage = None
+
+def get_emotion_storage():
+    """Get the emotion storage service instance (lazy initialization)"""
+    global _emotion_storage
+    if _emotion_storage is None:
+        _emotion_storage = EmotionStorageService()
+    return _emotion_storage

@@ -6,7 +6,7 @@ from app.services.admin import AdminDashboardService
 from app.services.assessment import AssessmentService
 from flask import send_file, request, jsonify
 from app.services.export import ExportService, ExportException
-from app.services.emotion_storage import emotion_storage
+from app.services.emotion_storage import get_emotion_storage
 from datetime import datetime, timedelta
 import os
 admin_bp = Blueprint('admin', __name__)
@@ -184,7 +184,7 @@ def get_assessment_data_api(session_id):
 def storage_management():
     """Storage management dashboard"""
     try:
-        stats = emotion_storage.get_storage_stats()
+        stats = get_emotion_storage().get_storage_stats()
         return jsonify({'success': True, 'stats': stats})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -196,7 +196,7 @@ def storage_management():
 def cleanup_storage():
     """Clean up old files (admin only)"""
     try:
-        result = emotion_storage.cleanup_old_files()
+        result = get_emotion_storage().cleanup_old_files()
         return jsonify({'success': True, 'cleanup_result': result})
     except Exception as e:
         return jsonify({'error': str(e)}), 500

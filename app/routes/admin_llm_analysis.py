@@ -7,7 +7,16 @@ from app.models.llm_analysis import LLMModel, LLMAnalysisResult, AnalysisConfigu
 from app import db
 
 admin_llm_analysis_bp = Blueprint('admin_llm_analysis', __name__)
-llm_service = LLMAnalysisService()
+
+# Lazy initialization to avoid issues with Gunicorn/multi-process deployment
+_llm_service = None
+
+def get_llm_service():
+    """Get the LLM analysis service instance (lazy initialization)"""
+    global _llm_service
+    if _llm_service is None:
+        _llm_service = LLMAnalysisService()
+    return _llm_service
 
 @admin_llm_analysis_bp.route('/admin/api/llm-analysis/config', methods=['POST'])
 @login_required
@@ -22,7 +31,7 @@ def update_analysis_config():
             return jsonify({'success': False, 'error': 'Instruction prompt is required'})
         
         # Use hardcoded format from LLMAnalysisService
-        config = llm_service.update_analysis_configuration(instruction_prompt, llm_service.ANALYSIS_FORMAT)
+        config = get_llm_service().update_analysis_configuration(instruction_prompt, get_llm_service().ANALYSIS_FORMAT)
         return jsonify({'success': True, 'config_id': config.id})
         
     except Exception as e:
@@ -41,7 +50,7 @@ def add_llm_model():
         if not model_name or not provider:
             return jsonify({'success': False, 'error': 'Model name and provider are required'})
         
-        model = llm_service.add_llm_model(model_name, provider)
+        model = get_llm_service().add_llm_model(model_name, provider)
         return jsonify({
             'success': True, 
             'model': {
@@ -69,7 +78,7 @@ def remove_llm_model():
         if not model_name:
             return jsonify({'success': False, 'error': 'Model name is required'})
         
-        llm_service.remove_llm_model(model_name)
+        get_llm_service().remove_llm_model(model_name)
         return jsonify({'success': True})
         
     except ValueError as e:
@@ -83,7 +92,7 @@ def remove_llm_model():
 def get_llm_models():
     """Get all LLM models"""
     try:
-        models = llm_service.get_active_models()
+        models = get_llm_service().get_active_models()
         return jsonify({
             'success': True,
             'models': [{
@@ -104,7 +113,7 @@ def get_llm_models():
 def get_available_providers():
     """Get available LLM providers"""
     try:
-        providers = llm_service.get_available_providers()
+        providers = get_llm_service().get_available_providers()
         return jsonify({'success': True, 'providers': providers})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
@@ -129,7 +138,7 @@ def analyze_session():
         if assessment.llm_analysis_status == 'completed':
             return jsonify({'success': False, 'error': 'This session has already been analyzed.'})
         
-        results = llm_service.analyze_session(session_id)
+        results = get_llm_service().analyze_session(session_id)
         
         return jsonify({
             'success': True,
@@ -149,7 +158,7 @@ def analyze_session():
 def get_analysis_results(session_id):
     """Get analysis results for a session"""
     try:
-        results = llm_service.get_session_analysis_results(session_id)
+        results = get_llm_service().get_session_analysis_results(session_id)
         
         formatted_results = []
         for result in results:

@@ -93,5 +93,12 @@ class ChatSessionManager:
         if not session:
             raise ValueError(f"Session {session_token} not found")
         return self._openai_service.generate_streaming_response(session, user_message)
-# Global instance
-chat_session_manager = ChatSessionManager()
+# Lazy initialization to avoid issues with Gunicorn/multi-process deployment
+_chat_session_manager = None
+
+def get_chat_session_manager():
+    """Get the chat session manager instance (lazy initialization)"""
+    global _chat_session_manager
+    if _chat_session_manager is None:
+        _chat_session_manager = ChatSessionManager()
+    return _chat_session_manager

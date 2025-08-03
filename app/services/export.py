@@ -11,7 +11,7 @@ from app import db
 from app.models.assessment import Assessment, PHQ9Response, OpenQuestionResponse, EmotionData
 from app.models.user import User
 from app.models.patient_profile import PatientProfile
-from app.services.emotion_storage import emotion_storage
+from app.services.emotion_storage import get_emotion_storage
 
 class ExportException(Exception):
     pass
@@ -310,7 +310,7 @@ class ExportService:
     @staticmethod
     def _generate_session_summary(assessment):
         """Generate comprehensive session summary"""
-        files = emotion_storage.get_session_files(assessment.session_id, assessment.user_id)
+        files = get_emotion_storage().get_session_files(assessment.session_id, assessment.user_id)
         
         return {
             'session_id': assessment.session_id,
