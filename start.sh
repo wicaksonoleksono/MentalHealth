@@ -1,3 +1,6 @@
 #!/bin/bash
-source .env
-exec gunicorn --bind 0.0.0.0:2100 run:app
+# Start Gunicorn processes
+echo "Starting Gunicorn."
+exec gunicorn run:app \
+  --bind 0.0.0.0:2121 \
+  --workers 3

@@ -17,9 +17,10 @@ def create_app():
     instance_path = os.path.join(app.root_path, '..', 'instance')
     os.makedirs(instance_path, exist_ok=True)
     try:
+        upload_folder = app.config.get('UPLOAD_FOLDER', 'uploads')
         assessment_dirs = [
             'exports'
-            ,'uploads'
+            ,'./uploads'
         ]
         for dir_name in assessment_dirs:
             os.makedirs(os.path.join(upload_folder, dir_name), exist_ok=True)

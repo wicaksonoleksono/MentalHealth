@@ -7,18 +7,53 @@ from app.services.auth import AuthService  # Fixed import path
 from sqlalchemy.exc import IntegrityError
 import json
 
-# Always use this for seeding - admin and patients
 users_to_seed = [
     {
-        "username": "admin",
-        "email": "admin@example.com", 
+        "username": "wicak",
+        "email": "wicak@example.com",
         "password": "admin123",
-        "user_type": "superuser"
+        "user_type": "admin"
+    },
+    {
+        "username": "waffiq",
+        "email": "waffiq@example.com",
+        "password": "admin123",
+        "user_type": "admin"
+    },
+    {
+        "username": "samudera",
+        "email": "samudera@example.com",
+        "password": "admin123",
+        "user_type": "admin"
+    },
+    {
+        "username": "rangga",
+        "email": "rangga@example.com",
+        "password": "admin123",
+        "user_type": "admin"
+    },
+    {
+        "username": "fadhil",
+        "email": "fadhil@example.com",
+        "password": "admin123",
+        "user_type": "admin"
+    },
+    {
+        "username": "baqi",
+        "email": "baqi@example.com",
+        "password": "admin123",
+        "user_type": "admin"
+    },
+    {
+        "username": "oriza",
+        "email": "oriza@example.com",
+        "password": "admin123",
+        "user_type": "admin"
     },
     {
         "username": "patient",
         "email": "patient@example.com",
-        "password": "patient123", 
+        "password": "admin123",
         "user_type": "patient",
         "profile": {
             "age": 25,
@@ -30,7 +65,7 @@ users_to_seed = [
     {
         "username": "patient2",
         "email": "patient2@example.com",
-        "password": "patient123", 
+        "password": "admin123",
         "user_type": "patient",
         "profile": {
             "age": 35,
