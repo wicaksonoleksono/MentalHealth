@@ -2,6 +2,8 @@
 from datetime import datetime
 from app import db
 
+from enum import Enum
+
 class Assessment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -12,6 +14,8 @@ class Assessment(db.Model):
     open_questions_completed = db.Column(db.Boolean, default=False)
     # Assessment status
     status = db.Column(db.String(20), default='in_progress')  # 'in_progress', 'completed', 'abandoned'
+    llm_analysis_status = db.Column(db.String(20), default='pending') # 'pending', 'in_progress', 'completed', 'failed'
+    llm_analysis_at = db.Column(db.DateTime)
     consent_agreed = db.Column(db.Boolean, default=False)
     camera_verified = db.Column(db.Boolean, default=False)
     # Timestamps
@@ -107,30 +111,97 @@ class Assessment(db.Model):
     def _trigger_auto_analysis(self):
         """Trigger automatic LLM analysis if enabled in settings"""
         try:
-            from app.models.settings import AppSetting
+            from app.models.settings import SettingsService, SettingsKey
             from app.services.llm_analysis import LLMAnalysisService
-            import threading
+            import logging
             
-            # Check if auto-analysis is enabled
-            auto_analysis_setting = AppSetting.query.filter_by(key='llm_auto_analysis').first()
-            if not auto_analysis_setting or auto_analysis_setting.value != '1':
+            logger = logging.getLogger(__name__)
+            
+            # Check if auto-analysis is enabled and not already done
+            if self.llm_analysis_status != 'pending':
+                logger.debug(f"Skipping auto-analysis for session {self.session_id}: status is {self.llm_analysis_status}")
+                return
+
+            # Check if auto-analysis is enabled using the new settings service
+            try:
+                auto_analysis_enabled = SettingsService.get(SettingsKey.LLM_AUTO_ANALYSIS)
+                if not auto_analysis_enabled:
+                    logger.debug(f"Auto-analysis disabled, skipping session {self.session_id}")
+                    return
+            except Exception as e:
+                logger.warning(f"Could not check auto-analysis setting: {e}")
                 return
             
-            # Run analysis in background thread to avoid blocking
-            def run_analysis():
-                try:
-                    llm_service = LLMAnalysisService()
-                    llm_service.analyze_session(self.session_id)
-                except Exception as e:
-                    print(f"Auto-analysis failed for session {self.session_id}: {e}")
+            # Check if there are active LLM models
+            llm_service = LLMAnalysisService()
+            active_models = llm_service.get_active_models()
+            if not active_models:
+                logger.warning(f"No active LLM models configured, skipping auto-analysis for session {self.session_id}")
+                self.llm_analysis_status = 'failed'
+                db.session.commit()
+                return
+                
+            logger.info(f"Starting auto-analysis for session {self.session_id}")
             
-            # Start background thread
-            analysis_thread = threading.Thread(target=run_analysis)
-            analysis_thread.daemon = True
-            analysis_thread.start()
+            # Run analysis immediately in current context (more reliable than threading)
+            try:
+                results = llm_service.analyze_session(self.session_id)
+                logger.info(f"Auto-analysis completed for session {self.session_id}: {len(results)} results")
+                
+            except Exception as e:
+                logger.error(f"Auto-analysis failed for session {self.session_id}: {e}")
+                # The LLM service already handles status updates on failure
+                
+        except Exception as e:
+            logger.error(f"Error triggering auto-analysis for session {self.session_id}: {e}")
+            # Set failed status if something went wrong
+            try:
+                self.llm_analysis_status = 'failed' 
+                db.session.commit()
+            except:
+                pass
+
+    @classmethod
+    def check_pending_auto_analysis(cls):
+        """Check for completed assessments that need auto-analysis (safety net)"""
+        try:
+            from app.models.settings import SettingsService, SettingsKey
+            import logging
+            
+            logger = logging.getLogger(__name__)
+            
+            # Check if auto-analysis is enabled
+            try:
+                auto_analysis_enabled = SettingsService.get(SettingsKey.LLM_AUTO_ANALYSIS)
+                if not auto_analysis_enabled:
+                    return []
+            except Exception:
+                return []
+            
+            # Find completed assessments with pending analysis
+            pending_assessments = cls.query.filter(
+                cls.status == 'completed',
+                cls.phq9_completed == True,
+                cls.open_questions_completed == True,
+                cls.llm_analysis_status == 'pending'
+            ).all()
+            
+            logger.info(f"Found {len(pending_assessments)} assessments pending auto-analysis")
+            
+            processed = []
+            for assessment in pending_assessments:
+                try:
+                    logger.info(f"Processing missed auto-analysis for session {assessment.session_id}")
+                    assessment._trigger_auto_analysis()
+                    processed.append(assessment.session_id)
+                except Exception as e:
+                    logger.error(f"Failed to trigger analysis for session {assessment.session_id}: {e}")
+            
+            return processed
             
         except Exception as e:
-            print(f"Error triggering auto-analysis for session {self.session_id}: {e}")
+            logging.getLogger(__name__).error(f"Error checking pending auto-analysis: {e}")
+            return []
 
     def __repr__(self):
         return f'<Assessment {self.session_id} - User {self.user_id}>'
@@ -194,8 +265,6 @@ class EmotionData(db.Model):
         import os
         return os.path.exists(self.get_full_path())
 
-# app/models/phq.py
-from enum import Enum
 
 class PHQCategoryType(Enum):
     ANHEDONIA = (1, "Anhedonia", "Loss of interest or pleasure", "Kurang tertarik atau bergairah dalam melakukan apapun")

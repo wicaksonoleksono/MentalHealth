@@ -266,10 +266,11 @@ function chatInterface() {
                         })
                         .then(response => response.json())
                         .then(data => {
-                            console.log('Session updated:', data);
-                            console.log('Total messages in history:', data.message_count);
+                            console.log('💾 Session updated:', data);
+                            console.log('📝 Total messages in history:', data.message_count);
+                            console.log('💬 Exchange count:', data.exchange_count);
                         })
-                        .catch(error => console.error('Session update error:', error));
+                        .catch(error => console.error('🚨 Session update error:', error));
                         
                     } else if (data.type === 'error') {
                         botMessage.content = data.message || 'Sorry, I encountered an error. Please try again.';

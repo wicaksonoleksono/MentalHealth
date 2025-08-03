@@ -4,13 +4,37 @@ from datetime import datetime
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
-from langchain.memory import ConversationBufferMemory
-from langchain.schema import BaseMessage
+from langchain.memory import ChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.callbacks.base import BaseCallbackHandler
 from app import db
 from app.models.settings import AppSetting, SettingsKey
 from app.models.assessment import Assessment, OpenQuestionResponse
 from app.services.settings import SettingsService
 load_dotenv()
+
+class StreamingHandler(BaseCallbackHandler):
+    """Custom streaming handler for Server-Sent Events"""
+    def __init__(self):
+        self.tokens = []
+        self.current_output = ""
+    
+    def on_llm_new_token(self, token: str, **kwargs):
+        """Called when LLM generates a new token"""
+        self.tokens.append(token)
+        self.current_output += token
+    
+    def get_tokens(self):
+        """Generator to yield tokens for streaming"""
+        for token in self.tokens:
+            yield token
+    
+    def reset(self):
+        """Reset for new conversation"""
+        self.tokens = []
+        self.current_output = ""
+
 class OpenAIChatService:
     def __init__(self):
         self.llm = ChatOpenAI(
@@ -18,60 +42,86 @@ class OpenAIChatService:
             temperature=0.1,
             streaming=True
         )
-        # Initialize conversation memory for context preservation
-        self.memory = ConversationBufferMemory(
-            return_messages=True,
-            memory_key="chat_history"
-        )
+        # Industry standard: RunnableWithMessageHistory
+        self.chat_history = {}  # session_id -> InMemoryChatMessageHistory
+        self.chain_with_history = None
     
     @staticmethod
     def get_chat_settings():
         """Load chat settings from database using SettingsService for consistency."""
-        from app.models.settings import AppSetting
+        try:
+            from app.models.settings import SettingsKey
+            from app.services.settings import SettingsService
+            
+            # Use the proper SettingsService to get values
+            openquestion_prompt = SettingsService.get(SettingsKey.OPENQUESTION_PROMPT)
+            openquestion_instructions = SettingsService.get(SettingsKey.OPENQUESTION_INSTRUCTIONS)
+            
+            settings = {
+                'openquestion_prompt': openquestion_prompt or '',
+                'instructions': openquestion_instructions or '',
+                'enable_followup': True,
+                'response_style': 'empathetic'
+            }
+            
+        except Exception as e:
+            print(f"🚨 Error loading chat settings: {e}")
+            # Fallback to direct database query if SettingsService fails
+            from app.models.settings import AppSetting
+            openquestion_prompt = AppSetting.query.filter_by(key='openquestion_prompt').first()
+            openquestion_instructions = AppSetting.query.filter_by(key='openquestion_instructions').first()
+            
+            settings = {
+                'openquestion_prompt': openquestion_prompt.value if openquestion_prompt else '',
+                'instructions': openquestion_instructions.value if openquestion_instructions else '',
+                'enable_followup': True,
+                'response_style': 'empathetic'
+            }
         
-        # Get settings directly from database
-        openquestion_prompt = AppSetting.query.filter_by(key='openquestion_prompt').first()
-        openquestion_instructions = AppSetting.query.filter_by(key='openquestion_instructions').first()
-        
-        settings = {
-            'openquestion_prompt': openquestion_prompt.value if openquestion_prompt else '',
-            'instructions': openquestion_instructions.value if openquestion_instructions else '',
-            'enable_followup': True,
-            'response_style': 'empathetic'
-        }
-        
-        # Don't raise exceptions, just use defaults if missing
+        # 🔥 CRITICAL: NO DEFAULT PROMPTS! Research context MUST be configured!
         if not settings['openquestion_prompt']:
-            settings['openquestion_prompt'] = "You are a compassionate mental health assessment assistant. Help the user express their thoughts and feelings."
+            raise ValueError("🚨 CRITICAL: openquestion_prompt not configured in admin settings! This is REQUIRED for research validity. Please configure it in the admin panel.")
         
         if not settings['instructions']:
-            settings['instructions'] = "Please share your thoughts and feelings openly. This is a safe space."
+            settings['instructions'] = "Please take your time to share your thoughts and feelings. This is a safe space where you can express yourself openly."
         
         return settings
     
     def create_chat_session(self, assessment_session_id, user_id):
-        """Create a new chat session with LangChain conversation memory."""
+        """Create a new chat session with industry standard RunnableWithMessageHistory."""
         settings = self.get_chat_settings()
         system_prompt = settings['openquestion_prompt']
         
-        # Use default if system prompt is empty
-        if not system_prompt or system_prompt.strip() == '':
-            system_prompt = "You are a compassionate mental health assessment assistant. Help the user express their thoughts and feelings."
+        # Create session ID for this conversation
+        session_id = f"{assessment_session_id}_{user_id}"
         
-        # Create fresh memory for this session
-        self.memory = ConversationBufferMemory(
-            return_messages=True,
-            memory_key="chat_history"
+        # Industry standard approach: RunnableWithMessageHistory
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            MessagesPlaceholder(variable_name="history"),
+            ("human", "{input}")
+        ])
+        
+        # Create the chain
+        chain = prompt | self.llm
+        
+        # Create chat history for this session
+        self.chat_history[session_id] = ChatMessageHistory()
+        
+        # Wrap with message history
+        self.chain_with_history = RunnableWithMessageHistory(
+            chain,
+            lambda session_id: self.chat_history[session_id],
+            input_messages_key="input",
+            history_messages_key="history"
         )
         
-        # Initialize with system message
-        system_message = SystemMessage(content=system_prompt)
-        
-        # Store serializable session data (no LangChain objects)
+        # Store serializable session data for Flask session
         chat_session = {
+            'session_id': session_id,
             'system_prompt': system_prompt,
-            'message_history': [{'type': 'system', 'content': system_prompt}],  # Serializable message history
-            'conversation_history': [],  # Store for display/logging
+            'message_history': [{'type': 'system', 'content': system_prompt}],
+            'conversation_history': [],
             'settings': settings,
             'exchange_count': 0,
             'started_at': datetime.utcnow().isoformat(),
@@ -88,58 +138,66 @@ class OpenAIChatService:
         
         return chat_session
     
-    def generate_streaming_response(self, chat_session, user_message):
-        """Generate streaming response using LangChain conversation chain with proper context."""
-        current_time = datetime.utcnow().isoformat()
+    def restore_chain_from_session(self, chat_session):
+        """Restore LangChain chain and history from Flask session data."""
+        session_id = chat_session['session_id']
+        system_prompt = chat_session['system_prompt']
         
-        # Add user message to serializable message history
-        chat_session['message_history'].append({'type': 'human', 'content': user_message})
+        # Recreate the chain if needed
+        if not self.chain_with_history:
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", system_prompt),
+                MessagesPlaceholder(variable_name="history"),
+                ("human", "{input}")
+            ])
+            
+            chain = prompt | self.llm
+            
+            # Ensure we have chat history for this session
+            if session_id not in self.chat_history:
+                self.chat_history[session_id] = ChatMessageHistory()
+            
+            self.chain_with_history = RunnableWithMessageHistory(
+                chain,
+                lambda sid: self.chat_history[sid],
+                input_messages_key="input",
+                history_messages_key="history"
+            )
         
-        # Add to conversation history for logging
-        chat_session['conversation_history'].append({
-            'type': 'human', 
-            'content': user_message,
-            'timestamp': current_time
-        })
+        # Restore conversation history to LangChain memory
+        history = self.chat_history[session_id]
+        history.clear()  # Clear existing to avoid duplication
         
-        # Rebuild LangChain messages from serializable history
-        langchain_messages = []
         for msg in chat_session['message_history']:
-            if msg['type'] == 'system':
-                langchain_messages.append(SystemMessage(content=msg['content']))
-            elif msg['type'] == 'human':
-                langchain_messages.append(HumanMessage(content=msg['content']))
+            if msg['type'] == 'human':
+                history.add_user_message(msg['content'])
             elif msg['type'] == 'ai':
-                langchain_messages.append(AIMessage(content=msg['content']))
+                history.add_ai_message(msg['content'])
+            # Skip system messages - they're in the prompt template
+    
+    def generate_streaming_response(self, chat_session, user_message):
+        """Generate streaming response using direct LLM streaming with FULL conversation history."""
+        session_id = chat_session['session_id']
         
-        # Process messages for streaming
+        # Build messages manually with COMPLETE conversation context
+        messages = []
         
-        # Use the full conversation context for streaming
-        response_chunks = []
-        for chunk in self.llm.stream(langchain_messages):
+        # Add system prompt FIRST
+        system_prompt = chat_session['system_prompt']
+        if not system_prompt:
+            raise ValueError("🚨 CRITICAL: No system prompt found! Research context REQUIRED!")
+        messages.append(SystemMessage(content=system_prompt))
+        
+        # Add ALL conversation history to maintain context
+        for msg in chat_session['message_history']:
+            if msg['type'] == 'human':
+                messages.append(HumanMessage(content=msg['content']))
+            elif msg['type'] == 'ai':
+                messages.append(AIMessage(content=msg['content']))
+        messages.append(HumanMessage(content=user_message))
+        for chunk in self.llm.stream(messages):
             if hasattr(chunk, 'content') and chunk.content:
-                response_chunks.append(chunk.content)
                 yield chunk.content
-        
-        # Build full response
-        full_response = ''.join(response_chunks)
-        
-        # Add AI response to serializable message history
-        chat_session['message_history'].append({'type': 'ai', 'content': full_response})
-        
-        # Add to conversation history for logging
-        chat_session['conversation_history'].append({
-            'type': 'ai', 
-            'content': full_response,
-            'timestamp': current_time
-        })
-        
-        # Update exchange count
-        chat_session['exchange_count'] += 1
-        
-        # Update memory with the exchange
-        self.memory.chat_memory.add_user_message(user_message)
-        self.memory.chat_memory.add_ai_message(full_response)
     
     def save_conversation(self, assessment_session_id, user_id, conversation_data):
         """Save entire LangChain conversation with proper context preservation."""

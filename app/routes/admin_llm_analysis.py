@@ -17,12 +17,12 @@ def update_analysis_config():
     try:
         data = request.get_json()
         instruction_prompt = data.get('instruction_prompt', '').strip()
-        format_prompt = data.get('format_prompt', '').strip()
         
-        if not instruction_prompt or not format_prompt:
-            return jsonify({'success': False, 'error': 'Both instruction and format prompts are required'})
+        if not instruction_prompt:
+            return jsonify({'success': False, 'error': 'Instruction prompt is required'})
         
-        config = llm_service.update_analysis_configuration(instruction_prompt, format_prompt)
+        # Use hardcoded format from LLMAnalysisService
+        config = llm_service.update_analysis_configuration(instruction_prompt, llm_service.ANALYSIS_FORMAT)
         return jsonify({'success': True, 'config_id': config.id})
         
     except Exception as e:
@@ -120,6 +120,14 @@ def analyze_session():
         
         if not session_id:
             return jsonify({'success': False, 'error': 'Session ID is required'})
+
+        from app.models.assessment import Assessment
+        assessment = Assessment.query.filter_by(session_id=session_id).first()
+        if not assessment:
+            return jsonify({'success': False, 'error': 'Assessment not found'})
+
+        if assessment.llm_analysis_status == 'completed':
+            return jsonify({'success': False, 'error': 'This session has already been analyzed.'})
         
         results = llm_service.analyze_session(session_id)
         
@@ -187,3 +195,23 @@ def get_analysis_config():
             return jsonify({'success': False, 'error': 'No active configuration found'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+@admin_llm_analysis_bp.route('/admin/api/llm-analysis/check-pending', methods=['POST'])
+@login_required
+@admin_required
+def check_pending_analysis():
+    """Check for and process pending auto-analysis (safety net)"""
+    try:
+        from app.models.assessment import Assessment
+        
+        processed_sessions = Assessment.check_pending_auto_analysis()
+        
+        return jsonify({
+            'success': True,
+            'processed_count': len(processed_sessions),
+            'processed_sessions': processed_sessions,
+            'message': f'Processed {len(processed_sessions)} pending analyses'
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'Failed to check pending analysis: {str(e)}'})

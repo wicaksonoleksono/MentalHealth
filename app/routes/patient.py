@@ -13,6 +13,7 @@ from app.services.assessment import AssessmentService
 from app.services.assessment_balance import AssessmentBalanceService
 from app.services.phq import PHQService
 from app.services.openai_chat import OpenAIChatService
+from app.services.chat_session_manager import chat_session_manager
 from app.services.emotion_storage import emotion_storage
 from app.services.settings import SettingsService
 patient_bp = Blueprint('patient', __name__)
@@ -128,9 +129,13 @@ def start_fresh_assessment():
     assessment = AssessmentService.create_assessment_session(current_user.id)
     session['assessment_session_id'] = assessment.session_id
     
-    # Clear any existing session data
+    # Clear any existing session data including server-side chat session
+    chat_session_token = session.get('chat_session_token')
+    if chat_session_token:
+        chat_session_manager.delete_session(chat_session_token)
+    
     session.pop('phq_data', None)
-    session.pop('chat_session', None) 
+    session.pop('chat_session_token', None) 
     session.pop('assessment_order', None)
     session.modified = True
     
@@ -405,18 +410,29 @@ def phq9_submit():
 @login_required
 @patient_required
 def open_questions_assessment():
-    """Open questions assessment page with AI chat."""
     assessment_session_id = session.get('assessment_session_id')
     assessment_order = session.get('assessment_order', 'phq_first')
-    
     if not assessment_session_id:
         flash('Please start a new assessment session', 'error')
         return redirect(url_for('patient.dashboard'))
+    chat_session_token = session.get('chat_session_token')
+    if not chat_session_token:
+        chat_session_token = chat_session_manager.create_session(
+            assessment_session_id, assessment_session_id, current_user.id
+        )
+        session['chat_session_token'] = chat_session_token
+    else:
+        chat_session = chat_session_manager.get_session(chat_session_token)
+        if chat_session:
+            pass  # Session exists, continue
+        else:
+            chat_session_token = chat_session_manager.create_session(
+                assessment_session_id, assessment_session_id, current_user.id
+            )
+            session['chat_session_token'] = chat_session_token
     
-    # Create chat session and get settings
-    chat_service = OpenAIChatService()
-    chat_session = chat_service.create_chat_session(assessment_session_id, current_user.id)
-    session['chat_session'] = chat_session
+    # Get session data for template
+    chat_session = chat_session_manager.get_session(chat_session_token)
     
     # Get recording settings for consistency
     recording_config = SettingsService.get_recording_config()
@@ -454,76 +470,40 @@ def open_questions_assessment():
                          recording_config=recording_config,
                          session_id=assessment_session_id,
                          **progress_data)
-
-@patient_bp.route('/test-chat', methods=['GET'])
-@login_required
-@patient_required
-def test_chat():
-    """Test route to check if OpenAI service is working"""
-    try:
-        from app.services.openai_chat import OpenAIChatService
-        chat_service = OpenAIChatService()
-        
-        # Test settings
-        settings = chat_service.get_chat_settings()
-        
-        # Test chat session creation
-        test_session = chat_service.create_chat_session("test-session", current_user.id)
-        
-        return jsonify({
-            'success': True,
-            'settings_loaded': bool(settings.get('openquestion_prompt')),
-            'session_created': bool(test_session.get('system_prompt')),
-            'system_prompt_length': len(test_session.get('system_prompt', '')),
-            'message': 'OpenAI service is working correctly'
-        })
-        
-    except Exception as e:
-        current_app.logger.error(f"Test chat error: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': str(e),
-            'message': 'OpenAI service test failed'
-        }), 500
-
 @patient_bp.route('/chat-stream/<message>')
 @login_required
 @patient_required
 def chat_stream(message):
     assessment_session_id = session.get('assessment_session_id')
-    chat_session = session.get('chat_session')
+    chat_session_token = session.get('chat_session_token')
     
-    if not assessment_session_id or not chat_session or not message:
+    if not assessment_session_id or not chat_session_token or not message:
         return Response("data: " + json.dumps({'type': 'error', 'message': 'Invalid request'}) + "\n\n",
                        mimetype='text/event-stream')
     
-    # Pre-add user message to both histories
-    current_time = datetime.utcnow().isoformat()
-    chat_session['message_history'].append({'type': 'human', 'content': message})
-    chat_session['conversation_history'].append({
-        'type': 'human', 
-        'content': message,
-        'timestamp': current_time
-    })
+    # Add user message to server-side session BEFORE streaming
+    chat_session_manager.add_user_message(chat_session_token, message)
     
     def generate():
         response_content = ""
-        chat_service = OpenAIChatService()
         
-        for chunk in chat_service.generate_streaming_response(chat_session, message):
-            response_content += chunk
-            yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
-        
-        # Add AI response to both histories and update count
-        chat_session['message_history'].append({'type': 'ai', 'content': response_content})
-        chat_session['conversation_history'].append({
-            'type': 'ai', 
-            'content': response_content,
-            'timestamp': datetime.utcnow().isoformat()
-        })
-        chat_session['exchange_count'] = chat_session.get('exchange_count', 0) + 1
-        
-        yield f"data: {json.dumps({'type': 'complete', 'exchange_count': chat_session['exchange_count']})}\n\n"
+        try:
+            # Stream response using session manager
+            for chunk in chat_session_manager.stream_response(chat_session_token, message):
+                response_content += chunk
+                yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
+            
+            # Add AI response to server-side session
+            chat_session_manager.add_ai_response(chat_session_token, response_content)
+            
+            # Get updated session stats
+            chat_session = chat_session_manager.get_session(chat_session_token)
+            exchange_count = chat_session.get('exchange_count', 0) if chat_session else 0
+            
+            yield f"data: {json.dumps({'type': 'complete', 'exchange_count': exchange_count})}\n\n"
+            
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
     
     response = Response(generate(), mimetype='text/event-stream')
     response.headers['Cache-Control'] = 'no-cache'
@@ -535,16 +515,14 @@ def chat_stream(message):
 @login_required  
 @patient_required
 def update_chat_session():
-    """Update chat session after streaming completes - called from frontend."""
-    assessment_session_id = session.get('assessment_session_id')
-    chat_session = session.get('chat_session')
-    
-    if not assessment_session_id or not chat_session:
+    """Get current chat session info."""
+    chat_session_token = session.get('chat_session_token')
+    if not chat_session_token:
         return jsonify({'success': False, 'message': 'No chat session found'}), 400
     
-    # Just save the current chat session back to Flask session
-    session['chat_session'] = chat_session
-    session.modified = True
+    chat_session = chat_session_manager.get_session(chat_session_token)
+    if not chat_session:
+        return jsonify({'success': False, 'message': 'Chat session expired'}), 400
     
     return jsonify({
         'success': True,
@@ -560,10 +538,15 @@ def update_chat_session():
 def save_conversation():
     """Save the complete conversation when user is done."""
     assessment_session_id = session.get('assessment_session_id')
-    chat_session = session.get('chat_session')
+    chat_session_token = session.get('chat_session_token')
     
-    if not assessment_session_id or not chat_session:
+    if not assessment_session_id or not chat_session_token:
         return jsonify({'success': False, 'message': 'No conversation to save'}), 400
+    
+    # Get session from manager
+    chat_session = chat_session_manager.get_session(chat_session_token)
+    if not chat_session:
+        return jsonify({'success': False, 'message': 'Chat session expired'}), 400
     
     try:
         # Log conversation summary before saving
@@ -581,8 +564,9 @@ def save_conversation():
         # Mark assessment as having open questions completed
         AssessmentService.start_assessment_type(assessment_session_id, current_user.id, 'open_questions')
         
-        # Clear chat session from Flask session
-        session.pop('chat_session', None)
+        # Clear server-side chat session and Flask token
+        chat_session_manager.delete_session(chat_session_token)
+        session.pop('chat_session_token', None)
         session.modified = True
         
         current_app.logger.info(f"Successfully saved conversation for session {assessment_session_id}")
@@ -651,9 +635,14 @@ def assessment_complete():
     if not assessment or assessment.status != 'completed':
         flash('Assessment not completed', 'error')
         return redirect(url_for('patient.dashboard'))
+    # Clean up server-side chat session
+    chat_session_token = session.get('chat_session_token')
+    if chat_session_token:
+        chat_session_manager.delete_session(chat_session_token)
+    
     session.pop('assessment_session_id', None)
     session.pop('phq_data', None)
-    session.pop('chat_session', None)
+    session.pop('chat_session_token', None)
     session.pop('assessment_order', None)
     session.modified = True
     completion_data = {
@@ -853,30 +842,3 @@ def serve_emotion_file(emotion_id):
         )
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-# # Patient routes for their own data
-# @patient_bp.route('/export-my-session/<session_id>')
-# @login_required
-# @patient_required
-# def export_my_session(session_id):
-#     """Allow patients to export their own session data"""
-#     try:
-#         assessment = Assessment.query.filter_by(
-#             session_id=session_id,
-#             user_id=current_user.id
-#         ).first()
-#         if not assessment:
-#             return jsonify({'error': 'Session not found or access denied'}), 404
-#         # Export the session
-#         zip_path = ExportService.export_session_data(session_id, current_user.id)
-#         # 
-#         return send_file(
-#             zip_path,
-#             as_attachment=True,
-#             download_name=f"my_assessment_{session_id}.zip",
-#             mimetype='application/zip'
-#         )
-#         # 
-#     except ExportException as e:
-#         return jsonify({'error': str(e)}), 400
-#     except Exception as e:
-#         return jsonify({'error': f'Export failed: {str(e)}'}), 500

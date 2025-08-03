@@ -22,7 +22,7 @@
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" name="llm_auto_analysis" value="1" class="sr-only peer" 
-                           {{ 'checked' if settings_data.llm_auto_analysis == '1' else '' }}>
+                           {{ 'checked' if settings_data.llm_auto_analysis else '' }}>
                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                 </label>
             </div>
@@ -42,14 +42,28 @@
                 </div>
             </div>
             
-            <!-- Format Prompt -->
+            <!-- Format Information (Read-only) -->
             <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-3">JSON Format Prompt</label>
+                <label class="block text-sm font-medium text-gray-700 mb-3">What to expecct the json format for the LLM output</label>
                 <div class="relative">
-                    <textarea name="analysis_format_prompt" rows="6"
-                        class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none shadow-sm font-mono text-sm"
-                        placeholder="Enter the JSON format instructions...">{{ analysis_config.format_prompt if analysis_config else 'Gunakan format\n{\n  "indicator_1": {\n    "penjelasan": "penjelasan 1",\n    "skor": ESTIMATED_SCORE_1\n  },\n  "indicator_2": {\n    "penjelasan": "penjelasan 2",\n    "skor": ESTIMATED_SCORE_2\n  },\n  "indicator_3": {\n    "penjelasan": "penjelasan 3",\n    "skor": ESTIMATED_SCORE_3\n  }\n}' }}</textarea>
+                    <div class="w-full p-4 border border-gray-300 rounded-xl bg-gray-50 text-gray-700 font-mono text-sm">
+                        <p class="mb-2 font-medium">Format yang digunakan secara otomatis:</p>
+                        <pre class="text-xs">{
+  "indicator_1": {
+    "penjelasan": "penjelasan untuk indikator 1",
+    "skor": 0
+  },
+  "indicator_2": {
+    "penjelasan": "penjelasan untuk indikator 2", 
+    "skor": 0
+  },
+  ...
+}
+
+Skor: 0=Tidak Ada, 1=Ringan, 2=Sedang, 3=Kuat</pre>
+                    </div>
                 </div>
+                <p class="text-xs text-gray-500 mt-2">Format ini hardcoded untuk konsistensi parsing dan mendukung perubahan indikator.</p>
             </div>
         </div>
 
@@ -58,24 +72,22 @@
             <h4 class="font-medium text-gray-900 mb-4">LLM Models Management</h4>
             
             <!-- Add New Model -->
-            <form method="POST" action="{{ url_for('settings.save_settings_section', section='llm_analysis') }}">
-                <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-                    <h5 class="text-sm font-medium text-gray-700 mb-3">Add New LLM Model</h5>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Model Name</label>
-                            <input type="text" name="new_model_name" placeholder="e.g., gpt-4o-mini"
-                                class="w-full p-2 border border-gray-300 rounded-lg text-sm">
-                        </div>
-                        <div class="flex items-end">
-                            <button type="submit" name="action" value="add_model"
-                                class="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                                Add Model
-                            </button>
-                        </div>
+            <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                <h5 class="text-sm font-medium text-gray-700 mb-3">Add New LLM Model</h5>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Model Name</label>
+                        <input type="text" name="new_model_name" placeholder="e.g., gpt-4o-mini"
+                            class="w-full p-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" name="action" value="add_model"
+                            class="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                            Add Model
+                        </button>
                     </div>
                 </div>
-            </form>
+            </div>
             
             <!-- Active Models List -->
             <div>
@@ -112,6 +124,28 @@
             </div>
         </div>
 
+        <!-- Auto-Analysis Management -->
+        <div class="bg-white rounded-lg border border-purple-200 p-6">
+            <h4 class="font-medium text-gray-900 mb-4">Auto-Analysis Management</h4>
+            
+            <div class="space-y-4">
+                <!-- Check Pending Button -->
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <label class="font-medium text-gray-700">Check Pending Analyses</label>
+                        <p class="text-sm text-gray-600">Check for completed assessments that may have missed auto-analysis</p>
+                    </div>
+                    <button id="checkPendingBtn" 
+                            class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors">
+                        Check & Process
+                    </button>
+                </div>
+                
+                <!-- Status Display -->
+                <div id="pendingCheckStatus" class="hidden p-3 rounded-lg"></div>
+            </div>
+        </div>
+
         <!-- Info Section -->
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div class="flex">
@@ -128,3 +162,77 @@
     <!-- Hidden field for remove model action -->
     <input type="hidden" name="remove_model_name" value="">
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('settingsForm');
+        if (form) {
+            form.addEventListener('submit', function(event) {
+                const checkbox = form.querySelector('input[name="llm_auto_analysis"]');
+                if (!checkbox.checked) {
+                    // If the checkbox is unchecked, create a hidden input to submit '0'
+                    let hiddenInput = form.querySelector('input[name="llm_auto_analysis"][type="hidden"]');
+                    if (!hiddenInput) {
+                        hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.name = 'llm_auto_analysis';
+                        form.appendChild(hiddenInput);
+                    }
+                    hiddenInput.value = '0';
+                    // Make sure the checkbox value isn't submitted
+                    checkbox.disabled = true;
+                }
+            });
+        }
+    });
+    
+    // Handle pending analysis check
+    document.getElementById('checkPendingBtn').addEventListener('click', async function() {
+        const btn = this;
+        const statusDiv = document.getElementById('pendingCheckStatus');
+        
+        // Show loading state
+        btn.disabled = true;
+        btn.textContent = 'Checking...';
+        statusDiv.className = 'p-3 rounded-lg bg-blue-50 border border-blue-200';
+        statusDiv.innerHTML = '<p class="text-blue-700">Checking for pending analyses...</p>';
+        statusDiv.classList.remove('hidden');
+        
+        try {
+            const response = await fetch('/admin/api/llm-analysis/check-pending', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                statusDiv.className = 'p-3 rounded-lg bg-green-50 border border-green-200';
+                statusDiv.innerHTML = `
+                    <p class="text-green-700 font-medium">${data.message}</p>
+                    ${data.processed_count > 0 ? 
+                        `<p class="text-green-600 text-sm mt-1">Sessions processed: ${data.processed_sessions.join(', ')}</p>` : 
+                        '<p class="text-green-600 text-sm mt-1">No pending analyses found.</p>'
+                    }
+                `;
+            } else {
+                statusDiv.className = 'p-3 rounded-lg bg-red-50 border border-red-200';
+                statusDiv.innerHTML = `<p class="text-red-700">Error: ${data.error}</p>`;
+            }
+        } catch (error) {
+            statusDiv.className = 'p-3 rounded-lg bg-red-50 border border-red-200';
+            statusDiv.innerHTML = `<p class="text-red-700">Network error: ${error.message}</p>`;
+        } finally {
+            // Reset button
+            btn.disabled = false;
+            btn.textContent = 'Check & Process';
+            
+            // Hide status after 10 seconds
+            setTimeout(() => {
+                statusDiv.classList.add('hidden');
+            }, 10000);
+        }
+    });
+</script>

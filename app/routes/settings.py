@@ -86,7 +86,6 @@ def show_settings_section(section):
             llm_service = LLMAnalysisService()
             llm_models = llm_service.get_active_models()
             analysis_config = AnalysisConfiguration.get_active_config()
-        
         return render_template('admin/settings.html',
                              active_section=section,
                              settings_data=flattened,
@@ -110,6 +109,12 @@ def save_settings_section(section):
         form_data = dict(request.form)
         # Handle LLM analysis prompts and model management
         if section == 'llm_analysis':
+            # Explicitly handle boolean for checkbox
+            if 'llm_auto_analysis' in form_data:
+                form_data['llm_auto_analysis'] = form_data['llm_auto_analysis'] == '1'
+            else:
+                form_data['llm_auto_analysis'] = False
+
             from app.services.llm_analysis import LLMAnalysisService
             llm_service = LLMAnalysisService()
             
@@ -135,12 +140,12 @@ def save_settings_section(section):
                     except Exception as e:
                         flash(f'Error removing model: {str(e)}', 'error')
             
-            # Handle prompt updates
+            # Handle prompt updates (only instruction prompt, format is hardcoded)
             instruction_prompt = form_data.get('analysis_instruction_prompt', '')
-            format_prompt = form_data.get('analysis_format_prompt', '')
             
-            if instruction_prompt and format_prompt and action != 'add_model' and action != 'remove_model':
-                llm_service.update_analysis_configuration(instruction_prompt, format_prompt)
+            if instruction_prompt and action != 'add_model' and action != 'remove_model':
+                # Use hardcoded format from LLMAnalysisService
+                llm_service.update_analysis_configuration(instruction_prompt, llm_service.ANALYSIS_FORMAT)
             
             # Remove prompts and actions from form_data so they don't get processed as regular settings
             form_data.pop('analysis_instruction_prompt', None)
@@ -235,6 +240,11 @@ def api_reset_section(section):
                     reset_count += 1
         elif section in ['openquestion', 'consent']:
             for setting_key in SettingsKey.get_text_settings():
+                if setting_key.default is not None:
+                    SettingsService.set(setting_key, setting_key.default)
+                    reset_count += 1
+        elif section == 'llm_analysis':
+            for setting_key in SettingsKey.get_llm_settings():
                 if setting_key.default is not None:
                     SettingsService.set(setting_key, setting_key.default)
                     reset_count += 1

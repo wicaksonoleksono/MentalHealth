@@ -37,10 +37,17 @@ class SettingsService:
         
         # Get or create setting
         setting = AppSetting.query.filter_by(key=setting_key.key).first()
-        if setting:
-            setting.value = str(validated_value)
+        
+        # Convert boolean to string representation that _convert_value can handle
+        if setting_key.data_type == 'boolean':
+            stored_value = '1' if validated_value else '0'
         else:
-            setting = AppSetting(key=setting_key.key, value=str(validated_value))
+            stored_value = str(validated_value)
+            
+        if setting:
+            setting.value = stored_value
+        else:
+            setting = AppSetting(key=setting_key.key, value=stored_value)
             db.session.add(setting)
         
         db.session.commit()
@@ -66,7 +73,8 @@ class SettingsService:
         return {
             'recording': SettingsService.get_group(SettingsKey.get_recording_settings),
             'phq9': SettingsService.get_group(SettingsKey.get_phq9_settings),
-            'text': SettingsService.get_group(SettingsKey.get_text_settings)
+            'text': SettingsService.get_group(SettingsKey.get_text_settings),
+            'llm': SettingsService.get_group(SettingsKey.get_llm_settings)
         }
     
     @staticmethod

@@ -109,6 +109,14 @@ class SettingsKey(Enum):
             cls.CONSENT_FORM_TEXT, cls.PHQ9_INSTRUCTIONS
         }
         return text_keys
+    
+    @classmethod
+    def get_llm_settings(cls):
+        """Get all LLM analysis settings"""
+        llm_keys = {
+            cls.LLM_AUTO_ANALYSIS
+        }
+        return llm_keys
 class AppSetting(db.Model):
     __tablename__ = 'app_settings'
     
