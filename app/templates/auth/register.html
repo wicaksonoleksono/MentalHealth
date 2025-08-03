@@ -54,11 +54,14 @@
                     name="username" 
                     type="text" 
                     required 
-                    placeholder="WARNING: Do Not Use Your Real Name"
                     value="{{ request.form.username if request.form.username else '' }}"
                     class="mt-1 block w-full px-3 py-2 border border-secondary-300 rounded-lg shadow-sm 
                            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
                            placeholder-secondary-400">
+                           <span class="text-red-600">
+                    <b>PERINGATAN</b>: Demi menjaga privasi, jangan gunakan nama asli
+
+                           </span>
             </div>
             
             <div>
@@ -70,11 +73,13 @@
                     name="email" 
                     type="email" 
                     required 
-                    placeholder="If you are uncomfortable using your real email you can use anonymous email for a 2nd Notification on when to continue the assessment"
                     value="{{ request.form.email if request.form.email else '' }}"
                     class="mt-1 block w-full px-3 py-2 border border-secondary-300 rounded-lg shadow-sm 
                            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
                            placeholder-secondary-400">
+                              <span >
+                    Jika Anda kurang nyaman menggunakan email asli, Anda bisa memakai email anonim untuk menerima notifikasi kedua tentang kapan melanjutkan asesmen.
+                           </span>
             </div>
             
             <div>
