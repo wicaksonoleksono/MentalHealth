@@ -114,6 +114,13 @@ def save_settings_section(section):
                 form_data['llm_auto_analysis'] = form_data['llm_auto_analysis'] == '1'
             else:
                 form_data['llm_auto_analysis'] = False
+        
+        if section == 'phq9':
+            # Explicitly handle boolean for checkbox
+            if 'phq9_randomize_questions' in form_data:
+                form_data['phq9_randomize_questions'] = form_data['phq9_randomize_questions'] == '1'
+            else:
+                form_data['phq9_randomize_questions'] = False
 
             from app.services.llm_analysis import LLMAnalysisService
             llm_service = LLMAnalysisService()

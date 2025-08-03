@@ -1,6 +1,6 @@
 <!-- app/templates/patient/open_questions_assessment.html -->
 {% extends "base.html" %}
-{% block title %}Open Questions - Mental Health Chat{% endblock %}
+{% block title %}Pertanyaan Terbuka - Obrolan Kesehatan Mental{% endblock %}
 
 {% block extra_head %}
 {% endblock %}
@@ -10,22 +10,22 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex items-center">
-                <h1 class="text-xl font-semibold text-gray-900">Assessment Portal</h1>
+                <h1 class="text-xl font-semibold text-gray-900">Portal Penilaian</h1>
                 <div class="ml-6 flex items-center space-x-4">
                     <div class="bg-green-600 rounded-lg px-3 py-1">
-                        <span class="text-white font-medium text-sm">Open Questions</span>
+                        <span class="text-white font-medium text-sm">Pertanyaan Terbuka</span>
                     </div>
-                    <span class="text-gray-600 text-sm">AI Mental Health Conversation</span>
+                    <span class="text-gray-600 text-sm">Percakapan Kesehatan Mental AI</span>
                 </div>
             </div>
             <div class="flex items-center space-x-4">
                 <div id="camera-status" class="flex items-center space-x-2">
                     <div id="recording-indicator" class="w-2 h-2 bg-red-500 rounded-full animate-pulse hidden"></div>
-                    <span id="camera-status-text" class="text-gray-600 text-xs">Camera Ready</span>
+                    <span id="camera-status-text" class="text-gray-600 text-xs">Kamera Siap</span>
                 </div>
                 <div id="conversation-timer" class="text-gray-600 text-sm font-mono">00:00</div>
                 <span class="text-sm text-gray-600">{{ current_user.username }}</span>
-                <a href="{{ url_for('auth.logout') }}" class="text-sm text-gray-600 hover:text-gray-900">Logout</a>
+                <a href="{{ url_for('auth.logout') }}" class="text-sm text-gray-600 hover:text-gray-900">Keluar</a>
             </div>
         </div>
     </div>
@@ -48,7 +48,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
                 <div>
-                    <h3 class="text-sm font-medium text-green-700">Instructions</h3>
+                    <h3 class="text-sm font-medium text-green-700">Instruksi</h3>
                     <p class="text-sm text-gray-700 mt-1">{{ chat_settings.instructions }}</p>
                 </div>
             </div>
@@ -104,7 +104,7 @@
                     type="text" 
                     x-model="currentMessage"
                     :disabled="isTyping"
-                    :placeholder="isTyping ? 'AI is responding...' : 'Share your thoughts, feelings, or anything on your mind...'"
+                    :placeholder="isTyping ? 'AI sedang merespons...' : 'Bagikan pikiran, perasaan, atau apa pun yang ada di benak Anda...'"
                     class="flex-1 bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:opacity-50"
                     maxlength="1000">
                 
@@ -113,14 +113,14 @@
                     :disabled="!currentMessage.trim() || isTyping"
                     class="px-6 py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg font-medium hover:from-green-600 hover:to-teal-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg">
                     <span x-show="!isTyping" class="flex items-center">
-                        <span>Send</span>
+                        <span>Kirim</span>
                         <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                         </svg>
                     </span>
                     <span x-show="isTyping" class="flex items-center">
                         <div class="w-2 h-2 bg-white rounded-full animate-pulse mr-2"></div>
-                        <span>Responding</span>
+                        <span>Merespons</span>
                     </span>
                 </button>
             </form>
@@ -128,8 +128,8 @@
             <!-- Chat Status and Controls -->
             <div class="mt-4 flex justify-between items-center">
                 <div class="flex items-center space-x-4 text-gray-600">
-                    <span class="text-sm">Exchange: <span x-text="exchangeCount" class="font-mono"></span></span>
-                    <span id="recording-status" class="text-sm hidden">● Recording</span>
+                    <span class="text-sm">Pertukaran: <span x-text="exchangeCount" class="font-mono"></span></span>
+                    <span id="recording-status" class="text-sm hidden">● Merekam</span>
                 </div>
                 
                 <!-- Done Button -->
@@ -138,7 +138,7 @@
                     :disabled="isTyping || isFinishing"
                     class="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-medium hover:from-orange-600 hover:to-red-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg">
                     <span x-show="!isFinishing" class="flex items-center">
-                        <span>Finish Conversation</span>
+                        <span>Selesaikan Percakapan</span>
                         <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
@@ -147,7 +147,7 @@
                         <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                         </svg>
-                        Saving...
+                        Menyimpan...
                     </span>
                 </button>
             </div>
@@ -205,7 +205,7 @@ function chatInterface() {
                 video_format: '{{ recording_config.video_format }}'
             };
             
-            console.log('🎬 Open Questions: Initializing emotion capture with config:', config);
+            console.log('🎬 Pertanyaan Terbuka: Menginisialisasi pengambilan emosi dengan konfigurasi:', config);
             await window.initializeEmotionCapture(config);
         },
         
@@ -266,21 +266,21 @@ function chatInterface() {
                         })
                         .then(response => response.json())
                         .then(data => {
-                            console.log('💾 Session updated:', data);
-                            console.log('📝 Total messages in history:', data.message_count);
-                            console.log('💬 Exchange count:', data.exchange_count);
+                            console.log('💾 Sesi diperbarui:', data);
+                            console.log('📝 Total pesan dalam riwayat:', data.message_count);
+                            console.log('💬 Jumlah pertukaran:', data.exchange_count);
                         })
-                        .catch(error => console.error('🚨 Session update error:', error));
+                        .catch(error => console.error('🚨 Kesalahan pembaruan sesi:', error));
                         
                     } else if (data.type === 'error') {
-                        botMessage.content = data.message || 'Sorry, I encountered an error. Please try again.';
+                        botMessage.content = data.message || 'Maaf, terjadi kesalahan. Silakan coba lagi.';
                         botMessage.streaming = false;
                         this.isTyping = false;
                         eventSource.close();
                     }
                 } catch (e) {
                     console.error('Error parsing SSE data:', e);
-                    botMessage.content = 'Connection error. Please try again.';
+                    botMessage.content = 'Kesalahan koneksi. Silakan coba lagi.';
                     botMessage.streaming = false;
                     this.isTyping = false;
                     eventSource.close();
@@ -289,7 +289,7 @@ function chatInterface() {
             
             eventSource.onerror = (error) => {
                 console.error('EventSource error:', error);
-                botMessage.content = 'Connection error. Please try again.';
+                botMessage.content = 'Kesalahan koneksi. Silakan coba lagi.';
                 botMessage.streaming = false;
                 this.isTyping = false;
                 eventSource.close();
@@ -314,13 +314,13 @@ function chatInterface() {
                     // Redirect to next step
                     window.location.href = '{{ url_for("patient.complete_open_questions") }}';
                 } else {
-                    alert('Failed to save conversation. Please try again.');
+                    alert('Gagal menyimpan percakapan. Silakan coba lagi.');
                     this.isFinishing = false;
                 }
             })
             .catch(error => {
                 console.error('Error saving conversation:', error);
-                alert('Error saving conversation. Please try again.');
+                alert('Error saving conversation. Silakan coba lagi.');
                 this.isFinishing = false;
             });
         },

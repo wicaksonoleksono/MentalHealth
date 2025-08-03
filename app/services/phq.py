@@ -32,28 +32,50 @@ class PHQService:
                 category_name = PHQService._get_raw_setting(name_key, f'Category {cat_num}')
                 questions_key = f'phq_category_{cat_num}_questions'
                 questions_data = PHQService._get_raw_setting(questions_key)
+                
+                category_questions = []
                 if questions_data:
                     try:
-                        questions = json.loads(questions_data)
-                        if not isinstance(questions, list):
-                            questions = [questions_data]  # Single string
+                        category_questions = json.loads(questions_data)
+                        if not isinstance(category_questions, list):
+                            category_questions = [questions_data]  # Handle single string case
                     except json.JSONDecodeError:
-                        questions = [q.strip() for q in questions_data.split(',') if q.strip()]
-                    questions = [q for q in questions if q.strip()]
-                    if questions:
-                        for question_index, question_text in enumerate(questions):
-                            all_questions.append({
-                                'category': cat_num,
-                                'category_name': category_name,
-                                'question': question_text,
-                                'original_order': cat_num,
-                                'question_index_in_category': question_index,
-                                'total_questions_in_category': len(questions),
-                                'all_questions': questions  # Keep all for reference
-                            })
-                        
-                        if cat_num not in active_categories:
-                            active_categories.append(cat_num)
+                        category_questions = [q.strip() for q in questions_data.split(',') if q.strip()]
+                    category_questions = [q for q in category_questions if q.strip()] # Filter empty strings
+                
+                # Fallback to default question if no custom questions are defined for the category
+                if not category_questions:
+                    from app.models.assessment import PHQCategoryType
+                    phq_category_enum = PHQCategoryType.get_by_number(cat_num)
+                    if phq_category_enum:
+                        category_questions = [phq_category_enum.default_question]
+                    else:
+                        continue # Skip if no questions and no default
+
+                selected_question_text = None
+                question_index_in_category = 0
+
+                if settings['randomize_questions'] and category_questions:
+                    question_index_in_category = random.randint(0, len(category_questions) - 1)
+                    selected_question_text = category_questions[question_index_in_category]
+                elif category_questions:
+                    selected_question_text = category_questions[0] # Get first question if not randomizing
+                    question_index_in_category = 0
+                
+                if selected_question_text:
+                    all_questions.append({
+                        'category': cat_num,
+                        'category_name': category_name,
+                        'question': selected_question_text,
+                        'original_order': cat_num, # This will be the category number
+                        'question_index_in_category': question_index_in_category,
+                        'total_questions_in_category': len(category_questions),
+                        # 'all_questions': category_questions # Removed to avoid large data in session
+                    })
+                    if cat_num not in active_categories:
+                        active_categories.append(cat_num)
+        
+        # Shuffle the order of categories if randomization is enabled
         if settings['randomize_questions']:
             random.shuffle(all_questions)
         settings['active_categories'] = active_categories

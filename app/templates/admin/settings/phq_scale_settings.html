@@ -6,18 +6,18 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
             </svg>
         </div>
-        PHQ-9 Configuration
+        Konfigurasi PHQ-9
     </h3>
-    <p class="text-gray-600 mb-6">Configure response scale, behavior settings, and instructions</p>
+    <p class="text-gray-600 mb-6">Konfigurasikan skala respons, pengaturan perilaku, dan instruksi</p>
     
     <div class="space-y-6">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Point Range Configuration -->
             <div class="bg-white rounded-lg p-4 border border-purple-200">
-                <h4 class="font-medium text-gray-900 mb-3">Response Scale Range</h4>
+                <h4 class="font-medium text-gray-900 mb-3">Rentang Skala Respons</h4>
                 <div class="flex items-center space-x-4 mb-4">
                     <div class="flex-1">
-                        <label class="block text-sm text-gray-600 mb-1">Min Value</label>
+                        <label class="block text-sm text-gray-600 mb-1">Nilai Min</label>
                         <input type="number" 
                                x-model.number="minValue"
                                @input="updateRange()"
@@ -27,7 +27,7 @@
                                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                     </div>
                     <div class="flex-1">
-                        <label class="block text-sm text-gray-600 mb-1">Max Value</label>
+                        <label class="block text-sm text-gray-600 mb-1">Nilai Maks</label>
                         <input type="number" 
                                x-model.number="maxValue"
                                @input="updateRange()"
@@ -39,16 +39,16 @@
                 </div>
                 <div class="bg-purple-50 rounded-lg p-3">
                     <p class="text-sm text-purple-800">
-                        <strong>Scale Range:</strong> <span x-text="minValue"></span> to <span x-text="maxValue"></span>
-                        (<span x-text="(maxValue - minValue + 1)"></span> response options)
+                        <strong>Rentang Skala:</strong> <span x-text="minValue"></span> hingga <span x-text="maxValue"></span>
+                        (<span x-text="(maxValue - minValue + 1)"></span> opsi respons)
                     </p>
-                    <p class="text-xs text-purple-600 mt-1">Standard PHQ-9 uses 0-3 range (4 options)</p>
+                    <p class="text-xs text-purple-600 mt-1">PHQ-9 standar menggunakan rentang 0-3 (4 opsi)</p>
                 </div>
             </div>
 
             <!-- Response Labels (Dynamic) -->
             <div class="bg-white rounded-lg p-4 border border-purple-200">
-                <h4 class="font-medium text-gray-900 mb-3">Response Labels</h4>
+                <h4 class="font-medium text-gray-900 mb-3">Label Respons</h4>
                 <div class="space-y-3 max-h-64 overflow-y-auto">
                     <template x-for="i in responseOptions" :key="i">
                         <div class="flex items-center space-x-3">
@@ -57,37 +57,38 @@
                                 <input type="text" 
                                        :name="'scale_label_' + i"
                                        :value="getDefaultLabel(i)"
-                                       :placeholder="'Label for ' + i + ' points'"
+                                       :placeholder="'Label untuk ' + i + ' poin'"
                                        class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm">
                             </div>
                         </div>
                     </template>
                 </div>
                 <div class="mt-3 bg-purple-50 rounded-lg p-3">
-                    <p class="text-xs text-purple-600">Labels will be shown to patients as response options</p>
+                    <p class="text-xs text-purple-600">Label akan ditampilkan kepada pasien sebagai opsi respons</p>
                 </div>
             </div>
         </div>
 
         <!-- Additional PHQ Settings -->
         <div class="bg-white rounded-lg p-4 border border-purple-200">
-            <h4 class="font-medium text-gray-900 mb-3">Assessment Behavior</h4>
+            <h4 class="font-medium text-gray-900 mb-3">Perilaku Penilaian</h4>
             <div class="space-y-4">
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                     <div>
-                        <label class="text-sm font-medium text-gray-700">Randomize Question Order</label>
-                        <p class="text-sm text-gray-500">Randomly shuffle questions within each category</p>
+                        <label class="font-medium text-gray-700">Acak Urutan Pertanyaan</label>
+                        <p class="text-sm text-gray-600">Acak pertanyaan dalam setiap kategori</p>
                     </div>
-                    <input type="checkbox" name="phq9_randomize_questions" value="1" 
-                           {{ 'checked' if settings_data.phq9_randomize_questions else '' }}
-                           class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="phq9_randomize_questions" value="1" class="sr-only peer" 
+                               {{ 'checked' if settings_data.phq9_randomize_questions else '' }}>
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                    </label>
                 </div>
-                
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">PHQ-9 Instructions</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Instruksi PHQ-9</label>
                     <textarea name="phq9_instructions" rows="4" 
-                              placeholder="Instructions shown to patients before PHQ-9 assessment..."
+                              placeholder="Instruksi yang ditampilkan kepada pasien sebelum penilaian PHQ-9..."
                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">{{ settings_data.phq9_instructions }}</textarea>
                 </div>
             </div>
@@ -95,7 +96,7 @@
 
         <!-- Preview -->
         <div class="bg-white rounded-lg p-4 border border-purple-200">
-            <h4 class="font-medium text-gray-900 mb-3">Scale Preview</h4>
+            <h4 class="font-medium text-gray-900 mb-3">Pratinjau Skala</h4>
             <div class="flex flex-wrap gap-2">
                 <template x-for="i in responseOptions" :key="i">
                     <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 min-w-0 flex-1">
@@ -142,7 +143,7 @@ function scaleConfig() {
             }
         },
         getDefaultLabel(value) {
-            return this.scaleLabels[value.toString()] || this.defaultLabels[value] || `Option ${value}`;
+            return this.scaleLabels[value.toString()] || this.defaultLabels[value] || `Opsi ${value}`;
         },
 
         getCurrentLabel(value) {

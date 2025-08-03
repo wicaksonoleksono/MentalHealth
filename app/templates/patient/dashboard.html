@@ -3,28 +3,28 @@
 <!-- Pass variables to navbar -->
 {% block patient_content %}
     <div class="bg-white rounded-lg shadow p-8">
-        <h2 class="text-2xl font-bold text-secondary-900 mb-6">Mental Health Assessment</h2>
+        <h2 class="text-2xl font-bold text-secondary-900 mb-6">Penilaian Kesehatan Mental</h2>
         <div class="space-y-6">
             <div class="border-l-4 border-primary-500 pl-4">
                 <p class="text-secondary-700">
-                    This assessment will help evaluate your mental health. It consists of questionnaires and optional open questions.
-                    The session is private and secure.
+                    Penilaian ini akan membantu mengevaluasi kesehatan mental Anda. Ini terdiri dari kuesioner dan pertanyaan terbuka opsional.
+                    Sesi ini bersifat pribadi dan aman.
                 </p>
             </div>
             
             <div class="bg-secondary-50 rounded-lg p-4">
-                <h3 class="font-medium text-secondary-900 mb-2">Before you begin:</h3>
+                <h3 class="font-medium text-secondary-900 mb-2">Sebelum Anda memulai:</h3>
                 <ul class="text-sm text-secondary-600 space-y-1">
-                    <li>• Ensure you're in a quiet, private space</li>
-                    <li>• Camera access will be required for emotion analysis</li>
-                    <li>• Assessment takes approximately 10-15 minutes</li>
-                    <li>• You can pause at any time if needed</li>
+                    <li>• Pastikan Anda berada di tempat yang tenang dan pribadi</li>
+                    <li>• Akses kamera akan diperlukan untuk analisis emosi</li>
+                    <li>• Penilaian memakan waktu sekitar 10-15 menit</li>
+                    <li>• Anda dapat menjeda kapan saja jika diperlukan</li>
                 </ul>
             </div>
             
             <a href="{{ url_for('patient.start_assessment') }}" 
                class="block w-full bg-primary-600 text-white py-4 px-6 rounded-md hover:bg-primary-700 font-medium text-center transition-colors">
-                Begin Assessment
+                Mulai Penilaian
             </a>
         </div>
     </div>

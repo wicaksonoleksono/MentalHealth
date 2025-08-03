@@ -7,29 +7,30 @@
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h3 class="text-lg font-semibold text-gray-900">PHQ-9 Categories</h3>
-                <p class="text-sm text-gray-600 mt-1">Manage assessment categories and their questions</p>
+                <h3 class="text-lg font-semibold text-gray-900">Pengaturan Kategori</h3>
+                <p class="text-sm text-gray-600 mt-1">Kelola kategori penilaian dan pertanyaannya</p>
             </div>
             <button type="button" onclick="addNewCategory()" 
                     class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                 </svg>
-                Add Category
+                Tambah Kategori
             </button>
         </div>
 
         <!-- Quick Actions -->
         <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-            <div class="flex flex-wrap gap-3">
+            <div class="flex flex-wrap gap-3 items-center">
                 <button type="button" onclick="loadDefaultCategories()" 
                         class="bg-green-600 text-white px-3 py-2 rounded text-sm hover:bg-green-700">
-                    Load Default PHQ-9 Categories
+                    Muat Kategori PHQ-9 Default
                 </button>
                 <button type="button" onclick="clearAllCategories()" 
                         class="bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700">
-                    Clear All Categories
+                    Hapus Semua Kategori
                 </button>
+            
             </div>
         </div>
 
@@ -41,7 +42,7 @@
                     {% set questions_key = 'phq_category_' ~ cat_num ~ '_questions' %}
                     {% set questions = settings_data.get(questions_key, []) %}
                     {% set name_key = 'phq_category_' ~ cat_num ~ '_name' %}
-                    {% set category_name = settings_data.get(name_key, 'Category ' ~ cat_num) %}
+                    {% set category_name = settings_data.get(name_key, 'Kategori ' ~ cat_num) %}
                     
                     <div class="category-item border border-gray-200 rounded-lg p-4" data-category="{{ cat_num }}">
                         <input type="hidden" name="phq_category_{{ cat_num }}_exists" value="1">
@@ -53,7 +54,7 @@
                                     <input type="text" name="phq_category_{{ cat_num }}_name" 
                                            value="{{ category_name }}" 
                                            class="font-medium text-gray-900 bg-transparent border-none p-0 focus:ring-0 focus:border-blue-500 border-b-2 border-transparent hover:border-gray-300"
-                                           placeholder="Category Name">
+                                           placeholder="Nama Kategori">
                                 </div>
                             </div>
                             <button type="button" onclick="removeCategory({{ cat_num }})" 
@@ -65,13 +66,13 @@
                         </div>
                         
                         <div class="questions-container" data-category="{{ cat_num }}">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Questions:</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Pertanyaan:</label>
                             {% for question in questions %}
                                 <div class="question-row flex items-center mb-2">
                                     <input type="text" name="phq_category_{{ cat_num }}_question_{{ loop.index0 }}" 
                                            value="{{ question }}" 
                                            class="flex-1 p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
-                                           placeholder="Enter question...">
+                                           placeholder="Masukkan pertanyaan...">
                                     <button type="button" onclick="removeQuestion(this)" 
                                             class="ml-2 text-red-600 hover:text-red-800 p-1">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,7 +86,7 @@
                                     <input type="text" name="phq_category_{{ cat_num }}_question_0" 
                                            value="" 
                                            class="flex-1 p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
-                                           placeholder="Enter question...">
+                                           placeholder="Masukkan pertanyaan...">
                                     <button type="button" onclick="removeQuestion(this)" 
                                             class="ml-2 text-red-600 hover:text-red-800 p-1">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,7 +101,7 @@
                                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                                 </svg>
-                                Add Question
+                                Tambah Pertanyaan
                             </button>
                         </div>
                     </div>
@@ -113,8 +114,8 @@
             <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
             </svg>
-            <p class="text-lg font-medium">No categories created yet</p>
-            <p class="text-sm">Click "Add Category" or "Load Default PHQ-9 Categories" to get started</p>
+            <p class="text-lg font-medium">Belum ada kategori yang dibuat</p>
+            <p class="text-sm">Klik "Tambah Kategori" atau "Muat Kategori PHQ-9 Default" untuk memulai</p>
         </div>
     </div>
 </div>
@@ -148,7 +149,7 @@ function getNextCategoryNumber() {
 function addNewCategory() {
     const categoryNum = getNextCategoryNumber();
     if (!categoryNum) {
-        alert('Maximum number of categories reached (20)');
+        alert('Jumlah maksimum kategori tercapai (20)');
         return;
     }
     
@@ -164,9 +165,9 @@ function addNewCategory() {
                     <div class="flex items-center mb-2">
                         <span class="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium mr-3">${categoryNum}</span>
                         <input type="text" name="phq_category_${categoryNum}_name" 
-                               value="Category ${categoryNum}" 
+                               value="Kategori ${categoryNum}" 
                                class="font-medium text-gray-900 bg-transparent border-none p-0 focus:ring-0 focus:border-blue-500 border-b-2 border-transparent hover:border-gray-300"
-                               placeholder="Category Name">
+                               placeholder="Nama Kategori">
                     </div>
                 </div>
                 <button type="button" onclick="removeCategory(${categoryNum})" 
@@ -178,12 +179,12 @@ function addNewCategory() {
             </div>
             
             <div class="questions-container" data-category="${categoryNum}">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Questions:</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Pertanyaan:</label>
                 <div class="question-row flex items-center mb-2">
                     <input type="text" name="phq_category_${categoryNum}_question_0" 
                            value="" 
                            class="flex-1 p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
-                           placeholder="Enter question...">
+                           placeholder="Masukkan pertanyaan...">
                     <button type="button" onclick="removeQuestion(this)" 
                             class="ml-2 text-red-600 hover:text-red-800 p-1">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -197,7 +198,7 @@ function addNewCategory() {
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                     </svg>
-                    Add Question
+                    Tambah Pertanyaan
                 </button>
             </div>
         </div>
@@ -208,7 +209,7 @@ function addNewCategory() {
 }
 
 function removeCategory(categoryNum) {
-    if (!confirm(`Remove category ${categoryNum} and all its questions?`)) return;
+    if (!confirm(`Hapus kategori ${categoryNum} dan semua pertanyaannya?`)) return;
     
     const categoryEl = document.querySelector(`[data-category="${categoryNum}"]`);
     categoryEl.remove();
@@ -230,7 +231,7 @@ function addQuestion(categoryNum) {
             <input type="text" name="phq_category_${categoryNum}_question_${questionIndex}" 
                    value="" 
                    class="flex-1 p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
-                   placeholder="Enter question...">
+                   placeholder="Masukkan pertanyaan...">
             <button type="button" onclick="removeQuestion(this)" 
                     class="ml-2 text-red-600 hover:text-red-800 p-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -252,7 +253,7 @@ function removeQuestion(button) {
     // Don't allow removing if it's the last question
     const questions = container.querySelectorAll('.question-row');
     if (questions.length <= 1) {
-        alert('Each category must have at least one question');
+        alert('Setiap kategori harus memiliki setidaknya satu pertanyaan');
         return;
     }
     
@@ -266,7 +267,7 @@ function removeQuestion(button) {
 }
 
 function loadDefaultCategories() {
-    if (!confirm('This will add the standard PHQ-9 categories. Continue?')) return;
+    if (!confirm('Ini akan menambahkan kategori PHQ-9 standar. Lanjutkan?')) return;
     
     defaultPHQCategories.forEach(cat => {
         // Check if category already exists
@@ -286,7 +287,7 @@ function loadDefaultCategories() {
                             <input type="text" name="phq_category_${cat.number}_name" 
                                    value="${cat.name}" 
                                    class="font-medium text-gray-900 bg-transparent border-none p-0 focus:ring-0 focus:border-blue-500 border-b-2 border-transparent hover:border-gray-300"
-                                   placeholder="Category Name">
+                                   placeholder="Nama Kategori">
                         </div>
                     </div>
                     <button type="button" onclick="removeCategory(${cat.number})" 
@@ -298,12 +299,12 @@ function loadDefaultCategories() {
                 </div>
                 
                 <div class="questions-container" data-category="${cat.number}">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Questions:</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Pertanyaan:</label>
                     <div class="question-row flex items-center mb-2">
                         <input type="text" name="phq_category_${cat.number}_question_0" 
                                value="${cat.question}" 
                                class="flex-1 p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
-                               placeholder="Enter question...">
+                               placeholder="Masukkan pertanyaan...">
                         <button type="button" onclick="removeQuestion(this)" 
                                 class="ml-2 text-red-600 hover:text-red-800 p-1">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -317,7 +318,7 @@ function loadDefaultCategories() {
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                         </svg>
-                        Add Question
+                        Tambah Pertanyaan
                     </button>
                 </div>
             </div>
@@ -329,7 +330,7 @@ function loadDefaultCategories() {
 }
 
 function clearAllCategories() {
-    if (!confirm('Remove ALL categories and questions? This cannot be undone.')) return;
+    if (!confirm('Hapus SEMUA kategori dan pertanyaan? Tindakan ini tidak dapat dibatalkan.')) return;
     
     const categories = document.querySelectorAll('.category-item');
     categories.forEach(cat => cat.remove());

@@ -6,22 +6,21 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
             </svg>
         </div>
-        Open question settings
+       Pengaturan Pertanyaan Terbuka
     </h3>
-    <p class="text-gray-600 mb-8">Open question we uitilize LLM to capture the emotions and depression for the users</p>
-    
+    <p class="text-gray-600 mb-8">Konfigurasikan prompt dan instruksi untuk sesi pertanyaan terbuka dengan AI.</p>
     <div class="space-y-8">
         <!-- Patient Instructions -->
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-3">Instructions for Patients</label>
+            <label class="block text-sm font-medium text-gray-700 mb-3">Instruksi untuk Pasien</label>
             <div class="relative">
                 <textarea name="openquestion_instructions" rows="6"
                     class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none shadow-sm"
-                    placeholder="Instructions that patients will see before starting the open question session...">{{ settings_data.openquestion_instructions or 'Welcome to your mental health check-in session.\n\nIn this section, you\'ll have a conversation with an AI assistant about how you\'re feeling. This is a safe space to share your thoughts and emotions.\n\nPlease:\n• Be honest about your feelings\n• Take your time to think about your responses\n• Feel free to share as much or as little as you\'re comfortable with\n• Remember this conversation is confidential\n\nIf you\'re experiencing a mental health crisis or having thoughts of self-harm, please contact emergency services immediately or reach out to a mental health professional.\n\nClick "Start Conversation" when you\'re ready to begin.' }}</textarea>
+                    placeholder="Instruksi yang akan dilihat pasien sebelum memulai sesi pertanyaan terbuka...">{{ settings_data.openquestion_instructions or 'Selamat datang di sesi pemeriksaan kesehatan mental Anda.\n\nDi bagian ini, Anda akan bercakap-cakap dengan asisten AI tentang perasaan Anda. Ini adalah ruang yang aman untuk berbagi pemikiran dan emosi Anda.\n\nHarap:\n• Jujur tentang perasaan Anda\n• Luangkan waktu Anda untuk memikirkan tanggapan Anda\n• Jangan ragu untuk berbagi sebanyak atau sesedikit yang Anda rasa nyaman\n• Ingat percakapan ini bersifat rahasia\n\nJika Anda mengalami krisis kesehatan mental atau memiliki pikiran untuk menyakiti diri sendiri, harap segera hubungi layanan darurat atau hubungi profesional kesehatan mental.\n\nKlik "Mulai Percakapan" saat Anda siap untuk memulai.' }}</textarea>
                 <div class="absolute bottom-3 right-3 text-xs text-gray-400"
                      x-data="{ count: 0 }"
                      x-init="count = $el.parentElement.querySelector('textarea').value.length"
-                     x-text="count + ' characters'">
+                     x-text="count + ' karakter'">
                 </div>
             </div>
             <div class="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
@@ -30,7 +29,7 @@
                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
                     </svg>
                     <div class="text-sm text-green-700">
-                        <strong>Patient Instructions:</strong> These instructions will be shown to patients before they start the open question session. Include guidance on how to use the feature and what to expect.
+                        <strong>Instruksi untuk Pasien:</strong> Instruksi ini akan ditampilkan kepada pasien sebelum mereka memulai sesi pertanyaan terbuka. Sertakan panduan tentang cara menggunakan fitur dan apa yang bisa mereka harapkan.
                     </div>
                 </div>
             </div>
@@ -38,19 +37,19 @@
 
         <!-- AI System Prompt -->
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-3">AI System Prompt</label>
+            <label class="block text-sm font-medium text-gray-700 mb-3">Prompt Sistem AI</label>
             <div class="relative">
                <textarea name="openquestion_prompt" rows="12"
                     class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none shadow-sm font-mono text-sm"
-                    placeholder="You are a compassionate mental health assistant...">{{ settings_data.openquestion_prompt or (
-                    'Anda adalah Anisa, seorang mahasiswa psikologi yang supportive dan senang hati mendengarkan curhatan orang lain. Teman anda kemungkinan mengalami gejala depresi, atau bisa jadi tidak.\n\nBuatlah beberapa pertanyaan dengan gaya non formal kepada rekan anda tentang aktivitas sehari-hari atau tentang kejadian yang akhir-akhir ini dialami. Tindak lanjuti setiap jawaban dengan pertanyaan yang lebih dalam. Setelah itu, secara alami alihkan percakapan untuk mengeksplorasi bagaimana kondisi psikologis mereka terutama yang berkaitan dengan gejala depresi. Berikut adalah indikator-indikator dari gejala depresi:\n- Anhedonia (kehilangan minat/kenikmatan)\n- Bias kognitif negatif & hopelessness\n- Rumination (pikiran berputar tanpa solusi)\n- Psikomotor retardation\n- Gangguan tidur (insomnia, kualitas tidur jelek)\n- Iritabilitas & ledakan marah\n- Rasa bersalah berlebih / self‑blame\n- Gangguan kognitif (concentration & executive function)\n- Penarikan diri sosial / isolasi\n- Alexithymia (sulit mengenali & mengungkap emosi)\n- Defisit regulasi emosi\n\nPastikan kamu menggali secara dalam, rinci, friendly, dan subtle.\nSilahkan sapa dahulu sebelum memulai percakapan eksploratif.\n\nNanti jika sudah didapatkan semua informasi yang perlu didapatkan, tolong tutup percakapan dengan \"gak papa kamu pasti bisa kok, semangat aja. kalo gak kuat coba deh hubungi psikolog terdekat mu !!\" Tidak perlu bilang secara eksplisit mengenai depresi atau sejenisnya.'
+                    placeholder="Anda adalah asisten kesehatan mental yang berbelas kasih...">{{ settings_data.openquestion_prompt or (
+                    'Anda adalah Anisa, seorang mahasiswa psikologi yang suportif dan senang hati mendengarkan curhatan orang lain. Teman Anda kemungkinan mengalami gejala depresi, atau bisa jadi tidak.\n\nBuatlah beberapa pertanyaan dengan gaya non-formal kepada rekan Anda tentang aktivitas sehari-hari atau tentang kejadian yang akhir-akhir ini dialami. Tindak lanjuti setiap jawaban dengan pertanyaan yang lebih dalam. Setelah itu, secara alami alihkan percakapan untuk mengeksplorasi bagaimana kondisi psikologis mereka terutama yang berkaitan dengan gejala depresi. Berikut adalah indikator-indikator dari gejala depresi:\n- Anhedonia (kehilangan minat/kenikmatan)\n- Bias kognitif negatif & keputusasaan\n- Ruminasi (pikiran berputar tanpa solusi)\n- Keterbelakangan psikomotor\n- Gangguan tidur (insomnia, kualitas tidur jelek)\n- Iritabilitas & ledakan amarah\n- Rasa bersalah berlebih / menyalahkan diri sendiri\n- Gangguan kognitif (konsentrasi & fungsi eksekutif)\n- Penarikan diri dari pergaulan sosial / isolasi\n- Alexithymia (sulit mengenali & mengungkapkan emosi)\n- Defisit regulasi emosi\n\nPastikan Anda menggali secara dalam, rinci, ramah, dan halus.\nSilakan sapa terlebih dahulu sebelum memulai percakapan eksploratif.\n\nNanti jika sudah didapatkan semua informasi yang perlu didapatkan, tolong tutup percakapan dengan "gak papa kamu pasti bisa kok, semangat aja. kalo gak kuat coba deh hubungi psikolog terdekat mu !!" Tidak perlu bilang secara eksplisit mengenai depresi atau sejenisnya.'
                 ) }}
             </textarea>
 
                 <div class="absolute bottom-3 right-3 text-xs text-gray-400"
                      x-data="{ count: 0 }"
                      x-init="count = $el.parentElement.querySelector('textarea').value.length"
-                     x-text="count + ' characters'">
+                     x-text="count + ' karakter'">
                 </div>
             </div>
             <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
@@ -59,7 +58,7 @@
                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
                     </svg>
                     <div class="text-sm text-blue-700">
-                        <strong>System Prompt:</strong> Be specific about tone, include crisis handling instructions, and provide examples of good questions. The AI will follow these guidelines throughout the conversation.
+                        <strong>Prompt Sistem AI:</strong> Tentukan persona AI, nada bicara, dan instruksi spesifik. Sertakan panduan penanganan krisis dan berikan contoh pertanyaan yang baik. AI akan mengikuti panduan ini sepanjang percakapan.
                     </div>
                 </div>
             </div>
@@ -67,22 +66,22 @@
 
         <!-- Preview Section -->
         <div class="bg-white rounded-lg border border-blue-200 p-6">
-            <h4 class="font-medium text-gray-900 mb-4">Configuration Preview</h4>
+            <h4 class="font-medium text-gray-900 mb-4">Pratinjau</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <h5 class="text-sm font-medium text-gray-700 mb-2">Patient Instructions Preview</h5>
+                    <h5 class="text-sm font-medium text-gray-700 mb-2">Pratinjau Instruksi Pasien</h5>
                     <div class="bg-gray-50 rounded-lg p-3 text-sm text-gray-600 max-h-32 overflow-y-auto">
-                        <div x-data="{ preview: '' }" 
-                             x-init="preview = document.querySelector('[name=openquestion_instructions]').value.substring(0, 200) + '...'"
+                        <div x-data="{ preview: '' }"
+                             x-init="preview = document.querySelector('[name=openquestion_instructions]').value.substring(0, 200) + '...'
                              x-text="preview">
                         </div>
                     </div>
                 </div>
                 <div>
-                    <h5 class="text-sm font-medium text-gray-700 mb-2">AI Prompt Preview</h5>
+                    <h5 class="text-sm font-medium text-gray-700 mb-2">Pratinjau Prompt AI</h5>
                     <div class="bg-gray-50 rounded-lg p-3 text-sm text-gray-600 max-h-32 overflow-y-auto font-mono">
-                        <div x-data="{ preview: '' }" 
-                             x-init="preview = document.querySelector('[name=openquestion_prompt]').value.substring(0, 200) + '...'"
+                        <div x-data="{ preview: '' }"
+                             x-init="preview = document.querySelector('[name=openquestion_prompt]').value.substring(0, 200) + '...'
                              x-text="preview">
                         </div>
                     </div>

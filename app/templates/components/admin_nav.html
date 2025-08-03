@@ -3,21 +3,21 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex items-center space-x-8">
-                <h1 class="text-xl font-semibold text-gray-900">Admin Dashboard</h1>
+                <h1 class="text-xl font-semibold text-gray-900">Dasbor Admin</h1>
                 <div class="flex space-x-4">
                     <a href="{{ url_for('admin.dashboard') }}"
                        class="{% if request.endpoint == 'admin.dashboard' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} pb-4 pt-4 transition-colors font-medium">
-                        Overview
+                        Ringkasan 
                     </a>
                     <a href="{{ url_for('settings.show_settings') }}"
                        class="{% if request.endpoint == 'settings.show_settings' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} pb-4 pt-4 transition-colors">
-                        Settings
+                        Pengaturan
                     </a>
                 </div>
             </div>
             <div class="flex items-center space-x-4">
                 <span class="text-sm text-gray-600">{{ current_user.username }}</span>
-                <a href="{{ url_for('auth.logout') }}" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">Logout</a>
+                <a href="{{ url_for('auth.logout') }}" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">Keluar</a>
             </div>
         </div>
     </div>

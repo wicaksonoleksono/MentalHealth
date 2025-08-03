@@ -4,26 +4,26 @@
     
     <div x-show="mode === 'video'" class="controls mt-4 flex justify-center items-center space-x-4">
         <button @click="startRecording()" x-show="!isRecording && !isPaused" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-            Start Recording
+            Mulai Merekam
         </button>
         <button @click="pauseRecording()" x-show="isRecording" class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600">
-            Pause
+            Jeda
         </button>
         <button @click="resumeRecording()" x-show="isPaused" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-            Resume
+            Lanjutkan
         </button>
         <button @click="stopRecording()" x-show="isRecording || isPaused" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-            Stop Recording
+            Berhenti Merekam
         </button>
     </div>
 
     <div x-show="isRecording" class="recording-indicator mt-2 text-center text-red-500 font-bold">
-        <span class="animate-pulse">Recording...</span>
+        <span class="animate-pulse">Merekam...</span>
         <span x-text="elapsedTime"></span>
     </div>
 
     <div x-show="lastVideoUrl" class="mt-4">
-        <h4 class="text-lg font-semibold">Last Recording:</h4>
+        <h4 class="text-lg font-semibold">Rekaman Terakhir:</h4>
         <video :src="lastVideoUrl" controls class="w-full h-auto"></video>
     </div>
 </div>
@@ -47,28 +47,28 @@ document.addEventListener('alpine:init', () => {
         captureInterval: null,
 
         init() {
-            console.log('mediaRecorder init called');
+            console.log('mediaRecorder init dipanggil');
             this.setupMedia();
             if (this.mode === 'video') {
                 if (this.assessmentType === 'open_questions') {
-                    console.log('Starting video recording for open questions');
+                    console.log('Memulai perekaman video untuk pertanyaan terbuka');
                     this.startRecording();
                 } else if (this.assessmentType === 'phq9') {
-                    console.log('Starting video recording for PHQ9');
+                    console.log('Memulai perekaman video untuk PHQ9');
                     this.startRecording();
                     document.getElementById('phq-form').addEventListener('submit', () => {
-                        console.log('PHQ form submitted, stopping recording');
+                        console.log('Formulir PHQ dikirim, menghentikan perekaman');
                         this.stopRecording();
                     });
                 }
             } else if (this.mode === 'capture') {
-                console.log('Starting image capture');
+                console.log('Memulai pengambilan gambar');
                 this.startImageCapture();
             }
         },
 
         async setupMedia() {
-            console.log('setupMedia called');
+            console.log('setupMedia dipanggil');
             try {
                 this.mediaStream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
@@ -78,17 +78,17 @@ document.addEventListener('alpine:init', () => {
                     audio: this.mode === 'video'
                 });
                 this.$refs.videoElement.srcObject = this.mediaStream;
-                console.log('Media stream obtained successfully');
+                console.log('Aliran media berhasil diperoleh');
             } catch (err) {
-                console.error('Error accessing media devices.', err);
-                alert('Could not access camera and microphone. Please ensure permissions are granted.');
+                console.error('Error mengakses perangkat media.', err);
+                alert('Tidak dapat mengakses kamera dan mikrofon. Harap pastikan izin diberikan.');
             }
         },
 
         startRecording() {
-            console.log('startRecording called');
+            console.log('startRecording dipanggil');
             if (!this.mediaStream) {
-                console.error('No media stream available to start recording.');
+                console.error('Tidak ada aliran media yang tersedia untuk memulai perekaman.');
                 return;
             }
             this.isRecording = true;
@@ -96,21 +96,21 @@ document.addEventListener('alpine:init', () => {
             this.recordedChunks = [];
             
             const options = { mimeType: `video/${this.config.video_format};codecs=vp9` };
-            console.log('MediaRecorder options:', options);
+            console.log('Opsi MediaRecorder:', options);
             this.mediaRecorder = new MediaRecorder(this.mediaStream, options);
 
             this.mediaRecorder.ondataavailable = (event) => {
-                console.log('ondataavailable event', event.data.size);
+                console.log('peristiwa ondataavailable', event.data.size);
                 if (event.data.size > 0) {
                     this.recordedChunks.push(event.data);
                 }
             };
 
             this.mediaRecorder.onstop = () => {
-                console.log('onstop event');
+                console.log('peristiwa onstop');
                 const blob = new Blob(this.recordedChunks, { type: `video/${this.config.video_format}` });
                 this.lastVideoUrl = URL.createObjectURL(blob);
-                console.log('Sending video to server');
+                console.log('Mengirim video ke server');
                 this.sendToServer(blob, 'video');
                 this.isRecording = false;
                 this.isPaused = false;
@@ -120,11 +120,11 @@ document.addEventListener('alpine:init', () => {
 
             this.mediaRecorder.start();
             this.startTimer();
-            console.log('MediaRecorder started');
+            console.log('MediaRecorder dimulai');
         },
 
         stopRecording() {
-            console.log('stopRecording called');
+            console.log('stopRecording dipanggil');
             if (this.mediaRecorder) {
                 this.mediaRecorder.stop();
             }
@@ -134,7 +134,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         pauseRecording() {
-            console.log('pauseRecording called');
+            console.log('pauseRecording dipanggil');
             if (this.mediaRecorder && this.isRecording) {
                 this.mediaRecorder.pause();
                 this.isPaused = true;
@@ -144,7 +144,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         resumeRecording() {
-            console.log('resumeRecording called');
+            console.log('resumeRecording dipanggil');
             if (this.mediaRecorder && this.isPaused) {
                 this.mediaRecorder.resume();
                 this.isPaused = false;
@@ -154,7 +154,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         startTimer() {
-            console.log('startTimer called');
+            console.log('startTimer dipanggil');
             let seconds = 0;
             this.timer = setInterval(() => {
                 seconds++;
@@ -165,16 +165,16 @@ document.addEventListener('alpine:init', () => {
         },
 
         startImageCapture() {
-            console.log('startImageCapture called');
+            console.log('startImageCapture dipanggil');
             this.captureInterval = setInterval(() => {
                 this.captureImage();
             }, this.config.capture_interval * 1000);
         },
 
         captureImage() {
-            console.log('captureImage called');
+            console.log('captureImage dipanggil');
             if (!this.mediaStream) {
-                console.error('No media stream available for image capture.');
+                console.error('Tidak ada aliran media yang tersedia untuk pengambilan gambar.');
                 return;
             }
 
@@ -185,13 +185,13 @@ document.addEventListener('alpine:init', () => {
             context.drawImage(this.$refs.videoElement, 0, 0, canvas.width, canvas.height);
 
             canvas.toBlob((blob) => {
-                console.log('Sending image to server');
+                console.log('Mengirim gambar ke server');
                 this.sendToServer(blob, 'image');
             }, 'image/jpeg', this.config.image_quality);
         },
 
         sendToServer(blob, mediaType) {
-            console.log(`sendToServer called for ${mediaType}`);
+            console.log(`sendToServer dipanggil untuk ${mediaType}`);
             const reader = new FileReader();
             reader.readAsDataURL(blob);
             reader.onloadend = () => {
@@ -217,13 +217,13 @@ document.addEventListener('alpine:init', () => {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        console.log(`${mediaType} uploaded successfully:`, data);
+                        console.log(`${mediaType} berhasil diunggah:`, data);
                     } else {
-                        console.error(`Error uploading ${mediaType}:`, data.message);
+                        console.error(`Error mengunggah ${mediaType}:`, data.message);
                     }
                 })
                 .catch(error => {
-                    console.error(`Error sending ${mediaType} to server:`, error);
+                    console.error(`Error mengirim ${mediaType} ke server:`, error);
                 });
             };
         },

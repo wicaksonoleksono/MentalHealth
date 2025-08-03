@@ -1,18 +1,18 @@
 <!-- app/templates/patient/consent.html -->
 {% extends "patient/base.html" %}
 
-{% block title %}Consent Form - Assessment{% endblock %}
+{% block title %}Formulir Persetujuan - Penilaian{% endblock %}
 
 {% block nav %}
 <nav class="bg-white shadow-sm border-b border-gray-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex items-center">
-                <h1 class="text-xl font-semibold text-gray-900">Assessment Portal</h1>
+                <h1 class="text-xl font-semibold text-gray-900">Portal Penilaian</h1>
             </div>
             <div class="flex items-center space-x-4">
                 <span class="text-sm text-gray-600">{{ current_user.username }}</span>
-                <a href="{{ url_for('auth.logout') }}" class="text-sm text-gray-600 hover:text-gray-900">Logout</a>
+                <a href="{{ url_for('auth.logout') }}" class="text-sm text-gray-600 hover:text-gray-900">Keluar</a>
             </div>
         </div>
     </div>
@@ -32,8 +32,8 @@
                     </svg>
                 </div>
                 <div>
-                    <h2 class="text-2xl font-bold text-white">Informed Consent</h2>
-                    <p class="text-purple-100">Please read and agree to participate in this assessment</p>
+                    <h2 class="text-2xl font-bold text-white">Persetujuan Informasi</h2>
+                    <p class="text-purple-100">Harap baca dan setujui untuk berpartisipasi dalam penilaian ini</p>
                 </div>
             </div>
         </div>
@@ -43,7 +43,7 @@
             <div class="prose prose-lg max-w-none">
                 <div class="bg-gray-50 rounded-lg p-6 border border-gray-200 mb-8">
                     <div class="whitespace-pre-line text-gray-700 leading-relaxed">
-                        {{ consent_text or "Please configure consent form text in admin settings." }}
+                        {{ consent_text or "Harap konfigurasikan teks formulir persetujuan di pengaturan admin." }}
                     </div>
                 </div>
             </div>
@@ -60,10 +60,10 @@
                                required
                                class="mt-1 h-5 w-5 text-purple-600 border-purple-300 rounded focus:ring-purple-500">
                         <div class="flex-1">
-                            <span class="text-lg font-medium text-gray-900">I agree to participate</span>
+                            <span class="text-lg font-medium text-gray-900">Saya setuju untuk berpartisipasi</span>
                             <p class="text-sm text-gray-600 mt-1">
-                                I have read and understood the information above. I voluntarily agree to participate 
-                                in this mental health assessment under the conditions described.
+                                Saya telah membaca dan memahami informasi di atas. Saya secara sukarela setuju untuk berpartisipasi 
+                                dalam penilaian kesehatan mental ini di bawah kondisi yang dijelaskan.
                             </p>
                         </div>
                     </label>
@@ -73,13 +73,13 @@
                 <div class="flex justify-between pt-6 border-t border-gray-200">
                     <a href="{{ url_for('patient.dashboard') }}" 
                        class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-                        Back to Dashboard
+                        Kembali ke Dasbor
                     </a>
                     
                     <button type="submit" 
                             class="px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-105 shadow-lg">
                         <div class="flex items-center">
-                            <span>Continue to Assessment</span>
+                            <span>Lanjutkan ke Penilaian</span>
                             <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
                             </svg>
@@ -93,7 +93,7 @@
     <!-- Session Info (for debugging) -->
     {% if config.DEBUG %}
     <div class="mt-4 text-xs text-gray-500 text-center">
-        Session ID: {{ session_id }}
+        ID Sesi: {{ session_id }}
     </div>
     {% endif %}
 </div>

@@ -6,22 +6,22 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
         </div>
-        Consent Form Configuration
+        Konfigurasi Formulir Persetujuan
     </h3>
-    <p class="text-gray-600 mb-8">Configure the consent form that patients see before starting assessments.</p>
+    <p class="text-gray-600 mb-8">Konfigurasikan formulir persetujuan yang dilihat pasien sebelum memulai penilaian.</p>
     
     <div class="space-y-6">
         <!-- Consent Form Text -->
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-3">Consent Form Text</label>
+            <label class="block text-sm font-medium text-gray-700 mb-3">Teks Formulir Persetujuan</label>
             <div class="relative">
                 <textarea name="consent_form_text" rows="20"
                     class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none shadow-sm"
-                    placeholder="Enter your consent form text here...">{{ settings_data.consent_form_text or 'CONSENT TO PARTICIPATE IN MENTAL HEALTH ASSESSMENT\n\nI understand that I am being asked to participate in a mental health assessment that includes:\n• Completion of standardized questionnaires (PHQ-9)\n• Participation in an AI-assisted conversation about my mental health\n• Optional audio/video recording during the assessment for research purposes\n\nI understand that:\n• My participation is voluntary and I can withdraw at any time\n• My responses will be kept confidential and used only for research purposes\n• The data collected may be used in aggregate form for research publications\n• If I express thoughts of self-harm, appropriate resources will be provided\n• This assessment is not a substitute for professional mental health treatment\n\nI consent to participate in this research and understand my rights as described above.\n\nBy clicking "I Agree" below, I indicate my informed consent to participate.' }}</textarea>
+                    placeholder="Masukkan teks formulir persetujuan Anda di sini...">{{ settings_data.consent_form_text or 'PERSETUJUAN UNTUK BERPARTISIPASI DALAM PENILAIAN KESEHATAN MENTAL\n\nSaya memahami bahwa saya diminta untuk berpartisipasi dalam penilaian kesehatan mental yang mencakup:\n• Pengisian kuesioner terstandarisasi (PHQ-9)\n• Partisipasi dalam percakapan berbantuan AI mengenai kesehatan mental saya\n• Perekaman audio/video opsional selama penilaian untuk keperluan penelitian\n\nSaya memahami bahwa:\n• Partisipasi saya bersifat sukarela dan saya dapat mengundurkan diri kapan saja\n• Jawaban saya akan dijaga kerahasiaannya dan hanya digunakan untuk keperluan penelitian\n• Data yang dikumpulkan dapat digunakan dalam bentuk agregat untuk publikasi penelitian\n• Jika saya menyatakan pikiran untuk mencelakai diri sendiri, sumber daya yang sesuai akan diberikan\n• Penilaian ini bukan pengganti perawatan profesional kesehatan mental\n\nSaya memberikan persetujuan untuk berpartisipasi dalam penelitian ini dan memahami hak-hak saya seperti yang dijelaskan di atas.\n\nDengan mengklik \"Saya Setuju\" di bawah, saya menunjukkan persetujuan yang diinformasikan untuk berpartisipasi.' }}</textarea>
                 <div class="absolute bottom-3 right-3 text-xs text-gray-400"
                      x-data="{ count: 0 }"
                      x-init="count = $el.parentElement.querySelector('textarea').value.length"
-                     x-text="count + ' characters'">
+                     x-text="count + ' karakter'">
                 </div>
             </div>
             
@@ -31,7 +31,7 @@
                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
                     </svg>
                     <div class="text-sm text-purple-700">
-                        <strong>Legal Note:</strong> Ensure your consent form complies with local privacy laws and institutional review board requirements. Include information about data collection, storage, and participant rights.
+                        <strong>Catatan Hukum:</strong> Pastikan formulir persetujuan Anda mematuhi undang-undang privasi setempat dan persyaratan dewan peninjau institusional. Sertakan informasi tentang pengumpulan data, penyimpanan, dan hak-hak peserta.
                     </div>
                 </div>
             </div>
@@ -39,32 +39,32 @@
 
         <!-- Consent Form Preview -->
         <div class="bg-white rounded-lg border border-purple-200 p-6">
-            <h4 class="font-medium text-gray-900 mb-4">Consent Form Preview</h4>
+            <h4 class="font-medium text-gray-900 mb-4">Pratinjau Formulir Persetujuan</h4>
             <div class="bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto">
                 <div class="text-sm text-gray-700 whitespace-pre-line" 
-                     x-data="{ preview: '' }" 
+                     x-data="{ preview: '' }"
                      x-init="preview = document.querySelector('[name=consent_form_text]').value"
                      x-text="preview">
                 </div>
             </div>
             <div class="mt-4 text-xs text-gray-500">
-                This is how the consent form will appear to patients. Make sure all required information is included and the language is clear and accessible.
+                Beginilah tampilan formulir persetujuan bagi pasien. Pastikan semua informasi yang diperlukan disertakan dan bahasanya jelas serta mudah diakses.
             </div>
         </div>
 
         <!-- Quick Templates -->
         <div class="bg-white rounded-lg border border-purple-200 p-6">
-            <h4 class="font-medium text-gray-900 mb-4">Quick Templates</h4>
+            <h4 class="font-medium text-gray-900 mb-4">Template Cepat</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button type="button" onclick="loadTemplate('research')" 
                         class="text-left p-4 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors">
-                    <div class="font-medium text-gray-900">Research Study</div>
-                    <div class="text-sm text-gray-600 mt-1">Standard research consent with data collection disclosure</div>
+                    <div class="font-medium text-gray-900">Studi Penelitian</div>
+                    <div class="text-sm text-gray-600 mt-1">Persetujuan penelitian standar dengan pengungkapan pengumpulan data</div>
                 </button>
                 <button type="button" onclick="loadTemplate('clinical')" 
                         class="text-left p-4 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors">
-                    <div class="font-medium text-gray-900">Clinical Assessment</div>
-                    <div class="text-sm text-gray-600 mt-1">Healthcare setting consent for assessment purposes</div>
+                    <div class="font-medium text-gray-900">Penilaian Klinis</div>
+                    <div class="text-sm text-gray-600 mt-1">Persetujuan pengaturan layanan kesehatan untuk tujuan penilaian</div>
                 </button>
             </div>
         </div>
@@ -75,44 +75,13 @@
 function loadTemplate(type) {
     const textarea = document.querySelector('[name=consent_form_text]');
     const templates = {
-        research: `PERSETUJUAN UNTUK BERPARTISIPASI DALAM PENELITIAN KESEHATAN MENTAL
+        research: `PERSETUJUAN UNTUK BERPARTISIPASI DALAM PENELITIAN KESEHATAN MENTAL\n\n    Saya memahami bahwa saya diminta untuk berpartisipasi dalam sebuah studi penelitian tentang asesmen kesehatan mental yang mencakup:\n    • Pengisian kuesioner standar (PHQ-9)\n    • Partisipasi dalam percakapan berbantuan AI tentang kesehatan mental saya\n    • Perekaman audio/video opsional selama asesmen untuk tujuan penelitian\n\n    Saya memahami bahwa:\n    • Partisipasi saya bersifat sukarela dan saya dapat mengundurkan diri kapan saja tanpa penalti\n    • Tanggapan saya akan dijaga kerahasiaannya dan hanya digunakan untuk tujuan penelitian\n    • Data yang dikumpulkan dapat digunakan dalam bentuk agregat untuk publikasi ilmiah\n    • Jika saya mengungkapkan pikiran untuk menyakiti diri sendiri, sumber daya yang sesuai akan diberikan\n    • Asesmen ini bukan pengganti perawatan kesehatan mental profesional\n    • Data saya akan disimpan dengan aman dan dimusnahkan setelah periode studi berakhir\n\n    Saya menyetujui untuk berpartisipasi dalam penelitian ini dan memahami hak-hak saya sebagaimana dijelaskan di atas.\n\n    Dengan mengklik "Saya Setuju" di bawah ini, saya menyatakan persetujuan saya untuk berpartisipasi.`,
 
-    Saya memahami bahwa saya diminta untuk berpartisipasi dalam sebuah studi penelitian tentang asesmen kesehatan mental yang mencakup:
-    • Pengisian kuesioner standar (PHQ-9)
-    • Partisipasi dalam percakapan berbantuan AI tentang kesehatan mental saya
-    • Perekaman audio/video opsional selama asesmen untuk tujuan penelitian
-
-    Saya memahami bahwa:
-    • Partisipasi saya bersifat sukarela dan saya dapat mengundurkan diri kapan saja tanpa penalti
-    • Tanggapan saya akan dijaga kerahasiaannya dan hanya digunakan untuk tujuan penelitian
-    • Data yang dikumpulkan dapat digunakan dalam bentuk agregat untuk publikasi ilmiah
-    • Jika saya mengungkapkan pikiran untuk menyakiti diri sendiri, sumber daya yang sesuai akan diberikan
-    • Asesmen ini bukan pengganti perawatan kesehatan mental profesional
-    • Data saya akan disimpan dengan aman dan dimusnahkan setelah periode studi berakhir
-
-    Saya menyetujui untuk berpartisipasi dalam penelitian ini dan memahami hak-hak saya sebagaimana dijelaskan di atas.
-
-    Dengan mengklik "Saya Setuju" di bawah ini, saya menyatakan persetujuan saya untuk berpartisipasi.`,
-
-        clinical: `PERSETUJUAN UNTUK ASESMEN KESEHATAN MENTAL
-
-    Saya memahami bahwa saya akan menjalani asesmen kesehatan mental yang mencakup:
-    • Kuesioner standar tentang kesehatan mental saya
-    • Percakapan dengan asisten AI mengenai kondisi saya saat ini
-    • Kemungkinan perekaman untuk tujuan penjaminan kualitas
-
-    Saya memahami bahwa:
-    • Asesmen ini merupakan bagian dari evaluasi layanan kesehatan saya
-    • Tanggapan saya akan dijaga kerahasiaannya sesuai dengan undang-undang privasi layanan kesehatan
-    • Informasi dapat dibagikan kepada tim layanan kesehatan saya jika diperlukan
-    • Protokol darurat akan dijalankan jika saya mengungkapkan pikiran untuk menyakiti diri sendiri
-    • Saya dapat menghentikan asesmen kapan saja
-
-    Dengan melanjutkan, saya menyetujui asesmen kesehatan mental ini.`
+        clinical: `PERSETUJUAN UNTUK ASESMEN KESEHATAN MENTAL\n\n    Saya memahami bahwa saya akan menjalani asesmen kesehatan mental yang mencakup:\n    • Kuesioner standar tentang kesehatan mental saya\n    • Percakapan dengan asisten AI mengenai kondisi saya saat ini\n    • Kemungkinan perekaman untuk tujuan penjaminan kualitas\n\n    Saya memahami bahwa:\n    • Asesmen ini merupakan bagian dari evaluasi layanan kesehatan saya\n    • Tanggapan saya akan dijaga kerahasiaannya sesuai dengan undang-undang privasi layanan kesehatan\n    • Informasi dapat dibagikan kepada tim layanan kesehatan saya jika diperlukan\n    • Protokol darurat akan dijalankan jika saya mengungkapkan pikiran untuk menyakiti diri sendiri\n    • Saya dapat menghentikan asesmen kapan saja\n\n    Dengan melanjutkan, saya menyetujui asesmen kesehatan mental ini.`
     };
 
     
-    if (templates[type] && confirm('Replace current consent text with this template?')) {
+    if (templates[type] && confirm('Ganti teks persetujuan saat ini dengan template ini?')) {
         textarea.value = templates[type];
         textarea.dispatchEvent(new Event('input'));
     }

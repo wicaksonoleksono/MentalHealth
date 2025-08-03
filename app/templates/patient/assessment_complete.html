@@ -1,17 +1,17 @@
 <!-- app/templates/patient/assessment_complete.html -->
 {% extends "base.html" %}
-{% block title %}Assessment Complete - Thank You{% endblock %}
+{% block title %}Penilaian Selesai - Terima Kasih{% endblock %}
 
 {% block nav %}
 <nav class="bg-white shadow-sm border-b border-gray-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex items-center">
-                <h1 class="text-xl font-semibold text-gray-900">Assessment Portal</h1>
+                <h1 class="text-xl font-semibold text-gray-900">Portal Penilaian</h1>
             </div>
             <div class="flex items-center space-x-4">
                 <span class="text-sm text-gray-600">{{ current_user.username }}</span>
-                <a href="{{ url_for('auth.logout') }}" class="text-sm text-gray-600 hover:text-gray-900">Logout</a>
+                <a href="{{ url_for('auth.logout') }}" class="text-sm text-gray-600 hover:text-gray-900">Keluar</a>
             </div>
         </div>
     </div>
@@ -29,10 +29,10 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                 </svg>
             </div>
-            <h1 class="text-4xl font-bold text-white mb-4">Assessment Complete!</h1>
-            <p class="text-xl text-green-100">Thank you for completing your mental health assessment</p>
+            <h1 class="text-4xl font-bold text-white mb-4">Penilaian Selesai!</h1>
+            <p class="text-xl text-green-100">Terima kasih telah menyelesaikan penilaian kesehatan mental Anda</p>
             {% if completion_time %}
-            <p class="text-green-200 mt-2">Completed on {{ completion_time.strftime('%B %d, %Y at %I:%M %p') }}</p>
+            <p class="text-green-200 mt-2">Selesai pada {{ completion_time.strftime('%d %B %Y pukul %H:%M') }}</p>
             {% endif %}
         </div>
 
@@ -43,17 +43,17 @@
                     <svg class="w-6 h-6 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                     </svg>
-                    Thank You for Participating
+                    Terima Kasih Telah Berpartisipasi
                 </h3>
                 <div class="prose max-w-none">
                     <p class="text-gray-700 text-lg leading-relaxed">
-                        Your participation in this mental health research study is greatly appreciated. 
-                        The information you have provided will contribute to valuable research that helps 
-                        improve mental health understanding and treatment approaches.
+                        Partisipasi Anda dalam studi penelitian kesehatan mental ini sangat kami hargai. 
+                        Informasi yang Anda berikan akan berkontribusi pada penelitian berharga yang membantu 
+                        meningkatkan pemahaman dan pendekatan pengobatan kesehatan mental.
                     </p>
                     <p class="text-gray-700 mt-4">
-                        Your responses have been securely recorded and will be analyzed as part of our research protocol. 
-                        All data is kept confidential and is used solely for research purposes.
+                        Tanggapan Anda telah dicatat dengan aman dan akan dianalisis sebagai bagian dari protokol penelitian kami. 
+                        Semua data dijaga kerahasiaannya dan digunakan semata-mata untuk tujuan penelitian.
                     </p>
                 </div>
             </div>
@@ -64,25 +64,25 @@
                     <svg class="w-5 h-5 mr-3 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 0h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                     </svg>
-                    Data Privacy & Security
+                    Privasi & Keamanan Data
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                     <div>
-                        <h4 class="font-medium text-gray-900 mb-2">Your Data is Protected:</h4>
+                        <h4 class="font-medium text-gray-900 mb-2">Data Anda Terlindungi:</h4>
                         <ul class="space-y-1 text-gray-700">
-                            <li>• All data encrypted during transmission</li>
-                            <li>• Files stored in secure research servers</li>
-                            <li>• Access limited to authorized research staff</li>
-                            <li>• Data retention follows research protocols</li>
+                            <li>• Semua data dienkripsi selama transmisi</li>
+                            <li>• File disimpan di server penelitian yang aman</li>
+                            <li>• Akses terbatas pada staf peneliti yang berwenang</li>
+                            <li>• Penyimpanan data mengikuti protokol penelitian</li>
                         </ul>
                     </div>
                     <div>
-                        <h4 class="font-medium text-gray-900 mb-2">Research Process:</h4>
+                        <h4 class="font-medium text-gray-900 mb-2">Proses Penelitian:</h4>
                         <ul class="space-y-1 text-gray-700">
-                            <li>• Data analysis conducted by research team</li>
-                            <li>• Findings contribute to mental health research</li>
-                            <li>• All data anonymized for analysis</li>
-                            <li>• Results may be published in research studies</li>
+                            <li>• Analisis data dilakukan oleh tim peneliti</li>
+                            <li>• Temuan berkontribusi pada penelitian kesehatan mental</li>
+                            <li>• Semua data dianonimkan untuk analisis</li>
+                            <li>• Hasil dapat dipublikasikan dalam studi penelitian</li>
                         </ul>
                     </div>
                 </div>
@@ -94,7 +94,12 @@
                     <svg class="w-6 h-6 text-amber-600 mt-1 mr-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.728-.833-2.498 0L3.316 16.5c-.77.833.192 2.5 1.732 2.5z"/>
                     </svg>
-                   
+                    <div>
+                        <h3 class="text-xl font-semibold text-amber-800 mb-2">Pemberitahuan Penting:</h3>
+                        <p class="text-amber-700">
+                            Penilaian ini bukan pengganti diagnosis profesional, pengobatan, atau saran medis. Jika Anda memiliki kekhawatiran tentang kesehatan mental Anda, silakan cari bantuan dari profesional kesehatan mental yang berkualifikasi.
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -105,7 +110,7 @@
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                     </svg>
-                    Return to Dashboard
+                    Kembali ke Dasbor
                 </a>
             </div>
         </div>
