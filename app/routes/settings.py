@@ -9,7 +9,7 @@ from app.models.settings import AppSetting
 settings_bp = Blueprint('settings', __name__)
 
 # Valid sections
-VALID_SECTIONS = ['openquestion', 'consent', 'phq9', 'recording']
+VALID_SECTIONS = ['openquestion', 'consent', 'phq9', 'recording', 'llm_analysis']
 
 @settings_bp.route('/admin/settings/')
 @login_required
@@ -78,10 +78,21 @@ def show_settings_section(section):
         flattened['existing_category_numbers'] = existing_categories
         flattened['phq_categories'] = phq_categories
         
+        llm_models = []
+        analysis_config = None
+        if section == 'llm_analysis':
+            from app.models.llm_analysis import LLMModel, AnalysisConfiguration
+            from app.services.llm_analysis import LLMAnalysisService
+            llm_service = LLMAnalysisService()
+            llm_models = llm_service.get_active_models()
+            analysis_config = AnalysisConfiguration.get_active_config()
+        
         return render_template('admin/settings.html',
                              active_section=section,
                              settings_data=flattened,
-                             categorized_settings=settings_data)
+                             categorized_settings=settings_data,
+                             llm_models=llm_models,
+                             analysis_config=analysis_config)
                              
     except SettingsException as e:
         flash(f'Error loading settings: {str(e)}', 'error')
@@ -95,9 +106,50 @@ def save_settings_section(section):
     if section not in VALID_SECTIONS:
         flash(f'Invalid settings section: {section}', 'error')
         return redirect(url_for('settings.show_settings_section', section='openquestion'))
-    
     try:
         form_data = dict(request.form)
+        # Handle LLM analysis prompts and model management
+        if section == 'llm_analysis':
+            from app.services.llm_analysis import LLMAnalysisService
+            llm_service = LLMAnalysisService()
+            
+            # Handle model actions
+            action = form_data.get('action', '')
+            if action == 'add_model':
+                model_name = form_data.get('new_model_name', '').strip()
+                if model_name:
+                    try:
+                        llm_service.add_llm_model(model_name)
+                        flash(f'Model {model_name} added successfully!', 'success')
+                    except Exception as e:
+                        flash(f'Error adding model: {str(e)}', 'error')
+                else:
+                    flash('Please enter a model name.', 'error')
+                    
+            elif action == 'remove_model':
+                model_name = form_data.get('remove_model_name', '').strip()
+                if model_name:
+                    try:
+                        llm_service.remove_llm_model(model_name)
+                        flash(f'Model {model_name} removed successfully!', 'success')
+                    except Exception as e:
+                        flash(f'Error removing model: {str(e)}', 'error')
+            
+            # Handle prompt updates
+            instruction_prompt = form_data.get('analysis_instruction_prompt', '')
+            format_prompt = form_data.get('analysis_format_prompt', '')
+            
+            if instruction_prompt and format_prompt and action != 'add_model' and action != 'remove_model':
+                llm_service.update_analysis_configuration(instruction_prompt, format_prompt)
+            
+            # Remove prompts and actions from form_data so they don't get processed as regular settings
+            form_data.pop('analysis_instruction_prompt', None)
+            form_data.pop('analysis_format_prompt', None)
+            form_data.pop('action', None)
+            form_data.pop('new_provider', None)
+            form_data.pop('new_model_name', None)
+            form_data.pop('remove_model_name', None)
+        
         updated_count = SettingsService.update_bulk(form_data)
         flash(f'Settings saved successfully! Updated {updated_count} settings.', 'success')
         
@@ -147,6 +199,18 @@ def api_consent_config():
             'text': text_settings.get('consent_form_text', '')
         }
         return jsonify({'success': True, 'config': config})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@settings_bp.route('/api/llm/active-models')
+@login_required
+@admin_required
+def api_active_llm_models():
+    try:
+        from app.services.llm_analysis import LLMAnalysisService
+        llm_service = LLMAnalysisService()
+        models = llm_service.get_model_names()
+        return jsonify({'success': True, 'models': models})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 

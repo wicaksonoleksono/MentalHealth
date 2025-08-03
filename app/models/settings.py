@@ -36,6 +36,9 @@ class SettingsKey(Enum):
     VIDEO_QUALITY = ('video_quality', 'choice', 'Video quality', ['480p', '720p', '1080p'])
     VIDEO_FORMAT = ('video_format', 'choice', 'Video format', ['webm', 'mp4'])
     
+    # LLM Analysis Settings
+    LLM_AUTO_ANALYSIS = ('llm_auto_analysis', 'boolean', 'Enable automatic LLM analysis on completion', False)
+    
     # PHQ9 Scale Settings
     SCALE_MIN = ('scale_min', 'integer', 'Scale minimum value', 0)
     SCALE_MAX = ('scale_max', 'integer', 'Scale maximum value', 3)

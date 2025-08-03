@@ -46,6 +46,7 @@ def create_app():
     from app.routes.patient import patient_bp
     from app.routes.admin import admin_bp
     from app.routes.settings import settings_bp
+    from app.routes.admin_llm_analysis import admin_llm_analysis_bp
     
     # Register blueprints with prefixes
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -53,6 +54,7 @@ def create_app():
     app.register_blueprint(patient_bp, url_prefix='/patient')
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(settings_bp, url_prefix='/settings')
+    app.register_blueprint(admin_llm_analysis_bp)
     
     # Create database tables
     with app.app_context():

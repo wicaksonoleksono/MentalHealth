@@ -30,6 +30,10 @@
                        class="{{ 'text-primary-600 border-b-2 border-primary-600' if active_section == 'recording' else 'text-secondary-600 hover:text-secondary-900' }} pb-4 pt-4">
                         Camera & Recording
                     </a>
+                    <a href="{{ url_for('settings.show_settings_section', section='llm_analysis') }}" 
+                       class="{{ 'text-primary-600 border-b-2 border-primary-600' if active_section == 'llm_analysis' else 'text-secondary-600 hover:text-secondary-900' }} pb-4 pt-4">
+                        LLM Analysis
+                    </a>
                 </div>
             </div>
             <div class="flex items-center space-x-4">
@@ -74,6 +78,12 @@
         <!-- Camera & Recording Section -->
         <div class="max-w-5xl">
             {% include 'admin/settings/image_capture_tab.html' %}
+        </div>
+
+        {% elif active_section == 'llm_analysis' %}
+        <!-- LLM Analysis Section -->
+        <div class="max-w-6xl">
+            {% include 'admin/settings/llm_analysis_tab.html' %}
         </div>
 
         {% endif %}

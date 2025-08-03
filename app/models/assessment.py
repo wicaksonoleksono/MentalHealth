@@ -46,6 +46,10 @@ class Assessment(db.Model):
         if self.phq9_completed and self.open_questions_completed:
             self.status = 'completed'
             self.completed_at = datetime.utcnow()
+            
+            # Trigger auto-analysis if enabled
+            self._trigger_auto_analysis()
+            
         db.session.commit()
         
     def get_completion_order(self):
@@ -99,6 +103,34 @@ class Assessment(db.Model):
             except json.JSONDecodeError:
                 return {}
         return {}
+
+    def _trigger_auto_analysis(self):
+        """Trigger automatic LLM analysis if enabled in settings"""
+        try:
+            from app.models.settings import AppSetting
+            from app.services.llm_analysis import LLMAnalysisService
+            import threading
+            
+            # Check if auto-analysis is enabled
+            auto_analysis_setting = AppSetting.query.filter_by(key='llm_auto_analysis').first()
+            if not auto_analysis_setting or auto_analysis_setting.value != '1':
+                return
+            
+            # Run analysis in background thread to avoid blocking
+            def run_analysis():
+                try:
+                    llm_service = LLMAnalysisService()
+                    llm_service.analyze_session(self.session_id)
+                except Exception as e:
+                    print(f"Auto-analysis failed for session {self.session_id}: {e}")
+            
+            # Start background thread
+            analysis_thread = threading.Thread(target=run_analysis)
+            analysis_thread.daemon = True
+            analysis_thread.start()
+            
+        except Exception as e:
+            print(f"Error triggering auto-analysis for session {self.session_id}: {e}")
 
     def __repr__(self):
         return f'<Assessment {self.session_id} - User {self.user_id}>'

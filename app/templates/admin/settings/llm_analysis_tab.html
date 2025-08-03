@@ -1,0 +1,130 @@
+<!-- app/templates/admin/settings/llm_analysis_tab.html -->
+<div class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-8 border border-purple-100">
+    <h3 class="text-2xl font-semibold text-gray-900 mb-4 flex items-center">
+        <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center mr-4">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+        </div>
+        LLM Analysis Configuration
+    </h3>
+    <p class="text-gray-600 mb-8">Configure analysis prompts, models, and automation settings. Analysis is done in the Overview tab.</p>
+    
+    <div class="space-y-8">
+        <!-- Auto-Analysis Setting -->
+        <div class="bg-white rounded-lg border border-purple-200 p-6">
+            <h4 class="font-medium text-gray-900 mb-4">Automation Settings</h4>
+            
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div>
+                    <label class="font-medium text-gray-700">Auto-Analysis</label>
+                    <p class="text-sm text-gray-600">Automatically analyze sessions when assessments are completed</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="llm_auto_analysis" value="1" class="sr-only peer" 
+                           {{ 'checked' if settings_data.llm_auto_analysis == '1' else '' }}>
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Analysis Prompts Configuration -->
+        <div class="bg-white rounded-lg border border-purple-200 p-6">
+            <h4 class="font-medium text-gray-900 mb-4">Analysis Prompts</h4>
+            
+            <!-- Instruction Prompt -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-3">Analysis Instruction Prompt</label>
+                <div class="relative">
+                    <textarea name="analysis_instruction_prompt" rows="8"
+                        class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none shadow-sm font-mono text-sm"
+                        placeholder="Enter the analysis instructions for LLM...">{{ analysis_config.instruction_prompt if analysis_config else 'Berdasarkan indikator-indikator dari gejala depresi berikut:\nAnhedonia (kehilangan minat/kenikmatan)\nBias kognitif negatif & hopelessness\nRumination (pikiran berputar tanpa solusi)\nPsikomotor retardation\nGangguan tidur (insomnia, kualitas tidur jelek)\nIritabilitas & ledakan marah\nRasa bersalah berlebih / self‑blame\nGangguan kognitif (concentration & executive function)\nPenarikan diri sosial / isolasi\nAlexithymia (sulit mengenali & mengungkap emosi)\nDefisit regulasi emosi\nBuatlah analisa jawaban "Teman" diatas untuk setiap indikator tersebut beserta penilaian skala angka (0-3) yang diberikan untuk menunjukkan sejauh mana indikasi gejala tersebut muncul dalam percakapan:\n0: Tidak Ada Indikasi Jelas (Gejala tidak muncul dalam percakapan)\n1: Indikasi Ringan (Gejala tersirat atau disebutkan secara tidak langsung)\n2: Indikasi Sedang (Gejala disebutkan dengan cukup jelas, namun tidak mendominasi)\n3: Indikasi Kuat (Gejala disebutkan secara eksplisit, berulang, dan menjadi keluhan utama)' }}</textarea>
+                </div>
+            </div>
+            
+            <!-- Format Prompt -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-3">JSON Format Prompt</label>
+                <div class="relative">
+                    <textarea name="analysis_format_prompt" rows="6"
+                        class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none shadow-sm font-mono text-sm"
+                        placeholder="Enter the JSON format instructions...">{{ analysis_config.format_prompt if analysis_config else 'Gunakan format\n{\n  "indicator_1": {\n    "penjelasan": "penjelasan 1",\n    "skor": ESTIMATED_SCORE_1\n  },\n  "indicator_2": {\n    "penjelasan": "penjelasan 2",\n    "skor": ESTIMATED_SCORE_2\n  },\n  "indicator_3": {\n    "penjelasan": "penjelasan 3",\n    "skor": ESTIMATED_SCORE_3\n  }\n}' }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- LLM Models Management -->
+        <div class="bg-white rounded-lg border border-purple-200 p-6">
+            <h4 class="font-medium text-gray-900 mb-4">LLM Models Management</h4>
+            
+            <!-- Add New Model -->
+            <form method="POST" action="{{ url_for('settings.save_settings_section', section='llm_analysis') }}">
+                <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                    <h5 class="text-sm font-medium text-gray-700 mb-3">Add New LLM Model</h5>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Model Name</label>
+                            <input type="text" name="new_model_name" placeholder="e.g., gpt-4o-mini"
+                                class="w-full p-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div class="flex items-end">
+                            <button type="submit" name="action" value="add_model"
+                                class="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                                Add Model
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            
+            <!-- Active Models List -->
+            <div>
+                <h5 class="text-sm font-medium text-gray-700 mb-3">Active Models</h5>
+                <div id="llm-models-list" class="space-y-2">
+                    {% for model in llm_models %}
+                    <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                        <div class="flex items-center space-x-3">
+                            <span class="font-medium text-gray-900">{{ model.name }}</span>
+                            {% if model.api_key_configured %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    ✓ API Key OK
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    ✗ No API Key
+                                </span>
+                            {% endif %}
+                        </div>
+                        <button type="submit" name="action" value="remove_model" 
+                                onclick="this.form.elements['remove_model_name'].value='{{ model.name }}'"
+                                class="text-red-600 hover:text-red-800 text-sm transition-colors">
+                            Remove
+                        </button>
+                    </div>
+                    {% endfor %}
+                    
+                    {% if not llm_models %}
+                    <div class="text-center py-4 text-gray-500">
+                        <p>No models configured yet. Add your first model above.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Section -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div class="flex">
+                <svg class="w-5 h-5 text-blue-500 mt-0.5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+                <div class="text-sm text-blue-700">
+                    <strong>Analysis Usage:</strong> Go to the Overview tab to manually analyze completed sessions or enable auto-analysis above. Make sure to configure your API keys in the .env file first.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hidden field for remove model action -->
+    <input type="hidden" name="remove_model_name" value="">
+</div>
