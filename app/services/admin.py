@@ -61,8 +61,10 @@ class AdminDashboardService:
                 'progress_count': progress_count,
                 'status': status,
                 'status_class': status_class,
+                'db_status': assessment.status,  # Raw database status
                 'phq9_score': assessment.phq9_score,
-                'phq9_severity': assessment.phq9_severity
+                'phq9_severity': assessment.phq9_severity,
+                'llm_analysis_status': assessment.llm_analysis_status
             })
         
         return session_data

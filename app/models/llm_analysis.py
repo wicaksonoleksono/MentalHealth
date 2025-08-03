@@ -21,6 +21,7 @@ class LLMModel(db.Model):
 class LLMAnalysisResult(db.Model):
     """Store analysis results for each session and LLM model"""
     id = db.Column(db.Integer, primary_key=True)
+    assessment_id = db.Column(db.Integer, db.ForeignKey('assessment.id'), nullable=False)  # Assessment ID
     session_id = db.Column(db.String(100), nullable=False)  # Assessment session_id
     llm_model_id = db.Column(db.Integer, db.ForeignKey('llm_model.id'), nullable=False)
     

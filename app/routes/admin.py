@@ -202,3 +202,118 @@ def cleanup_storage():
         return jsonify({'error': str(e)}), 500
 
 
+# LLM Analysis API Endpoints
+@admin_bp.route('/api/llm-analysis/analyze', methods=['POST'])
+@login_required
+@admin_required
+def analyze_session_api():
+    """Trigger LLM analysis for a specific session"""
+    try:
+        data = request.get_json()
+        session_id = data.get('session_id')
+        
+        if not session_id:
+            return jsonify({'success': False, 'error': 'Session ID is required'}), 400
+        
+        from app.services.llm_analysis import LLMAnalysisService
+        from app.models.assessment import Assessment
+        
+        # Check if assessment exists
+        assessment = Assessment.query.filter_by(session_id=session_id).first()
+        if not assessment:
+            return jsonify({'success': False, 'error': 'Assessment not found'}), 404
+        
+        if assessment.status != 'completed':
+            return jsonify({'success': False, 'error': 'Assessment must be completed first'}), 400
+        
+        # Run analysis
+        llm_service = LLMAnalysisService()
+        results = llm_service.analyze_session(session_id)
+        
+        # Count results
+        completed = len([r for r in results if r.analysis_status == 'completed'])
+        failed = len([r for r in results if r.analysis_status == 'failed'])
+        
+        return jsonify({
+            'success': True,
+            'message': 'Analysis completed',
+            'completed': completed,
+            'failed': failed,
+            'total': len(results)
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@admin_bp.route('/api/llm-analysis/results/<session_id>')
+@login_required
+@admin_required
+def get_analysis_results_api(session_id):
+    """Get LLM analysis results for a session"""
+    try:
+        from app.models.llm_analysis import LLMAnalysisResult
+        from app.models.assessment import Assessment
+        
+        # Check if assessment exists
+        assessment = Assessment.query.filter_by(session_id=session_id).first()
+        if not assessment:
+            return jsonify({'success': False, 'error': 'Assessment not found'}), 404
+        
+        # Get analysis results
+        results = LLMAnalysisResult.query.filter_by(assessment_id=assessment.id).all()
+        
+        results_data = []
+        for result in results:
+            result_data = {
+                'id': result.id,
+                'model_name': result.llm_model.name,
+                'provider': result.llm_model.provider,
+                'status': result.analysis_status,  # Fixed: use analysis_status
+                'completed_at': result.completed_at.isoformat() if result.completed_at else None,
+                'processing_time_ms': result.processing_time_ms,
+                'error_message': result.error_message,
+                'parsed_results': result.get_parsed_results()
+            }
+            results_data.append(result_data)
+        
+        return jsonify({
+            'success': True,
+            'data': results_data,
+            'session_id': session_id
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# Model Validation API Endpoint
+@admin_bp.route('/api/llm-analysis/validate-model', methods=['POST'])
+@login_required
+@admin_required
+def validate_model_api():
+    """Validate an LLM model without saving to database"""
+    try:
+        data = request.get_json()
+        model_name = data.get('model_name', '').strip()
+        provider = data.get('provider', 'openai')
+        
+        if not model_name:
+            return jsonify({'success': False, 'error': 'Model name is required'}), 400
+        
+        from app.services.llm_analysis import LLMAnalysisService
+        
+        llm_service = LLMAnalysisService()
+        validation_result = llm_service.validate_model_without_saving(model_name, provider)
+        
+        return jsonify({
+            'success': validation_result['valid'],
+            'error': validation_result['error'],
+            'details': validation_result['details'],
+            'model_name': model_name
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+

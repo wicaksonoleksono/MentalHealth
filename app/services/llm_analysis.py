@@ -45,59 +45,170 @@ class LLMAnalysisService:
     
     
     
-    def add_llm_model(self, model_name, provider="openai"):
-        """Add a new LLM model for analysis with LangChain support"""
-        if provider != 'openai':
-            raise ValueError("Only 'openai' provider is supported.")
-
-        # Check if API key is configured
-        api_key_configured = bool(self.openai_api_key)
-        if not api_key_configured:
-            raise ValueError("OpenAI API key not configured. Please set OPENAI_API_KEY in environment.")
+    def _validate_openai_model(self, model_name):
+        """Comprehensive OpenAI model validation using industry standards"""
+        validation_result = {
+            'valid': False,
+            'error': None,
+            'details': {
+                'model_exists': False,
+                'api_accessible': False,
+                'langchain_compatible': False,
+                'response_format_valid': False
+            }
+        }
         
-        # Test if LangChain or basic OpenAI is available
         try:
-            from langchain_openai import ChatOpenAI
-            # Test the model with a simple call
-            test_llm = ChatOpenAI(
-                model=model_name,
-                temperature=0.0,
-                openai_api_key=self.openai_api_key,
-                max_tokens=10
-            )
-            # This will validate the model exists
-            test_llm.invoke([{"role": "user", "content": "test"}])
+            # Step 1: Check if model exists in OpenAI's official model list
+            known_models = {
+                'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4', 'gpt-4-32k',
+                'gpt-3.5-turbo', 'gpt-3.5-turbo-16k', 'gpt-3.5-turbo-instruct',
+                'text-davinci-003', 'text-davinci-002', 'text-curie-001', 'text-babbage-001'
+            }
             
-        except ImportError:
-            # Fallback to basic OpenAI for validation
+            if model_name not in known_models:
+                # Try to get current model list from OpenAI API
+                try:
+                    from openai import OpenAI
+                    client = OpenAI(api_key=self.openai_api_key)
+                    models_response = client.models.list()
+                    available_models = {model.id for model in models_response.data}
+                    
+                    if model_name not in available_models:
+                        validation_result['error'] = f"Model '{model_name}' not found in OpenAI's available models"
+                        return validation_result
+                    
+                except Exception as e:
+                    # If we can't fetch model list, warn but continue with other validation
+                    pass
+            
+            validation_result['details']['model_exists'] = True
+            
+            # Step 2: Test LangChain compatibility and API access
             try:
-                from openai import OpenAI
-                client = OpenAI(api_key=self.openai_api_key)
-                # Test if model exists
-                client.chat.completions.create(
+                from langchain_openai import ChatOpenAI
+                from langchain_core.messages import HumanMessage
+                
+                test_llm = ChatOpenAI(
                     model=model_name,
-                    messages=[{"role": "user", "content": "test"}],
-                    max_tokens=10
+                    temperature=0.0,
+                    openai_api_key=self.openai_api_key,
+                    max_tokens=10,
+                    timeout=30,
+                    max_retries=1
                 )
+                
+                # Test with minimal request to validate access and compatibility
+                test_message = HumanMessage(content="Test")
+                response = test_llm.invoke([test_message])
+                
+                validation_result['details']['langchain_compatible'] = True
+                validation_result['details']['api_accessible'] = True
+                
+                # Step 3: Validate response format
+                if hasattr(response, 'content') and isinstance(response.content, str):
+                    validation_result['details']['response_format_valid'] = True
+                    validation_result['valid'] = True
+                else:
+                    validation_result['error'] = "Model response format is invalid"
+                    return validation_result
+                    
+            except ImportError as e:
+                validation_result['error'] = f"LangChain not properly installed: {str(e)}"
+                return validation_result
+                
             except Exception as e:
-                raise ValueError(f"Model validation failed: {str(e)}")
+                error_str = str(e).lower()
+                
+                # Specific error handling for common issues
+                if "model_not_found" in error_str or "does not exist" in error_str:
+                    validation_result['error'] = f"Model '{model_name}' does not exist or you don't have access to it"
+                elif "rate_limit" in error_str:
+                    validation_result['error'] = "Rate limit exceeded. Please try again later"
+                elif "api_key" in error_str or "unauthorized" in error_str:
+                    validation_result['error'] = "Invalid or insufficient API key permissions"
+                elif "quota" in error_str:
+                    validation_result['error'] = "API quota exceeded. Check your OpenAI billing"
+                elif "timeout" in error_str:
+                    validation_result['error'] = "Request timeout. Model may be unavailable"
+                else:
+                    validation_result['error'] = f"Model validation failed: {str(e)}"
+                
+                return validation_result
+                
         except Exception as e:
-            raise ValueError(f"Model validation failed: {str(e)}")
+            validation_result['error'] = f"Validation error: {str(e)}"
+            return validation_result
         
-        # Check if model already exists
+        return validation_result
+    
+    def add_llm_model(self, model_name, provider="openai"):
+        """Add a new LLM model with comprehensive validation using industry standards"""
+        # Input validation
+        if not model_name or not isinstance(model_name, str):
+            raise ValueError("Model name must be a non-empty string")
+        
+        model_name = model_name.strip()
+        if not model_name:
+            raise ValueError("Model name cannot be empty")
+            
+        if provider != 'openai':
+            raise ValueError("Only 'openai' provider is supported")
+        
+        # Check for duplicates first
         existing_model = LLMModel.query.filter_by(name=model_name, provider=provider).first()
         if existing_model:
-            raise ValueError(f"Model {model_name} already exists")
+            raise ValueError(f"Model '{model_name}' already exists")
         
-        # Create new model
-        llm_model = LLMModel(
-            name=model_name,
-            provider=provider,
-            api_key_configured=api_key_configured
-        )
-        db.session.add(llm_model)
-        db.session.commit()
-        return llm_model
+        # API key validation
+        if not self.openai_api_key:
+            raise ValueError("OpenAI API key not configured. Please set OPENAI_API_KEY in environment")
+        
+        # Comprehensive model validation
+        logger.info(f"Validating model '{model_name}' with OpenAI API...")
+        validation_result = self._validate_openai_model(model_name)
+        
+        if not validation_result['valid']:
+            logger.error(f"Model validation failed for '{model_name}': {validation_result['error']}")
+            raise ValueError(validation_result['error'])
+        
+        # Log successful validation details
+        details = validation_result['details']
+        logger.info(f"Model '{model_name}' validation successful - "
+                   f"Exists: {details['model_exists']}, "
+                   f"API Access: {details['api_accessible']}, "
+                   f"LangChain Compatible: {details['langchain_compatible']}, "
+                   f"Response Valid: {details['response_format_valid']}")
+        
+        # Create and save model if all validation passes
+        try:
+            llm_model = LLMModel(
+                name=model_name,
+                provider=provider,
+                api_key_configured=True,  # We know it's configured if validation passed
+                is_active=True
+            )
+            
+            db.session.add(llm_model)
+            db.session.commit()
+            
+            logger.info(f"Successfully added model '{model_name}' to database")
+            return llm_model
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Failed to save model '{model_name}' to database: {str(e)}")
+            raise ValueError(f"Failed to save model to database: {str(e)}")
+    
+    def validate_model_without_saving(self, model_name, provider="openai"):
+        """Validate a model without saving to database (for testing purposes)"""
+        if provider != 'openai':
+            raise ValueError("Only 'openai' provider is supported")
+            
+        if not self.openai_api_key:
+            raise ValueError("OpenAI API key not configured")
+            
+        return self._validate_openai_model(model_name)
     
     def remove_llm_model(self, model_name):
         """Remove an LLM model"""
@@ -311,6 +422,7 @@ class LLMAnalysisService:
                     
                     # Save successful result
                     analysis_result = LLMAnalysisResult(
+                        assessment_id=assessment.id,
                         session_id=session_id,
                         llm_model_id=model.id,
                         chat_history=formatted_chat,
@@ -338,6 +450,7 @@ class LLMAnalysisService:
                         error_msg = "Request timed out. The model may be overloaded."
                     
                     analysis_result = LLMAnalysisResult(
+                        assessment_id=assessment.id,
                         session_id=session_id,
                         llm_model_id=model.id,
                         chat_history=formatted_chat,
