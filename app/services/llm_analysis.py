@@ -36,42 +36,9 @@ class LLMAnalysisService:
   "indicator_4": {
     "penjelasan": "penjelasan untuk indikator 4",
     "skor": 0
-  },
-  "indicator_5": {
-    "penjelasan": "penjelasan untuk indikator 5",
-    "skor": 0
-  },
-  "indicator_6": {
-    "penjelasan": "penjelasan untuk indikator 6",
-    "skor": 0
-  },
-  "indicator_7": {
-    "penjelasan": "penjelasan untuk indikator 7",
-    "skor": 0
-  },
-  "indicator_8": {
-    "penjelasan": "penjelasan untuk indikator 8",
-    "skor": 0
-  },
-  "indicator_9": {
-    "penjelasan": "penjelasan untuk indikator 9",
-    "skor": 0
-  },
-  "indicator_10": {
-    "penjelasan": "penjelasan untuk indikator 10",
-    "skor": 0
-  },
-  "indicator_11": {
-    "penjelasan": "penjelasan untuk indikator 11",
-    "skor": 0
-  }
+  }, ...
 }
-
-Skor menggunakan skala 0-3:
-0: Tidak Ada Indikasi Jelas
-1: Indikasi Ringan  
-2: Indikasi Sedang
-3: Indikasi Kuat"""
+"""
     
     def __init__(self):
         self.openai_api_key = os.getenv('OPENAI_API_KEY')
@@ -392,11 +359,9 @@ Skor menggunakan skala 0-3:
             assessment.llm_analysis_status = 'failed'
             db.session.commit()
             raise e
-    
     def get_session_analysis_results(self, session_id):
         """Get all analysis results for a session"""
         return LLMAnalysisResult.query.filter_by(session_id=session_id).all()
-    
     def update_analysis_configuration(self, instruction_prompt, format_prompt):
         """Update analysis configuration"""
         # Deactivate current config

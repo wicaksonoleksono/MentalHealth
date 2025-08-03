@@ -733,7 +733,6 @@ def capture_emotion_binary():
         })
         
     except Exception as e:
-        print(f"Emotion capture error: {e}")
         return jsonify({'success': False, 'message': f'Upload failed: {str(e)}'}), 500
 
 

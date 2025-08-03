@@ -65,8 +65,6 @@ class OpenAIChatService:
             }
             
         except Exception as e:
-            print(f"🚨 Error loading chat settings: {e}")
-            # Fallback to direct database query if SettingsService fails
             from app.models.settings import AppSetting
             openquestion_prompt = AppSetting.query.filter_by(key='openquestion_prompt').first()
             openquestion_instructions = AppSetting.query.filter_by(key='openquestion_instructions').first()
@@ -77,14 +75,10 @@ class OpenAIChatService:
                 'enable_followup': True,
                 'response_style': 'empathetic'
             }
-        
-        # 🔥 CRITICAL: NO DEFAULT PROMPTS! Research context MUST be configured!
         if not settings['openquestion_prompt']:
-            raise ValueError("🚨 CRITICAL: openquestion_prompt not configured in admin settings! This is REQUIRED for research validity. Please configure it in the admin panel.")
-        
+            raise ValueError("openquestion_prompt not configured in admin settings! This is REQUIRED for research validity. Please configure it in the admin panel.")
         if not settings['instructions']:
             settings['instructions'] = "Please take your time to share your thoughts and feelings. This is a safe space where you can express yourself openly."
-        
         return settings
     
     def create_chat_session(self, assessment_session_id, user_id):
@@ -262,24 +256,20 @@ class OpenAIChatService:
         # Also save individual exchanges for easier analysis with timestamps
         for i, msg in enumerate(conversation_data.get('conversation_history', [])):
             if msg['type'] in ['human', 'ai']:
-                # Parse timestamp from conversation history
                 msg_timestamp = None
                 if 'timestamp' in msg:
                     try:
                         msg_timestamp = datetime.fromisoformat(msg['timestamp'])
                     except (ValueError, TypeError):
                         pass
-                
                 exchange_data = {
                     'assessment_id': assessment.id,
                     'question_text': f"Exchange {i//2 + 1} - {msg['type'].title()}",
                     'response_text': msg['content'],
                     'response_time_ms': None
                 }
-                
                 if msg_timestamp:
                     exchange_data['created_at'] = msg_timestamp
-                
                 exchange_record = OpenQuestionResponse(**exchange_data)
                 db.session.add(exchange_record)
         

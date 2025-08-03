@@ -157,7 +157,7 @@ class SettingsService:
     
     @staticmethod
     def get_recording_config():
-        """🔬 Get recording configuration for frontend with scientific capture modes"""
+        """ Get recording configuration for frontend with scientific capture modes"""
         recording_settings = SettingsService.get_group(SettingsKey.get_recording_settings)
         
         # Provide defaults if settings aren't configured
@@ -166,7 +166,6 @@ class SettingsService:
             'mode': recording_settings.get('recording_mode', 'capture'),
             'enabled': recording_settings.get('enable_recording', True),
             
-            # 🔬 NEW: Scientific capture mode settings
             'capture_mode': recording_settings.get('capture_mode', 'interval'),
             
             # Interval settings

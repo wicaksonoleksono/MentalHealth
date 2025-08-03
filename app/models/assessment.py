@@ -50,8 +50,6 @@ class Assessment(db.Model):
         if self.phq9_completed and self.open_questions_completed:
             self.status = 'completed'
             self.completed_at = datetime.utcnow()
-            
-            # Trigger auto-analysis if enabled
             self._trigger_auto_analysis()
             
         db.session.commit()
@@ -110,12 +108,11 @@ class Assessment(db.Model):
 
     def _trigger_auto_analysis(self):
         """Trigger automatic LLM analysis if enabled in settings"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
         try:
             from app.models.settings import SettingsService, SettingsKey
-            from app.services.llm_analysis import LLMAnalysisService
-            import logging
-            
-            logger = logging.getLogger(__name__)
             
             # Check if auto-analysis is enabled and not already done
             if self.llm_analysis_status != 'pending':
@@ -132,26 +129,12 @@ class Assessment(db.Model):
                 logger.warning(f"Could not check auto-analysis setting: {e}")
                 return
             
-            # Check if there are active LLM models
-            llm_service = LLMAnalysisService()
-            active_models = llm_service.get_active_models()
-            if not active_models:
-                logger.warning(f"No active LLM models configured, skipping auto-analysis for session {self.session_id}")
-                self.llm_analysis_status = 'failed'
-                db.session.commit()
-                return
-                
-            logger.info(f"Starting auto-analysis for session {self.session_id}")
+            # TEMPORARY: Skip auto-analysis to prevent errors during development
+            logger.info(f"Auto-analysis temporarily disabled for session {self.session_id}")
+            self.llm_analysis_status = 'skipped'
+            db.session.commit()
+            return
             
-            # Run analysis immediately in current context (more reliable than threading)
-            try:
-                results = llm_service.analyze_session(self.session_id)
-                logger.info(f"Auto-analysis completed for session {self.session_id}: {len(results)} results")
-                
-            except Exception as e:
-                logger.error(f"Auto-analysis failed for session {self.session_id}: {e}")
-                # The LLM service already handles status updates on failure
-                
         except Exception as e:
             logger.error(f"Error triggering auto-analysis for session {self.session_id}: {e}")
             # Set failed status if something went wrong

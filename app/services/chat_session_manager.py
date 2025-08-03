@@ -5,44 +5,27 @@ import threading
 from app.services.openai_chat import OpenAIChatService
 
 class ChatSessionManager:
-    """Production-ready chat session manager with in-memory storage."""
-    
     def __init__(self):
         self._sessions: Dict[str, dict] = {}
         self._openai_service = OpenAIChatService()
         self._lock = threading.RLock()
-    
     def create_session(self, session_id: str, assessment_session_id: str, user_id: int) -> str:
-        """Create new chat session and return session_token."""
         with self._lock:
-            # Create chat session data
             chat_session = self._openai_service.create_chat_session(assessment_session_id, user_id)
-            
-            # Store in memory with session token
             session_token = f"chat_{session_id}_{user_id}"
             self._sessions[session_token] = chat_session
-            
             return session_token
-    
     def get_session(self, session_token: str) -> Optional[dict]:
-        """Get chat session by token."""
         with self._lock:
             return self._sessions.get(session_token)
-    
     def update_session(self, session_token: str, user_message: str, ai_response: str):
-        """Add message exchange to session."""
         with self._lock:
             session = self._sessions.get(session_token)
             if not session:
                 return False
-            
             current_time = datetime.utcnow().isoformat()
-            
-            # Add to message history
             session['message_history'].append({'type': 'human', 'content': user_message})
             session['message_history'].append({'type': 'ai', 'content': ai_response})
-            
-            # Add to conversation history
             session['conversation_history'].append({
                 'type': 'human', 
                 'content': user_message,
@@ -109,9 +92,6 @@ class ChatSessionManager:
         session = self.get_session(session_token)
         if not session:
             raise ValueError(f"Session {session_token} not found")
-        
-        # Generate response with full context
         return self._openai_service.generate_streaming_response(session, user_message)
-
 # Global instance
 chat_session_manager = ChatSessionManager()
