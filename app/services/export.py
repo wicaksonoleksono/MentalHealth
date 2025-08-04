@@ -149,7 +149,7 @@ class ExportService:
         }
         
         with open(os.path.join(export_dir, 'session_metadata.json'), 'w') as f:
-            json.dump(metadata, f, indent=2)
+            f.write(json.dumps(metadata, indent=2))
     
     @staticmethod
     def _export_phq9_responses(assessment, export_dir):
@@ -170,19 +170,14 @@ class ExportService:
             })
         
         with open(os.path.join(export_dir, 'phq9_responses.json'), 'w') as f:
-            json.dump(json_data, f, indent=2)
+            f.write(json.dumps(json_data, indent=2))
         
         # CSV export
-        with open(os.path.join(export_dir, 'phq9_responses.csv'), 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(['question_number', 'response_value', 'response_time_ms', 'created_at'])
+        with open(os.path.join(export_dir, 'phq9_responses.csv'), 'w') as f:
+            csv_content = 'question_number,response_value,response_time_ms,created_at\n'
             for response in responses:
-                writer.writerow([
-                    response.question_number,
-                    response.response_value,
-                    response.response_time_ms,
-                    response.created_at.isoformat()
-                ])
+                csv_content += f"{response.question_number},{response.response_value},{response.response_time_ms},{response.created_at.isoformat()}\n"
+            f.write(csv_content)
     
     @staticmethod
     def _export_open_responses(assessment, export_dir):
@@ -202,7 +197,7 @@ class ExportService:
             })
         
         with open(os.path.join(export_dir, 'open_question_responses.json'), 'w') as f:
-            json.dump(json_data, f, indent=2)
+            f.write(json.dumps(json_data, indent=2))
     
     @staticmethod
     def _export_media_files(assessment, export_dir):
@@ -250,7 +245,7 @@ class ExportService:
         
         # Save manifest
         with open(os.path.join(media_dir, 'file_manifest.json'), 'w') as f:
-            json.dump(manifest, f, indent=2)
+            f.write(json.dumps(manifest, indent=2))
     
     @staticmethod
     def _export_patient_profile(user, export_dir):
@@ -282,7 +277,7 @@ class ExportService:
             }
         
         with open(os.path.join(export_dir, 'patient_profile.json'), 'w') as f:
-            json.dump(profile_data, f, indent=2)
+            f.write(json.dumps(profile_data, indent=2))
     
     @staticmethod
     def _create_summary_report(assessment, export_dir):
@@ -290,7 +285,7 @@ class ExportService:
         summary = ExportService._generate_session_summary(assessment)
         
         with open(os.path.join(export_dir, 'summary_report.json'), 'w') as f:
-            json.dump(summary, f, indent=2)
+            f.write(json.dumps(summary, indent=2))
     
     @staticmethod
     def _create_zip_file(export_dir, filename):

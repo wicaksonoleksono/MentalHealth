@@ -2,16 +2,21 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
-from config import Config
+from config import config
 import os
 
 # Initialize extensions
 db = SQLAlchemy()
 login_manager = LoginManager()
 
-def create_app():
+def create_app(config_name=None):
     app = Flask(__name__)
-    app.config.from_object(Config)
+    
+    # Determine configuration
+    if config_name is None:
+        config_name = os.environ.get('FLASK_ENV', 'production')
+    
+    app.config.from_object(config.get(config_name, config['default']))
     
     # Ensure instance directory exists
     instance_path = os.path.join(app.root_path, '..', 'instance')
