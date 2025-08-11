@@ -13,7 +13,6 @@ langchain==0.0.335
 langchain-openai==0.0.2
 openai>=0.27.0        # specify a real package name and minimal version
 Pillow==10.1.0
-opencv-python-headless==4.8.1.78
 python-dotenv==1.0.0
 click==8.1.7
 bcrypt==4.1.2
@@ -23,3 +22,4 @@ marshmallow==3.20.1
 marshmallow-dataclass==8.6.0
 Flask-JWT-Extended==4.4.4  # recommended over unmaintained Flask-JWT
 aiofiles==23.2.1
+asgrief

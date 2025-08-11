@@ -18,6 +18,7 @@ from app.services.emotion_storage import get_emotion_storage
 from app.services.settings import SettingsService
 patient_bp = Blueprint('patient', __name__)
 
+
 @patient_bp.route('/dashboard')
 @login_required
 @patient_required
@@ -28,7 +29,7 @@ def dashboard():
         user_id=current_user.id,
         status='in_progress'
     ).order_by(Assessment.started_at.desc()).first()
-    
+
     incomplete_data = None
     if incomplete_assessment:
         incomplete_data = {
@@ -40,7 +41,7 @@ def dashboard():
             'open_questions_completed': incomplete_assessment.open_questions_completed,
             'first_assessment_type': incomplete_assessment.first_assessment_type
         }
-    
+
     return render_template('patient/dashboard.html', incomplete_assessment=incomplete_data)
 
 
@@ -54,16 +55,17 @@ def discard_incomplete():
         user_id=current_user.id,
         status='in_progress'
     ).all()
-    
+
     for assessment in incomplete_assessments:
         assessment.status = 'abandoned'
-    
+
     db.session.commit()
-    
+
     return jsonify({
         'success': True,
         'message': 'Incomplete assessment discarded'
     })
+
 
 @patient_bp.route('/start-assessment')
 @login_required
@@ -75,7 +77,7 @@ def start_assessment():
         user_id=current_user.id,
         status='in_progress'
     ).order_by(Assessment.started_at.desc()).first()
-    
+
     if incomplete_assessment:
         # Show modal with completion status
         completion_status = {
@@ -87,10 +89,10 @@ def start_assessment():
             'open_questions_done': incomplete_assessment.open_questions_completed,
             'started_at': incomplete_assessment.started_at.strftime('%B %d, %Y at %I:%M %p')
         }
-        
-        return render_template('patient/resume_assessment_modal.html', 
-                             completion_status=completion_status)
-    
+
+        return render_template('patient/resume_assessment_modal.html',
+                               completion_status=completion_status)
+
     # No incomplete assessment, start fresh
     assessment = AssessmentService.create_assessment_session(current_user.id)
     session['assessment_session_id'] = assessment.session_id
@@ -104,7 +106,7 @@ def start_assessment():
 def start_fresh_assessment():
     """Start a completely fresh assessment, discarding any incomplete ones."""
     discard_session_id = request.form.get('discard_session_id')
-    
+
     # Mark the old assessment as abandoned
     if discard_session_id:
         old_assessment = Assessment.query.filter_by(
@@ -112,33 +114,33 @@ def start_fresh_assessment():
             user_id=current_user.id,
             status='in_progress'
         ).first()
-        
+
         if old_assessment:
             old_assessment.status = 'abandoned'
-            
+
             # Clean up any media files associated with the old assessment
             try:
                 # Clean up files for discarded session
                 get_emotion_storage().cleanup_session_files(discard_session_id, current_user.id)
             except Exception as e:
                 current_app.logger.warning(f"Failed to cleanup media files for session {discard_session_id}: {e}")
-            
+
             db.session.commit()
-    
+
     # Start completely fresh assessment
     assessment = AssessmentService.create_assessment_session(current_user.id)
     session['assessment_session_id'] = assessment.session_id
-    
+
     # Clear any existing session data including server-side chat session
     chat_session_token = session.get('chat_session_token')
     if chat_session_token:
         get_chat_session_manager().delete_session(chat_session_token)
-    
+
     session.pop('phq_data', None)
-    session.pop('chat_session_token', None) 
+    session.pop('chat_session_token', None)
     session.pop('assessment_order', None)
     session.modified = True
-    
+
     flash('Previous assessment discarded. Starting fresh assessment session.', 'success')
     return redirect(url_for('patient.camera_check'))
 
@@ -174,6 +176,8 @@ def camera_verified():
         'message': 'Camera verified successfully',
         'redirect_url': url_for('patient.consent')
     })
+
+
 @patient_bp.route('/camera-status', methods=['POST'])
 @login_required
 @patient_required
@@ -181,12 +185,13 @@ def camera_status():
     """Handle camera status updates."""
     data = request.get_json()
     camera_active = data.get('camera_active', False)
-    
+
     return jsonify({
         'success': True,
         'camera_active': camera_active,
         'message': 'Camera status updated'
     })
+
 
 @patient_bp.route('/consent')
 @login_required
@@ -204,10 +209,11 @@ def consent():
         'progress_percentage': 25,
         'assessment_order': assessment_order
     }
-    return render_template('patient/consent.html', 
-                         consent_text=consent_text,
-                         session_id=assessment_session_id,
-                         **progress_data)
+    return render_template('patient/consent.html',
+                           consent_text=consent_text,
+                           session_id=assessment_session_id,
+                           **progress_data)
+
 
 @patient_bp.route('/submit-consent', methods=['POST'])
 @login_required
@@ -217,7 +223,7 @@ def submit_consent():
     consent_agreed = request.form.get('consent_agreed')
     session_id = request.form.get('session_id')
     assessment_order = session.get('assessment_order', 'phq_first')
-    
+
     if not consent_agreed:
         flash('You must agree to the consent form to continue', 'error')
         return redirect(url_for('patient.consent'))
@@ -232,6 +238,7 @@ def submit_consent():
         return redirect(url_for('patient.open_questions_assessment'))
 # app/routes/patient.py - PHQ-9 section fixes
 
+
 @patient_bp.route('/phq9-assessment')
 @login_required
 @patient_required
@@ -239,46 +246,46 @@ def phq9_assessment():
     """PHQ-9 assessment page - redirects to first question."""
     assessment_session_id = session.get('assessment_session_id')
     assessment_order = session.get('assessment_order', 'phq_first')
-    
+
     if not assessment_session_id:
         flash('Please start a new assessment session', 'error')
         return redirect(url_for('patient.dashboard'))
-    
+
     try:
         # Create PHQ session data
         phq_data = PHQService.create_phq_session(assessment_session_id, current_user.id)
-        
+
         # Check if there are any questions available
         if not phq_data.get('questions') or len(phq_data['questions']) == 0:
             flash('No PHQ-9 questions are configured. Please contact an administrator to set up the assessment.', 'error')
             return redirect(url_for('patient.dashboard'))
-        
+
         # Get and save assessment settings for consistency
         recording_config = SettingsService.get_recording_config()
         assessment_order = session.get('assessment_order', 'phq_first')
-        
+
         # Save settings to assessment record
         assessment = Assessment.query.filter_by(
             session_id=assessment_session_id,
             user_id=current_user.id
         ).first()
-        
+
         if assessment:
             assessment.set_phq9_settings(phq_data['settings'])
             assessment.set_recording_settings(recording_config)
             assessment.assessment_order = assessment_order
             db.session.commit()
-        
+
         # Store PHQ session data
         session['phq_data'] = phq_data
         session['phq_start_time'] = datetime.now().isoformat()
-        
+
         # Start with first assessment type
         AssessmentService.start_assessment_type(assessment_session_id, current_user.id, 'phq9')
-        
+
         # Redirect to first question
         return redirect(url_for('patient.phq9_question', question_index=0))
-        
+
     except Exception as e:
         flash(f'Error setting up PHQ-9 assessment: {str(e)}', 'error')
         return redirect(url_for('patient.dashboard'))
@@ -291,12 +298,12 @@ def phq9_question(question_index):
     assessment_session_id = session.get('assessment_session_id')
     phq_data = session.get('phq_data')
     assessment_order = session.get('assessment_order', 'phq_first')
-    
+
     # Check if assessment session exists
     if not assessment_session_id:
         flash('Please start a new assessment session', 'error')
         return redirect(url_for('patient.dashboard'))
-    
+
     # Check if PHQ data exists, if not try to create it
     if not phq_data:
         try:
@@ -306,12 +313,12 @@ def phq9_question(question_index):
         except Exception as e:
             flash(f'Error setting up PHQ-9 assessment: {str(e)}', 'error')
             return redirect(url_for('patient.dashboard'))
-    
+
     # Check if there are any questions available
     if not phq_data.get('questions') or len(phq_data['questions']) == 0:
         flash('No PHQ-9 questions are configured. Please contact an administrator.', 'error')
         return redirect(url_for('patient.dashboard'))
-    
+
     # Validate question index
     if question_index >= len(phq_data['questions']):
         flash(f'Invalid question index {question_index}. Redirecting to first question.', 'warning')
@@ -334,18 +341,18 @@ def phq9_question(question_index):
         'assessment_order': assessment_order
     }
     current_question = phq_data['questions'][question_index]
-    
+
     # Get recording settings for camera capture
     recording_config = SettingsService.get_recording_config()
-    
+
     return render_template('patient/phq9_question.html',
-                         question=current_question,
-                         question_index=question_index,
-                         total_questions=len(phq_data['questions']),
-                         settings=phq_data['settings'],
-                         recording_config=recording_config,
-                         session_id=assessment_session_id,
-                         **progress_data)
+                           question=current_question,
+                           question_index=question_index,
+                           total_questions=len(phq_data['questions']),
+                           settings=phq_data['settings'],
+                           recording_config=recording_config,
+                           session_id=assessment_session_id,
+                           **progress_data)
 
 
 @patient_bp.route('/phq9-submit', methods=['POST'])
@@ -360,21 +367,21 @@ def phq9_submit():
     response_time_ms = request.form.get('response_time_ms')
     response_timestamp = request.form.get('response_timestamp')
     assessment_order = session.get('assessment_order', 'phq_first')
-    
+
     if not assessment_session_id or not phq_data:
         flash('PHQ-9 session not found', 'error')
         return redirect(url_for('patient.dashboard'))
-    
+
     # Calculate response time if provided
     if response_time_ms:
         response_time_ms = int(response_time_ms)
-    
+
     # Get question data
     current_question = phq_data['questions'][question_index]
     category_number = current_question['category']
     question_text = current_question['question']
     question_index_in_category = current_question.get('question_index_in_category', 0)
-    
+
     # Save response with timestamp and question index
     PHQService.save_phq_response(
         assessment_session_id,
@@ -406,6 +413,7 @@ def phq9_submit():
     else:
         return redirect(url_for('patient.phq9_question', question_index=next_question_index))
 
+
 @patient_bp.route('/open-questions-assessment')
 @login_required
 @patient_required
@@ -430,19 +438,19 @@ def open_questions_assessment():
                 assessment_session_id, assessment_session_id, current_user.id
             )
             session['chat_session_token'] = chat_session_token
-    
+
     # Get session data for template
     chat_session = get_chat_session_manager().get_session(chat_session_token)
-    
+
     # Get recording settings for consistency
     recording_config = SettingsService.get_recording_config()
-    
+
     # Save chat and recording settings to assessment record
     assessment = Assessment.query.filter_by(
         session_id=assessment_session_id,
         user_id=current_user.id
     ).first()
-    
+
     if assessment:
         assessment.set_chat_settings(chat_session['settings'])
         # Update recording settings if not already set
@@ -464,47 +472,49 @@ def open_questions_assessment():
     }
     # Get recording settings for camera capture
     recording_config = SettingsService.get_recording_config()
-    
-    return render_template('patient/open_questions_assessment.html', 
-                         chat_settings=chat_session['settings'],
-                         recording_config=recording_config,
-                         session_id=assessment_session_id,
-                         **progress_data)
+
+    return render_template('patient/open_questions_assessment.html',
+                           chat_settings=chat_session['settings'],
+                           recording_config=recording_config,
+                           session_id=assessment_session_id,
+                           **progress_data)
+
+
 @patient_bp.route('/chat-stream/<message>')
 @login_required
 @patient_required
 def chat_stream(message):
     assessment_session_id = session.get('assessment_session_id')
     chat_session_token = session.get('chat_session_token')
-    
+
     if not assessment_session_id or not chat_session_token or not message:
         return Response("data: " + json.dumps({'type': 'error', 'message': 'Invalid request'}) + "\n\n",
-                       mimetype='text/event-stream')
-    
+                        mimetype='text/event-stream')
+
     # Add user message to server-side session BEFORE streaming
     get_chat_session_manager().add_user_message(chat_session_token, message)
-    
+
     def generate():
         response_content = ""
-        
+
         try:
             # Stream response using session manager
             for chunk in get_chat_session_manager().stream_response(chat_session_token, message):
                 response_content += chunk
                 yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
-            
+
             # Add AI response to server-side session
             get_chat_session_manager().add_ai_response(chat_session_token, response_content)
-            
+
             # Get updated session stats
             chat_session = get_chat_session_manager().get_session(chat_session_token)
             exchange_count = chat_session.get('exchange_count', 0) if chat_session else 0
-            
+
             yield f"data: {json.dumps({'type': 'complete', 'exchange_count': exchange_count})}\n\n"
-            
+
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
-    
+
     response = Response(generate(), mimetype='text/event-stream')
     response.headers['Cache-Control'] = 'no-cache'
     response.headers['X-Accel-Buffering'] = 'no'
@@ -512,24 +522,23 @@ def chat_stream(message):
 
 
 @patient_bp.route('/update-chat-session', methods=['POST'])
-@login_required  
+@login_required
 @patient_required
 def update_chat_session():
     """Get current chat session info."""
     chat_session_token = session.get('chat_session_token')
     if not chat_session_token:
         return jsonify({'success': False, 'message': 'No chat session found'}), 400
-    
+
     chat_session = get_chat_session_manager().get_session(chat_session_token)
     if not chat_session:
         return jsonify({'success': False, 'message': 'Chat session expired'}), 400
-    
+
     return jsonify({
         'success': True,
         'exchange_count': chat_session.get('exchange_count', 0),
         'message_count': len(chat_session.get('message_history', []))
     })
-
 
 
 @patient_bp.route('/save-conversation', methods=['POST'])
@@ -539,45 +548,45 @@ def save_conversation():
     """Save the complete conversation when user is done."""
     assessment_session_id = session.get('assessment_session_id')
     chat_session_token = session.get('chat_session_token')
-    
+
     if not assessment_session_id or not chat_session_token:
         return jsonify({'success': False, 'message': 'No conversation to save'}), 400
-    
+
     # Get session from manager
     chat_session = get_chat_session_manager().get_session(chat_session_token)
     if not chat_session:
         return jsonify({'success': False, 'message': 'Chat session expired'}), 400
-    
+
     try:
         # Log conversation summary before saving
         current_app.logger.info(f"Saving conversation for session {assessment_session_id}, "
-                               f"exchanges: {chat_session.get('exchange_count', 0)}, "
-                               f"messages: {len(chat_session.get('message_history', []))}")
-        
+                                f"exchanges: {chat_session.get('exchange_count', 0)}, "
+                                f"messages: {len(chat_session.get('message_history', []))}")
+
         chat_service = OpenAIChatService()
         saved_assessment = chat_service.save_conversation(
             assessment_session_id,
             current_user.id,
             chat_session
         )
-        
+
         # Mark assessment as having open questions completed
         AssessmentService.start_assessment_type(assessment_session_id, current_user.id, 'open_questions')
-        
+
         # Clear server-side chat session and Flask token
         get_chat_session_manager().delete_session(chat_session_token)
         session.pop('chat_session_token', None)
         session.modified = True
-        
+
         current_app.logger.info(f"Successfully saved conversation for session {assessment_session_id}")
-        
+
         return jsonify({
             'success': True,
             'message': 'Conversation saved successfully',
             'exchanges_saved': chat_session.get('exchange_count', 0),
             'assessment_id': saved_assessment.id
         })
-    
+
     except Exception as e:
         current_app.logger.error(f"Failed to save conversation for session {assessment_session_id}: {str(e)}")
         return jsonify({
@@ -593,20 +602,20 @@ def complete_open_questions():
     """Complete open questions assessment."""
     assessment_session_id = session.get('assessment_session_id')
     assessment_order = session.get('assessment_order', 'phq_first')
-    
+
     if not assessment_session_id:
         flash('Please start a new assessment session', 'error')
         return redirect(url_for('patient.dashboard'))
-    
+
     # Mark open questions as completed
     AssessmentService.complete_open_questions_assessment(assessment_session_id, current_user.id)
-    
+
     # Check if we need to do PHQ-9
     assessment = Assessment.query.filter_by(
         session_id=assessment_session_id,
         user_id=current_user.id
     ).first()
-    
+
     if assessment and assessment.status == 'completed':
         # Both assessments done
         flash('All assessments completed successfully!', 'success')
@@ -619,6 +628,7 @@ def complete_open_questions():
         else:
             flash('Assessment completed!', 'success')
             return redirect(url_for('patient.assessment_complete'))
+
 
 @patient_bp.route('/assessment-complete')
 @login_required
@@ -639,7 +649,7 @@ def assessment_complete():
     chat_session_token = session.get('chat_session_token')
     if chat_session_token:
         get_chat_session_manager().delete_session(chat_session_token)
-    
+
     session.pop('assessment_session_id', None)
     session.pop('phq_data', None)
     session.pop('chat_session_token', None)
@@ -653,44 +663,45 @@ def assessment_complete():
 
     return render_template('patient/assessment_complete.html', **completion_data)
 
+
 @patient_bp.route('/capture-emotion-binary', methods=['POST'])
 @login_required
 @patient_required
 def capture_emotion_binary():
     """Handle binary file uploads (unified service)"""
     try:
-        
+
         # Validate session
         assessment_session_id = session.get('assessment_session_id')
         if not assessment_session_id:
             return jsonify({'success': False, 'message': 'No assessment session found'}), 400
-        
+
         # Get file from request
         if 'file' not in request.files:
             return jsonify({'success': False, 'message': 'No file provided'}), 400
-        
+
         file = request.files['file']
         if file.filename == '':
             return jsonify({'success': False, 'message': 'No file selected'}), 400
-        
+
         # Get form data
         assessment_type = request.form.get('assessment_type')
         question_identifier = request.form.get('question_identifier')
         media_type = request.form.get('media_type')
-        
+
         if not all([assessment_type, question_identifier, media_type]):
             return jsonify({'success': False, 'message': 'Missing required fields'}), 400
-        
+
         # Read file data
         file_data = file.read()
-        
+
         # Prepare metadata
         metadata = {
             'duration_ms': int(request.form.get('duration_ms', 0)),
             'capture_timestamp': int(request.form.get('capture_timestamp', 0)),
             'conversation_elapsed_ms': int(request.form.get('conversation_elapsed_ms', 0))
         }
-        
+
         # Parse recording settings if provided
         recording_settings = request.form.get('recording_settings')
         if recording_settings:
@@ -699,7 +710,7 @@ def capture_emotion_binary():
                 metadata['recording_settings'] = json.loads(recording_settings)
             except:
                 pass
-        
+
         # Save using unified emotion storage service (VPS + Database in one call!)
         if media_type == 'video':
             emotion_data = get_emotion_storage().save_video(
@@ -723,7 +734,7 @@ def capture_emotion_binary():
             )
         else:
             return jsonify({'success': False, 'message': 'Invalid media type'}), 400
-        
+
         return jsonify({
             'success': True,
             'file_path': emotion_data.file_path,
@@ -731,14 +742,14 @@ def capture_emotion_binary():
             'database_id': emotion_data.id,
             'message': f'{media_type.title()} saved successfully'
         })
-        
+
     except Exception as e:
         return jsonify({'success': False, 'message': f'Upload failed: {str(e)}'}), 500
 
 
 @patient_bp.route('/storage-stats')
 @login_required
-@patient_required 
+@patient_required
 def get_storage_stats():
     """Get storage statistics"""
     try:
@@ -769,18 +780,18 @@ def get_session_files():
     assessment_session_id = session.get('assessment_session_id')
     if not assessment_session_id:
         return jsonify({'success': False, 'message': 'No assessment session found'}), 400
-    
+
     try:
         # Get files using unified service
         files = get_emotion_storage().get_session_files(assessment_session_id, current_user.id)
-        
+
         return jsonify({
             'success': True,
             'files': files,
             'total_files': len(files),
             'total_size': sum(f['file_size'] for f in files if f['file_size'])
         })
-        
+
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
@@ -793,16 +804,16 @@ def validate_session_files():
     assessment_session_id = session.get('assessment_session_id')
     if not assessment_session_id:
         return jsonify({'success': False, 'message': 'No assessment session found'}), 400
-    
+
     try:
         # Validate files using unified service
         validation_result = get_emotion_storage().validate_session_files(assessment_session_id, current_user.id)
-        
+
         return jsonify({
             'success': True,
             'validation': validation_result
         })
-        
+
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
@@ -814,25 +825,25 @@ def validate_session_files():
 def serve_emotion_file(emotion_id):
     """Serve captured emotion file"""
     from flask import send_file
-    
+
     # Get emotion data record
     emotion_data = EmotionData.query.filter_by(id=emotion_id).first()
     if not emotion_data:
         return jsonify({'error': 'File not found'}), 404
-    
+
     # Verify user owns this file
     assessment = Assessment.query.filter_by(
         id=emotion_data.assessment_id,
         user_id=current_user.id
     ).first()
-    
+
     if not assessment:
         return jsonify({'error': 'Access denied'}), 403
-    
+
     # Check if file exists
     if not emotion_data.file_exists():
         return jsonify({'error': 'Physical file not found'}), 404
-    
+
     try:
         return send_file(
             emotion_data.get_full_path(),
