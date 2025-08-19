@@ -8,3 +8,4 @@ app/cli.py
 __pycache__
 *.pyc
 instance
+app.db
