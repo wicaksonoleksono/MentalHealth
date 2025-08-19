@@ -4,3 +4,7 @@ instance/
 /venv/
 uploads/
 .claude
+app/cli.py
+__pycache__
+*.pyc
+instance
