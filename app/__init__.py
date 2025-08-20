@@ -16,19 +16,47 @@ def create_app(config_name=None):
     app = Flask(__name__)
     if config_name is None:
         config_name = os.environ.get('FLASK_ENV', 'production')
-    app.config.from_object(config.get(config_name, config['default']))
-    instance_path = os.path.join(app.root_path, '..', 'instance')
-    os.makedirs(instance_path, exist_ok=True)
-    try:
-        upload_folder = app.config.get('UPLOAD_FOLDER', 'uploads')
-        assessment_dirs = [
-            'exports', './uploads'
-        ]
-        for dir_name in assessment_dirs:
-            os.makedirs(os.path.join(upload_folder, dir_name), exist_ok=True)
-        print(f"Upload directories initialized at: {upload_folder}")
-    except Exception as e:
-        print(f"Warning: Could not initialize upload directories: {e}")
+    
+    # Get config object and apply to app
+    config_obj = config.get(config_name, config['default'])
+    app.config.from_object(config_obj)
+    
+    # Use config object's basedir for instance path
+    from config import basedir
+    instance_path = os.path.join(basedir, 'instance')
+    
+    # Check if instance directory exists, if not ask for confirmation
+    if not os.path.exists(instance_path):
+        if click.confirm(f'Instance directory does not exist at {instance_path}. Create it?'):
+            os.makedirs(instance_path, exist_ok=True)
+            print(f"✅ Created instance directory: {instance_path}")
+        else:
+            print(f"❌ Skipped creating instance directory")
+    
+    # Create upload and export directories using config values
+    upload_folder = app.config['UPLOAD_FOLDER']
+    exports_folder = app.config.get('EXPORTS_FOLDER', os.path.join(basedir, 'exports'))
+    
+    # Check and create upload folder
+    if not os.path.exists(upload_folder):
+        if click.confirm(f'Upload directory does not exist at {upload_folder}. Create it?'):
+            os.makedirs(upload_folder, exist_ok=True)
+            print(f"✅ Created upload directory: {upload_folder}")
+        else:
+            print(f"❌ Skipped creating upload directory")
+    
+    # Check and create exports folder  
+    if not os.path.exists(exports_folder):
+        if click.confirm(f'Exports directory does not exist at {exports_folder}. Create it?'):
+            os.makedirs(exports_folder, exist_ok=True)
+            print(f"✅ Created exports directory: {exports_folder}")
+        else:
+            print(f"❌ Skipped creating exports directory")
+    
+    print(f"Directories status:")
+    print(f"  Instance: {instance_path} ({'✅' if os.path.exists(instance_path) else '❌'})")
+    print(f"  Uploads: {upload_folder} ({'✅' if os.path.exists(upload_folder) else '❌'})")
+    print(f"  Exports: {exports_folder} ({'✅' if os.path.exists(exports_folder) else '❌'})")
 
     # Initialize extensions
     db.init_app(app)
