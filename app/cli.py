@@ -6,7 +6,6 @@ from app.models.settings import AppSetting
 from app.services.auth import AuthService  # Fixed import path
 from sqlalchemy.exc import IntegrityError
 import json
-
 users_to_seed = [
     {
         "username": "wicak",
@@ -126,7 +125,6 @@ def register_commands(app):
                         click.echo(f"  - User '{username}' already exists. Type updated to '{user_type}'.")
                     else:
                         click.echo(f"  - User '{username}' already exists.")
-
             try:
                 db.session.commit()
                 click.echo("User seeding complete.")
